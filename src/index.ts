@@ -1,9 +1,12 @@
+import 'dotenv/config';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { githubWebhook } from './routes/github';
 import { reminder } from './routes/reminder';
 import { status } from './routes/status';
+
+import './env';
 
 const app = new Hono();
 

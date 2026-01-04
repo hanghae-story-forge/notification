@@ -6,14 +6,11 @@ export const env = createEnv({
    * Specify your server-side environment variables schema here.
    */
   server: {
-    DATABASE_URL: z
-      .string()
-      .url()
-      .default('postgresql://localhost:5432/dongueldonguel'),
+    DATABASE_URL: z.string().url({ message: 'Invalid DATABASE_URL format' }),
     NODE_ENV: z
       .enum(['development', 'production', 'test'])
       .default('development'),
-    DISCORD_WEBHOOK_URL: z.string().url().optional(),
+    DISCORD_WEBHOOK_URL: z.string().url({ message: 'Invalid DISCORD_WEBHOOK_URL format' }).optional(),
   },
 
   /**
