@@ -31,6 +31,16 @@ export const cycles = pgTable('cycles', {
   generationIdx: index('cycles_generation_idx').on(table.generationId),
 }));
 
+// 기수-멤버 조인 테이블
+export const generationMembers = pgTable('generation_members', {
+  id: serial('id').primaryKey(),
+  generationId: integer('generation_id').notNull().references(() => generations.id),
+  memberId: integer('member_id').notNull().references(() => members.id),
+  joinedAt: timestamp('joined_at').defaultNow().notNull(),
+}, (table) => ({
+  generationMemberIdx: index('gen_members_gen_member_idx').on(table.generationId, table.memberId),
+}));
+
 // 제출 테이블
 export const submissions = pgTable('submissions', {
   id: serial('id').primaryKey(),
@@ -50,5 +60,7 @@ export type Generation = typeof generations.$inferSelect;
 export type NewGeneration = typeof generations.$inferInsert;
 export type Cycle = typeof cycles.$inferSelect;
 export type NewCycle = typeof cycles.$inferInsert;
+export type GenerationMember = typeof generationMembers.$inferSelect;
+export type NewGenerationMember = typeof generationMembers.$inferInsert;
 export type Submission = typeof submissions.$inferSelect;
 export type NewSubmission = typeof submissions.$inferInsert;

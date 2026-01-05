@@ -7,7 +7,7 @@
 - **Hono** - 웹 프레임워크
 - **TypeScript**
 - **Drizzle ORM** - DB ORM
-- **PostgreSQL** - 데이터베이스
+- **Neon PostgreSQL** - 데이터베이스 (Serverless Postgres)
 
 ## 기능
 
@@ -20,7 +20,7 @@
 ### 1. 의존성 설치
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. 환경 변수 설정
@@ -28,7 +28,8 @@ npm install
 `.env` 파일 생성:
 
 ```env
-DATABASE_URL=postgresql://localhost:5432/dongueldonguel
+# Neon PostgreSQL (브랜치별로 다른 URL 사용)
+DATABASE_URL=postgresql://user:password@ep-xxx.aws.neon.tech/neondb?sslmode=require
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 PORT=3000
 ```
@@ -36,13 +37,13 @@ PORT=3000
 ### 3. DB 마이그레이션
 
 ```bash
-npm run db:push
+pnpm run db:push
 ```
 
 ### 4. 실행
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ## API 명세
