@@ -2,18 +2,18 @@
 
 - **Scope**: Drizzle ORM PostgreSQL 스키마 정의
 - **Source of Truth**: `src/db/schema.ts`
-- **Last Verified**: 2025-01-05
-- **Repo Ref**: f32413325de67a3ad1bde6649d16474d236d164b
+- **Last Verified**: 2026-01-05
+- **Repo Ref**: df3a0ab
 
 ---
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   created_at: "2025-01-05T10:00:00Z"
-  last_verified: "2025-01-05T10:00:00Z"
-  git_commit: "f32413325de67a3ad1bde6649d16474d236d164b"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   source_files:
     src/db/schema.ts:
-      git_hash: "b8c7e13f1557a68a220c9b964d09d2cc741be34e"
+      git_hash: "df3a0ab"
       source_exists: true
 ---
 

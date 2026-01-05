@@ -6,18 +6,31 @@
 
 ## Executive Summary
 
-상태 추적 시스템은 **2가지 형식**(JSON, Discord webhook)으로 제출 현황을 제공하여, Discord 봇 명령어를 통한 실시간 조회를 가능하게 합니다. 조회 쿼리가 효율적이나, `generation_members` 미사용으로 전체 멤버를 대상으로 통계를 계산하여 기수별 참여율이 부정확할 수 있습니다.
+상태 추적 시스템은 **4가지 엔드포인트**(현재 회차 조회, 제출 현황 JSON, Discord webhook 두 가지 형식)로 제출 현황을 제공하여, Discord 봇 명령어를 통한 실시간 조회를 가능하게 합니다. 조회 쿼리가 효율적이나, `generation_members` 미사용으로 전체 멤버를 대상으로 통계를 계산하여 기수별 참여율이 부정확할 수 있습니다.
+
+**NEW**: 현재 진행중인 회차를 자동으로 조회하는 `/api/status/current` 엔드포인트가 추가되어, 운영자가 매번 회차 ID를 기억할 필요 없이 "지금 제출해야 할 회차"를 즉시 확인할 수 있습니다.
 
 ## Facts
 
 ### API 엔드포인트 구조
 
-1. **`GET /api/status/{cycleId}`**
+1. **`GET /api/status/current`** (NEW)
+   - **용도**: 현재 진행중인 사이클 조회 (JSON 형식)
+   - **주 사용자**: Discord 봇, 대시보드
+   - **응답 구조**: 사이클 정보, 남은 시간 (daysLeft, hoursLeft)
+   - **조회 로직**: 현재 시간이 `startDate`와 `endDate` 사이인 회차
+
+2. **`GET /api/status/current/discord`** (NEW)
+   - **용도**: 현재 사이클의 제출 현황을 Discord webhook 페이로드 형식으로 반환
+   - **주 사용자**: Discord 봇이 직접 Discord에 전송
+   - **응답 구조**: Discord embeds 형식 (제출자/미제출자 목록 포함)
+
+3. **`GET /api/status/{cycleId}`**
    - **용도**: 특정 사이클의 제출 현황 조회 (JSON 형식)
    - **주 사용자**: Discord 봇, 대시보드
    - **응답 구조**: 사이클 정보, 요약 통계, 제출자 상세, 미제출자 목록
 
-2. **`GET /api/status/{cycleId}/discord`**
+4. **`GET /api/status/{cycleId}/discord`**
    - **용도**: 제출 현황을 Discord webhook 페이로드 형식으로 반환
    - **주 사용자**: Discord 봇이 직접 Discord에 전송
    - **응답 구조**: Discord embeds 형식 (title, fields, color, timestamp)
@@ -49,7 +62,41 @@ summary: {
 
 ## Key Insights (Interpretation)
 
-### 1. 이중 포맷 지원: 유연성 vs 복잡성
+### 1. 현재 회차 자동 조회: 사용자 경험 개선 (NEW)
+
+**문제점**: 기존 시스템에서는 운영자가 매번 회차 ID를 기억해야 함
+
+**시나리오**:
+```
+운영자: "이번 주차 제출 현황 확인"
+1. 회차 ID 기억하기: "2주차... ID가 뭐지? 42번? 43번?"
+2. Discord 봇 명령어: `/status 42`
+3. 잘못된 ID 입력 시: "/status 43"으로 재시도
+```
+
+**해결**: `/api/status/current` 엔드포인트로 현재 진행중인 회차 자동 조회
+
+**구현**:
+```typescript
+const now = new Date();
+const currentCycle = await db
+  .select({ cycle: cycles, generation: generations })
+  .from(cycles)
+  .innerJoin(generations, eq(cycles.generationId, generations.id))
+  .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
+  .limit(1);
+```
+
+**이점**:
+- **사용자 경험**: 회차 ID 기억 불필요, `/check-submission` 명령어만으로 즉시 확인
+- **운영 효율**: 신규 운영자 온보딩 시 회차 ID 학습 비용 절감
+- **남은 시간 표시**: daysLeft, hoursLeft로 마감 임박도 직관적 파악
+
+**남은 위험**:
+- **공백 기간**: 마감 직후부터 다음 회차 시작 전까지 404 반환
+  - 해결안: "가장 최근 회차" 또는 "다음 예정 회차" 폴백 추가
+
+### 2. 이중 포맷 지원: 유연성 vs 복잡성
 
 **설계**: 동일한 데이터를 JSON과 Discord webhook 페이로드 두 가지 형식으로 제공
 

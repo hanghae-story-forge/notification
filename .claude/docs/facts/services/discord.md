@@ -2,18 +2,18 @@
 
 - **Scope**: Discord webhook 메시지 생성 및 전송
 - **Source of Truth**: `src/services/discord.ts`
-- **Last Verified**: 2025-01-05
-- **Repo Ref**: f32413325de67a3ad1bde6649d16474d236d164b
+- **Last Verified**: 2026-01-05
+- **Repo Ref**: df3a0ab
 
 ---
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   created_at: "2025-01-05T10:00:00Z"
-  last_verified: "2025-01-05T10:00:00Z"
-  git_commit: "f32413325de67a3ad1bde6649d16474d236d164b"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   source_files:
     src/services/discord.ts:
-      git_hash: "cd4b43fd78f95e4fe13164ea2a8fa72d7b373f79"
+      git_hash: "df3a0ab"
       source_exists: true
 ---
 
