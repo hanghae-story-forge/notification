@@ -17,7 +17,32 @@ const app = new Hono();
 // CORS 허용
 app.use('/*', cors());
 
-// Health check
+// Health check for Docker
+app.get('/health', async (c) => {
+  try {
+    // DB 연결 확인
+    const { db } = await import('./lib/db');
+    await db.execute({ sql: 'SELECT 1' });
+
+    return c.json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return c.json(
+      {
+        status: 'unhealthy',
+        database: 'disconnected',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      },
+      503
+    );
+  }
+});
+
+// Root endpoint
 app.get('/', (c) => c.json({ status: 'ok', message: '똥글똥글 API' }));
 
 // GitHub webhook
