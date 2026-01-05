@@ -15,11 +15,14 @@ export class DrizzleGenerationRepository implements GenerationRepository {
 
     // ID가 0이면 새로운 기수 (생성)
     if (dto.id === 0) {
-      const result = await db.insert(generations).values({
-        name: dto.name,
-        startedAt: new Date(dto.startedAt),
-        isActive: dto.isActive,
-      }).returning();
+      const result = await db
+        .insert(generations)
+        .values({
+          name: dto.name,
+          startedAt: new Date(dto.startedAt),
+          isActive: dto.isActive,
+        })
+        .returning();
 
       // 생성된 ID로 엔티티 업데이트
       return this.mapToEntity(result[0]);
