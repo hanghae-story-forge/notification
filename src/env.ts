@@ -26,10 +26,7 @@ export const env = createEnv({
       .string()
       .min(1, { message: 'DISCORD_GUILD_ID is required' })
       .optional(),
-    APP_ID: z
-      .string()
-      .min(1, { message: 'APP_ID is required' })
-      .optional(),
+    APP_ID: z.string().min(1, { message: 'APP_ID is required' }).optional(),
     APP_PRIVATE_KEY: z
       .string()
       .min(1, { message: 'APP_PRIVATE_KEY is required' })

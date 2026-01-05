@@ -18,7 +18,9 @@ export async function getGitHubClient(): Promise<Octokit> {
   const installationId = env.APP_INSTALLATION_ID;
 
   if (!appId || !privateKey || !installationId) {
-    throw new Error('GitHub App credentials are required (APP_ID, APP_PRIVATE_KEY, APP_INSTALLATION_ID)');
+    throw new Error(
+      'GitHub App credentials are required (APP_ID, APP_PRIVATE_KEY, APP_INSTALLATION_ID)'
+    );
   }
 
   const auth = createAppAuth({
