@@ -1,6 +1,3 @@
-import { db } from '@/lib/db';
-import { generations, cycles } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
 import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import type { z } from 'zod';
@@ -10,10 +7,11 @@ import type {
 } from './github.routes';
 
 // DDD Layer imports
-import { RecordSubmissionCommand } from '@/application/commands';
+import { RecordSubmissionCommand, CreateCycleCommand } from '@/application/commands';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { SubmissionService } from '@/domain/submission/submission.service';
 import { DiscordWebhookService } from '@/infrastructure/external/discord/discord.webhook';
 import {
@@ -29,6 +27,7 @@ import {
 const submissionRepo = new DrizzleSubmissionRepository();
 const cycleRepo = new DrizzleCycleRepository();
 const memberRepo = new DrizzleMemberRepository();
+const generationRepo = new DrizzleGenerationRepository();
 const submissionService = new SubmissionService(submissionRepo);
 const discordService = new DiscordWebhookService();
 
@@ -38,6 +37,8 @@ const recordSubmissionCommand = new RecordSubmissionCommand(
   submissionRepo,
   submissionService
 );
+
+const createCycleCommand = new CreateCycleCommand(cycleRepo, generationRepo);
 
 // ========================================
 // Utilities
@@ -156,7 +157,7 @@ export const handleIssueComment = async (c: AppContext) => {
   }
 };
 
-// 이슈 생성 처리 (회차 생성) - 향후 DDD로 리팩토링 예정
+// 이슈 생성 처리 (회차 생성) - DDD로 리팩토링
 export const handleIssues = async (c: AppContext) => {
   const payload = (await c.req.json()) as z.infer<
     typeof IssuesWebhookPayloadSchema
@@ -172,35 +173,6 @@ export const handleIssues = async (c: AppContext) => {
     );
   }
 
-  // 활성화된 기수 찾기 (가장 최근에 생성된 활성 기수)
-  const activeGenerations = await db
-    .select()
-    .from(generations)
-    .where(eq(generations.isActive, true))
-    .orderBy(generations.createdAt);
-
-  if (activeGenerations.length === 0) {
-    return c.json(
-      { message: 'No active generation found' },
-      HttpStatusCodes.BAD_REQUEST
-    );
-  }
-
-  const generation = activeGenerations[0];
-
-  // 이미 동일한 회차가 있는지 확인
-  const existingCycle = await db
-    .select()
-    .from(cycles)
-    .where(and(eq(cycles.generationId, generation.id), eq(cycles.week, week)));
-
-  if (existingCycle.length > 0) {
-    return c.json(
-      { message: 'Cycle already exists for this week' },
-      HttpStatusCodes.OK
-    );
-  }
-
   // 날짜 계산 (본문에서 파싱 또는 기본값 사용)
   const dates = parseDatesFromBody(issue.body);
   const now = new Date();
@@ -209,25 +181,45 @@ export const handleIssues = async (c: AppContext) => {
   const startDate = dates?.start ?? now;
   const endDate = dates?.end ?? new Date(now.getTime() + weekInMs);
 
-  // 회차 생성
-  const newCycle = await db
-    .insert(cycles)
-    .values({
-      generationId: generation.id,
+  try {
+    // Command 실행 (DDD Use Case)
+    const result = await createCycleCommand.execute({
       week,
       startDate,
       endDate,
       githubIssueUrl: issue.html_url,
-    })
-    .returning();
+    });
 
-  return c.json(
-    {
-      message: 'Cycle created',
-      cycle: newCycle[0],
-    },
-    HttpStatusCodes.CREATED
-  );
+    return c.json(
+      {
+        message: 'Cycle created',
+        cycle: result.cycle.toDTO(),
+        generation: result.generationName,
+      },
+      HttpStatusCodes.CREATED
+    );
+  } catch (error) {
+    // 도메인 에러 처리
+    if (error instanceof NotFoundError) {
+      return c.json({ message: error.message }, HttpStatusCodes.NOT_FOUND);
+    }
+    if (error instanceof ConflictError) {
+      return c.json(
+        { message: error.message },
+        HttpStatusCodes.OK // 이미 존재함은 에러가 아님
+      );
+    }
+    if (error instanceof ValidationError) {
+      return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
+    }
+
+    // 알 수 없는 에러
+    console.error('Unexpected error in handleIssues:', error);
+    return c.json(
+      { message: 'Internal server error' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
+  }
 };
 
 export const handleUnknownEvent = async (c: AppContext) => {
