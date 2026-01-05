@@ -68,3 +68,27 @@ export const getNotSubmittedMembers = createRoute({
     ),
   },
 });
+
+export const sendReminderNotifications = createRoute({
+  path: '/api/reminder/send-reminders',
+  method: 'post',
+  tags,
+  request: {
+    query: z.object({
+      hoursBefore: z.string().default('24').optional(),
+    }),
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        sent: z.number(),
+        cycles: z.array(z.object({ cycleId: z.number(), cycleName: z.string() })),
+      }),
+      'Reminder notifications sent'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      InternalServerErrorSchema,
+      'Failed to send reminder notifications'
+    ),
+  },
+});

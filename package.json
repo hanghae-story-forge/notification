@@ -19,6 +19,7 @@
     "github:sync-members": "tsx scripts/sync-members.ts",
     "github:assign": "tsx scripts/assign-members-to-generation.ts",
     "github:fetch-comments": "tsx scripts/fetch-issue-comments.ts",
+    "github:poll-projects": "tsx scripts/poll-github-projects.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
