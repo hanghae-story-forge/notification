@@ -6,7 +6,7 @@ export type Bindings = {
   GITHUB_WEBHOOK_SECRET?: string;
 };
 
-export type Variables = {};
+export type Variables = Record<string, never>;
 
 export type AppOpenAPIHono = OpenAPIHono<{ Bindings: Bindings; Variables: Variables }>;
 
