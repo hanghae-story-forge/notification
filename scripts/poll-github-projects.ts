@@ -1,15 +1,29 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { Octokit } from 'octokit';
+import { createAppAuth } from '@octokit/auth-app';
 import postgres from 'postgres';
 import { generations } from '../src/db/schema.js';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+// GitHub App credentials
+const APP_ID = process.env.APP_ID;
+const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
+const INSTALLATION_ID = process.env.APP_INSTALLATION_ID;
 const DATABASE_URL = process.env.DATABASE_URL;
 const API_URL = process.env.API_URL;
 
-if (!GITHUB_TOKEN) {
-  console.error('❌ GITHUB_TOKEN environment variable is required');
+if (!APP_ID) {
+  console.error('❌ APP_ID environment variable is required');
+  process.exit(1);
+}
+
+if (!APP_PRIVATE_KEY) {
+  console.error('❌ APP_PRIVATE_KEY environment variable is required');
+  process.exit(1);
+}
+
+if (!INSTALLATION_ID) {
+  console.error('❌ APP_INSTALLATION_ID environment variable is required');
   process.exit(1);
 }
 
@@ -23,7 +37,15 @@ if (!API_URL) {
   process.exit(1);
 }
 
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
+// Octokit 생성 (GitHub App 인증 사용)
+const octokit = new Octokit({
+  authStrategy: createAppAuth,
+  auth: {
+    appId: Number(APP_ID),
+    privateKey: APP_PRIVATE_KEY,
+    installationId: Number(INSTALLATION_ID),
+  },
+});
 const client = postgres(DATABASE_URL);
 const db = drizzle(client);
 

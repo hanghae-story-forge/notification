@@ -6,6 +6,10 @@ on:
     - cron: '0 * * * *'
   workflow_dispatch: # 수동 실행 가능
 
+permissions:
+  contents: read
+  organization-projects: read
+
 jobs:
   poll-projects:
     runs-on: ubuntu-latest
@@ -28,7 +32,9 @@ jobs:
 
       - name: Run projects poll script
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_ID: ${{ secrets.APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          APP_INSTALLATION_ID: ${{ secrets.APP_INSTALLATION_ID }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_URL: ${{ secrets.API_URL }}
         run: pnpm github:poll-projects
