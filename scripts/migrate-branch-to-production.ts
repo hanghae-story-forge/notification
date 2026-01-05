@@ -9,7 +9,7 @@
  */
 
 import postgres from 'postgres';
-import * as schema from '../src/db/schema';
+import * as schema from '../src/infrastructure/persistence/drizzle-db/schema';
 
 interface TableInfo {
   name: string;

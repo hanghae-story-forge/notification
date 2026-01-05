@@ -2,10 +2,10 @@ import 'dotenv/config';
 import { Octokit } from 'octokit';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { members, cycles, generations, submissions } from '../src/db/schema';
+import { members, cycles, generations, submissions } from '../src/infrastructure/persistence/drizzle-db/schema';
 import { eq } from 'drizzle-orm';
 import { env } from '../src/env';
-import { getGitHubClient } from '../src/lib/github';
+import { getGitHubClient } from '../src/infrastructure/lib/github';
 
 let octokit: Octokit;
 let client: postgres.Sql<{}>;

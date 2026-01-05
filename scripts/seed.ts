@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import { db } from '../src/lib/db';
-import { members, generations, cycles } from '../src/db/schema';
+import { db } from '../src/infrastructure/lib/db';
+import { members, generations, cycles } from '../src/infrastructure/persistence/drizzle-db/schema';
 
 async function seed() {
   console.log('🌱 Seeding database...');

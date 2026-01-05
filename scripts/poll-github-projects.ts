@@ -2,9 +2,9 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { Octokit } from 'octokit';
 import postgres from 'postgres';
-import { generations } from '../src/db/schema.js';
+import { generations } from '../src/infrastructure/persistence/drizzle-db/schema.js';
 import { env } from '../src/env';
-import { getGitHubClient } from '../src/lib/github';
+import { getGitHubClient } from '../src/infrastructure/lib/github';
 
 const API_URL = process.env.API_URL;
 
@@ -97,7 +97,9 @@ async function createGenerationViaGraphQL(name: string, startedAt: string) {
     throw new Error(`GraphQL request failed: ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as {
+    data: { addGeneration: { id: number; name: string; startedAt: string; isActive: boolean } };
+  };
   return data.data.addGeneration;
 }
 

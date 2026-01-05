@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { members, generationMembers, generations } from '../src/db/schema';
+import { members, generationMembers, generations } from '../src/infrastructure/persistence/drizzle-db/schema';
 import { eq, or, and } from 'drizzle-orm';
 
 const DATABASE_URL = process.env.DATABASE_URL;
