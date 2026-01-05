@@ -45,7 +45,13 @@ export const registerSlashCommands = async (): Promise<void> => {
       .setDescription('현재 활성화된 주차의 제출 현황을 확인합니다'),
   ].map((command) => command.toJSON());
 
-  const rest = new REST({ version: '10' }).setToken(env.DISCORD_BOT_TOKEN);
+  const botToken = env.DISCORD_BOT_TOKEN;
+
+  if (!botToken) {
+    throw new Error('DISCORD_BOT_TOKEN is not set');
+  }
+
+  const rest = new REST({ version: '10' }).setToken(botToken);
 
   try {
     console.log('🔄 Started refreshing application (/) commands.');
