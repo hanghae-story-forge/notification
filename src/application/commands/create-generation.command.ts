@@ -59,10 +59,10 @@ export class CreateGenerationCommand {
     });
 
     // 4. 저장
-    await this.generationRepo.save(generation);
+    const savedGeneration = await this.generationRepo.save(generation);
 
     return {
-      generation,
+      generation: savedGeneration,
     };
   }
 }

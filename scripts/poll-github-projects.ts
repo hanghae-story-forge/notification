@@ -97,9 +97,33 @@ async function createGenerationViaGraphQL(name: string, startedAt: string) {
     throw new Error(`GraphQL request failed: ${response.statusText}`);
   }
 
-  const data = (await response.json()) as {
-    data: { addGeneration: { id: number; name: string; startedAt: string; isActive: boolean } };
+  const raw = (await response.json()) as {
+    kind?: string;
+    singleResult?: {
+      data?: { addGeneration?: { id: number; name: string; startedAt: string; isActive: boolean } };
+      errors?: Array<{ message: string; path?: Array<string | number> }>;
+    };
+    data?: { addGeneration?: { id: number; name: string; startedAt: string; isActive: boolean } };
+    errors?: Array<{ message: string; path?: Array<string | number> }>;
   };
+
+  // Handle Apollo's singleResult format
+  const graphqlResult = raw.kind === 'single' ? raw.singleResult : raw;
+
+  const data = graphqlResult as {
+    data?: { addGeneration: { id: number; name: string; startedAt: string; isActive: boolean } };
+    errors?: Array<{ message: string; path?: Array<string | number> }>;
+  };
+
+  if (data.errors) {
+    const errorMessages = data.errors.map((e) => e.message).join(', ');
+    throw new Error(`GraphQL errors: ${errorMessages}`);
+  }
+
+  if (!data.data) {
+    throw new Error(`GraphQL response missing data field: ${JSON.stringify(raw, null, 2)}`);
+  }
+
   return data.data.addGeneration;
 }
 
