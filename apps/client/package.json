@@ -1,0 +1,16 @@
+{
+  "name": "@dongueldonguel/client",
+  "version": "1.0.0",
+  "private": true,
+  "description": "똥글똥글 클라이언트 애플리케이션",
+  "scripts": {
+    "dev": "echo 'Client app not yet implemented'",
+    "build": "echo 'Client app not yet implemented'",
+    "lint": "echo 'Client app not yet implemented'",
+    "type-check": "echo 'Client app not yet implemented'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
