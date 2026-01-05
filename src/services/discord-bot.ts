@@ -62,7 +62,23 @@ export const registerSlashCommands = async (): Promise<void> => {
       throw new Error('DISCORD_CLIENT_ID is not set');
     }
 
-    await rest.put(Routes.applicationCommands(clientId), { body: commands });
+    const guildId = env.DISCORD_GUILD_ID;
+
+    if (guildId) {
+      // 길드 명령어로 등록 (즉시 반영)
+      await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
+        body: commands,
+      });
+      console.log(
+        `✅ Successfully registered guild commands for server: ${guildId}`
+      );
+    } else {
+      // 글로벌 명령어로 등록 (최대 1시간 소요)
+      await rest.put(Routes.applicationCommands(clientId), { body: commands });
+      console.log(
+        '✅ Successfully registered global commands (may take up to 1 hour to propagate)'
+      );
+    }
 
     console.log('✅ Successfully reloaded application (/) commands.');
   } catch (error) {
