@@ -1,2 +1,2 @@
-export * from './notification.service.interface';
-export * from './github-parsing.service.interface';
+export { INotificationService } from './notification.service.interface';
+export { IGitHubParserService } from './github-parsing.service.interface';

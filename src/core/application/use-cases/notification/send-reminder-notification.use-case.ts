@@ -1,10 +1,10 @@
 import { injectable, inject } from 'inversify';
-import {
+import type {
   ICycleRepository,
   IMemberRepository,
   ISubmissionRepository,
 } from '@core/domain';
-import { INotificationService } from '@core/application/ports/services';
+import type { INotificationService } from '@core/application/ports/services';
 import { CycleId } from '@core/domain/shared';
 import { TYPES } from '@/di/tokens';
 

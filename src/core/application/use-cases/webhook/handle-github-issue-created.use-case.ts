@@ -1,6 +1,6 @@
 import { injectable, inject } from 'inversify';
-import { ICycleRepository, IGenerationRepository } from '@core/domain';
-import { IGitHubParserService } from '@core/application/ports/services';
+import type { ICycleRepository, IGenerationRepository } from '@core/domain';
+import type { IGitHubParserService } from '@core/application/ports/services';
 import { Cycle, WeekNumber, GitHubIssueUrl } from '@core/domain/cycle';
 import { DateRange } from '@core/domain/shared';
 import { NotFoundException } from '@core/domain/shared';

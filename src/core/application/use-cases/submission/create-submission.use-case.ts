@@ -1,10 +1,10 @@
 import { injectable, inject } from 'inversify';
-import {
+import type {
   IMemberRepository,
   ICycleRepository,
   ISubmissionRepository,
 } from '@core/domain';
-import {
+import type {
   INotificationService,
   IGitHubParserService,
 } from '@core/application/ports/services';
