@@ -2,10 +2,10 @@ import 'dotenv/config';
 import { Octokit } from 'octokit';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { members, generationMembers, generations } from '../src/db/schema';
+import { members, generationMembers, generations } from '../src/infrastructure/persistence/drizzle-db/schema';
 import { eq } from 'drizzle-orm';
 import { env } from '../src/env';
-import { getGitHubClient } from '../src/lib/github';
+import { getGitHubClient } from '../src/infrastructure/lib/github';
 
 let octokit: Octokit;
 let client: postgres.Sql<{}>;
@@ -143,7 +143,7 @@ async function main() {
   console.log('\n🔄 Syncing members...\n');
 
   for (const githubMember of githubMembers) {
-    const member = await getOrCreateMember(githubMember.login, githubMember.name);
+    const member = await getOrCreateMember(githubMember.login, githubMember.name ?? githubMember.login);
     console.log(`  👤 ${member.github} - ${member.name} (ID: ${member.id})`);
   }
 

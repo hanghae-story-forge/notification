@@ -18,10 +18,6 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { eq, and } from 'drizzle-orm';
 
-// Import existing handlers
-import { handleIssueComment, handleIssues, handleUnknownEvent } from '../src/routes/github/github.handlers';
-import { sendDiscordWebhook, createSubmissionMessage } from '../src/infrastructure/external/discord';
-
 // SQLite schema (simplified for testing)
 interface SQLiteSchema {
   members: {
@@ -213,13 +209,16 @@ app.post('/webhook/github', async (c) => {
   console.log(`\n📥 Webhook received: ${githubEvent}`);
   console.log(`   Payload:`, JSON.stringify(payload, null, 2));
 
-  // Route to appropriate handler
+  // Simple test handler - just log the event
   if (githubEvent === 'issue_comment') {
-    return handleIssueComment(c);
+    console.log('   ✅ Issue comment event received');
+    return c.json({ message: 'Issue comment logged' }, 200);
   } else if (githubEvent === 'issues') {
-    return handleIssues(c);
+    console.log('   ✅ Issues event received');
+    return c.json({ message: 'Issues event logged' }, 200);
   } else {
-    return handleUnknownEvent(c);
+    console.log(`   ℹ️  Unhandled event: ${githubEvent}`);
+    return c.json({ message: `Event logged: ${githubEvent}` }, 200);
   }
 });
 

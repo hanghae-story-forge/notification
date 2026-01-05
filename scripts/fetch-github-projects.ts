@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Octokit } from 'octokit';
-import { getGitHubClient } from '../src/lib/github';
+import { getGitHubClient } from '../src/infrastructure/lib/github';
 
 let octokit: Octokit;
 

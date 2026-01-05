@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Octokit } from 'octokit';
-import { getGitHubClient } from '../src/lib/github';
+import { getGitHubClient } from '../src/infrastructure/lib/github';
 
 let octokit: Octokit;
 
@@ -50,7 +50,7 @@ async function getOrganizationMembers(org: string): Promise<OrganizationMember[]
             name: userResponse.data.name,
             email: userResponse.data.email,
             avatarUrl: userResponse.data.avatar_url,
-            role: member.role === 'admin' ? 'Admin' : 'Member',
+            role: 'Member',
           });
         } catch (error) {
           console.warn(`  ⚠️  Failed to fetch details for @${member.login}`);
@@ -59,7 +59,7 @@ async function getOrganizationMembers(org: string): Promise<OrganizationMember[]
             name: null,
             email: null,
             avatarUrl: member.avatar_url,
-            role: member.role === 'admin' ? 'Admin' : 'Member',
+            role: 'Member',
           });
         }
       }
