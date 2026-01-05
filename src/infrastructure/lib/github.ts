@@ -1,6 +1,6 @@
 import { Octokit } from 'octokit';
 import { createAppAuth } from '@octokit/auth-app';
-import { env } from '../env';
+import { env } from '@/env';
 
 let cachedOctokit: Octokit | null = null;
 

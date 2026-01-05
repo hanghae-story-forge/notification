@@ -40,6 +40,7 @@ export interface CreateGenerationData {
   name: string;
   startedAt: Date;
   isActive: boolean;
+  createdAt?: Date;
 }
 
 // 기수 엔티티 (Aggregate Root)
@@ -48,7 +49,8 @@ export class Generation extends AggregateRoot<GenerationId> {
     id: GenerationId,
     private readonly _name: string,
     private readonly _startedAt: Date,
-    private readonly _isActive: boolean
+    private readonly _isActive: boolean,
+    private readonly _createdAt: Date
   ) {
     super(id);
   }
@@ -65,11 +67,13 @@ export class Generation extends AggregateRoot<GenerationId> {
     }
 
     const id = data.id ? GenerationId.create(data.id) : GenerationId.create(0);
+    const createdAt = data.createdAt ?? new Date();
     const generation = new Generation(
       id,
       trimmedName,
       data.startedAt,
-      data.isActive
+      data.isActive,
+      createdAt
     );
 
     // 도메인 이벤트 발행 (새 생성 시에만)
@@ -90,12 +94,14 @@ export class Generation extends AggregateRoot<GenerationId> {
     name: string;
     startedAt: Date;
     isActive: boolean;
+    createdAt: Date;
   }): Generation {
     return Generation.create({
       id: data.id,
       name: data.name,
       startedAt: data.startedAt,
       isActive: data.isActive,
+      createdAt: data.createdAt,
     });
   }
 
@@ -110,6 +116,10 @@ export class Generation extends AggregateRoot<GenerationId> {
 
   get isActive(): boolean {
     return this._isActive;
+  }
+
+  get createdAt(): Date {
+    return new Date(this._createdAt);
   }
 
   // 비즈니스 로직: 활성화 상태 확인

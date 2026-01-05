@@ -123,6 +123,10 @@ export class Cycle extends AggregateRoot<CycleId> {
     return this._githubIssueUrl;
   }
 
+  get createdAt(): Date {
+    return new Date(this._createdAt);
+  }
+
   // 비즈니스 로직: 마감까지 남은 시간
   getHoursRemaining(): number {
     return this._dateRange.getHoursRemaining();

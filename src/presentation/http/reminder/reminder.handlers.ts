@@ -1,4 +1,4 @@
-import type { AppContext } from '@/lib/router';
+import type { AppContext } from '@/infrastructure/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 // DDD Layer imports

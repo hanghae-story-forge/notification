@@ -1,8 +1,8 @@
 // Generation Repository Implementation - Drizzle ORM
 
 import { eq } from 'drizzle-orm';
-import { db } from '../../../lib/db';
-import { generations } from '../../../db/schema';
+import { db } from '../../lib/db';
+import { generations } from '../drizzle-db/schema';
 import {
   Generation,
   GenerationId,
@@ -72,12 +72,14 @@ export class DrizzleGenerationRepository implements GenerationRepository {
     name: string;
     startedAt: Date;
     isActive: boolean;
+    createdAt: Date;
   }): Generation {
     return Generation.reconstitute({
       id: row.id,
       name: row.name,
       startedAt: row.startedAt,
       isActive: row.isActive,
+      createdAt: row.createdAt,
     });
   }
 }

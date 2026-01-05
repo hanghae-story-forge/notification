@@ -1,8 +1,8 @@
 // Submission Repository Implementation - Drizzle ORM
 
 import { eq, and } from 'drizzle-orm';
-import { db } from '../../../lib/db';
-import { submissions } from '../../../db/schema';
+import { db } from '../../lib/db';
+import { submissions } from '../drizzle-db/schema';
 import {
   Submission,
   SubmissionId,

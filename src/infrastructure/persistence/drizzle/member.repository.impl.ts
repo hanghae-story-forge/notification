@@ -1,8 +1,8 @@
 // Member Repository Implementation - Drizzle ORM
 
 import { eq } from 'drizzle-orm';
-import { db } from '../../../lib/db';
-import { members } from '../../../db/schema';
+import { db } from '../../lib/db';
+import { members } from '../drizzle-db/schema';
 import { Member, MemberId } from '../../../domain/member/member.domain';
 import { MemberRepository } from '../../../domain/member/member.repository';
 
@@ -82,12 +82,14 @@ export class DrizzleMemberRepository implements MemberRepository {
     github: string;
     name: string;
     discordId: string | null;
+    createdAt: Date;
   }): Member {
     return Member.reconstitute({
       id: row.id,
       github: row.github,
       name: row.name,
       discordId: row.discordId ?? undefined,
+      createdAt: row.createdAt,
     });
   }
 }

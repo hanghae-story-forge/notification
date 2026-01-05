@@ -1,25 +1,24 @@
 // Discord Webhook Service Implementation
 
 import {
-  sendDiscordWebhook as originalSendDiscordWebhook,
+  sendDiscordWebhook,
   createSubmissionMessage,
   createReminderMessage,
   createStatusMessage,
-} from '../../../services/discord';
+} from './discord.messages';
 import { IDiscordWebhookClient, DiscordMessage } from './discord.interface';
 
 /**
  * Discord 웹훅 클라이언트 구현
  *
- * 기존 discord.ts 서비스를 인프라스트럭처 계층으로 이동하고
- * IDiscordWebhookClient 인터페이스를 구현
+ * 메시지 생성과 전송을 담당하는 인프라스트럭처 계층
  */
 export class DiscordWebhookClient implements IDiscordWebhookClient {
   async sendMessage(
     webhookUrl: string,
     message: DiscordMessage
   ): Promise<void> {
-    await originalSendDiscordWebhook(webhookUrl, message);
+    await sendDiscordWebhook(webhookUrl, message);
   }
 
   async sendSubmissionNotification(
