@@ -42,7 +42,10 @@ export const getReminderCycles = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(ReminderListResponseSchema, 'Reminder cycles retrieved'),
+    [HttpStatusCodes.OK]: jsonContent(
+      ReminderListResponseSchema,
+      'Reminder cycles retrieved'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Failed to get reminder cycles'
@@ -60,8 +63,14 @@ export const getNotSubmittedMembers = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(NotSubmittedResponseSchema, 'Not submitted members retrieved'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Cycle not found'),
+    [HttpStatusCodes.OK]: jsonContent(
+      NotSubmittedResponseSchema,
+      'Not submitted members retrieved'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Cycle not found'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Failed to get not submitted members'
@@ -82,7 +91,9 @@ export const sendReminderNotifications = createRoute({
     [HttpStatusCodes.OK]: jsonContent(
       z.object({
         sent: z.number(),
-        cycles: z.array(z.object({ cycleId: z.number(), cycleName: z.string() })),
+        cycles: z.array(
+          z.object({ cycleId: z.number(), cycleName: z.string() })
+        ),
       }),
       'Reminder notifications sent'
     ),

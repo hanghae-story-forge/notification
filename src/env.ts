@@ -10,9 +10,18 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(['development', 'production', 'test'])
       .default('development'),
-    DISCORD_WEBHOOK_URL: z.string().url({ message: 'Invalid DISCORD_WEBHOOK_URL format' }).optional(),
-    DISCORD_BOT_TOKEN: z.string().min(1, { message: 'DISCORD_BOT_TOKEN is required' }).optional(),
-    DISCORD_CLIENT_ID: z.string().min(1, { message: 'DISCORD_CLIENT_ID is required' }).optional(),
+    DISCORD_WEBHOOK_URL: z
+      .string()
+      .url({ message: 'Invalid DISCORD_WEBHOOK_URL format' })
+      .optional(),
+    DISCORD_BOT_TOKEN: z
+      .string()
+      .min(1, { message: 'DISCORD_BOT_TOKEN is required' })
+      .optional(),
+    DISCORD_CLIENT_ID: z
+      .string()
+      .min(1, { message: 'DISCORD_CLIENT_ID is required' })
+      .optional(),
   },
 
   /**

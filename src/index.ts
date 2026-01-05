@@ -8,7 +8,10 @@ import reminderRouter from './routes/reminder/reminder.index';
 import statusRouter from './routes/status/status.index';
 import { typeDefs } from './graphql/schema';
 import { resolvers } from './graphql/resolvers';
-import { createDiscordBot, registerSlashCommands } from './services/discord-bot';
+import {
+  createDiscordBot,
+  registerSlashCommands,
+} from './services/discord-bot';
 
 import './env';
 
@@ -55,7 +58,10 @@ app.all('/graphql', async (c) => {
     headers[key] = value;
   });
 
-  const result = 'body' in response ? (response.body as { singleResult: unknown }) : response;
+  const result =
+    'body' in response
+      ? (response.body as { singleResult: unknown })
+      : response;
 
   return c.json(result, 200, headers);
 });
@@ -87,5 +93,7 @@ if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
     console.error('❌ Failed to start Discord Bot:', error);
   }
 } else {
-  console.log('⚠️  Discord Bot not configured. Set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID to enable.');
+  console.log(
+    '⚠️  Discord Bot not configured. Set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID to enable.'
+  );
 }

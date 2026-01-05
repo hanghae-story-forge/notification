@@ -77,12 +77,24 @@ export const handleIssueComment = createRoute({
     headers: z.object({
       'x-github-event': z.literal('issue_comment'),
     }),
-    body: jsonContentRequired(IssueCommentWebhookPayloadSchema, 'GitHub issue comment webhook payload'),
+    body: jsonContentRequired(
+      IssueCommentWebhookPayloadSchema,
+      'GitHub issue comment webhook payload'
+    ),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(WebhookSuccessResponseSchema, 'Webhook processed successfully'),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(ErrorResponseSchema, 'Bad request'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Cycle or member not found'),
+    [HttpStatusCodes.OK]: jsonContent(
+      WebhookSuccessResponseSchema,
+      'Webhook processed successfully'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      ErrorResponseSchema,
+      'Bad request'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Cycle or member not found'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Internal server error'
@@ -98,12 +110,24 @@ export const handleIssues = createRoute({
     headers: z.object({
       'x-github-event': z.literal('issues'),
     }),
-    body: jsonContentRequired(IssuesWebhookPayloadSchema, 'GitHub issues webhook payload'),
+    body: jsonContentRequired(
+      IssuesWebhookPayloadSchema,
+      'GitHub issues webhook payload'
+    ),
   },
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(CycleCreatedResponseSchema, 'Cycle created successfully'),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(ErrorResponseSchema, 'Bad request'),
-    [HttpStatusCodes.OK]: jsonContent(WebhookSuccessResponseSchema, 'Webhook processed but ignored'),
+    [HttpStatusCodes.CREATED]: jsonContent(
+      CycleCreatedResponseSchema,
+      'Cycle created successfully'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      ErrorResponseSchema,
+      'Bad request'
+    ),
+    [HttpStatusCodes.OK]: jsonContent(
+      WebhookSuccessResponseSchema,
+      'Webhook processed but ignored'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Internal server error'
@@ -121,6 +145,9 @@ export const handleUnknownEvent = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(WebhookSuccessResponseSchema, 'Event acknowledged but ignored'),
+    [HttpStatusCodes.OK]: jsonContent(
+      WebhookSuccessResponseSchema,
+      'Event acknowledged but ignored'
+    ),
   },
 });

@@ -8,7 +8,10 @@ export type Bindings = {
 
 export type Variables = Record<string, never>;
 
-export type AppOpenAPIHono = OpenAPIHono<{ Bindings: Bindings; Variables: Variables }>;
+export type AppOpenAPIHono = OpenAPIHono<{
+  Bindings: Bindings;
+  Variables: Variables;
+}>;
 
 export type AppContext = Context<{ Bindings: Bindings; Variables: Variables }>;
 

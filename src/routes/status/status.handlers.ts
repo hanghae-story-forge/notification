@@ -38,7 +38,9 @@ export const getStatus = async (c: AppContext) => {
   // 전체 멤버
   const allMembers = await db.select().from(members);
 
-  const submittedIds = new Set(submissionList.map((s) => s.submission.memberId));
+  const submittedIds = new Set(
+    submissionList.map((s) => s.submission.memberId)
+  );
   const submitted = submissionList.map((s) => ({
     name: s.member.name,
     github: s.member.github,
@@ -104,9 +106,13 @@ export const getStatusDiscord = async (c: AppContext) => {
 
   const submittedIds = new Set(submissionList.map((s) => s.memberId));
 
-  const submittedNames = allMembers.filter((m) => submittedIds.has(m.id)).map((m) => m.name);
+  const submittedNames = allMembers
+    .filter((m) => submittedIds.has(m.id))
+    .map((m) => m.name);
 
-  const notSubmittedNames = allMembers.filter((m) => !submittedIds.has(m.id)).map((m) => m.name);
+  const notSubmittedNames = allMembers
+    .filter((m) => !submittedIds.has(m.id))
+    .map((m) => m.name);
 
   const discordMessage = createStatusMessage(
     `${generation.name} - ${cycle.week}주차`,

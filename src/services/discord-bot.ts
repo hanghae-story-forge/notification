@@ -1,4 +1,11 @@
-import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+} from 'discord.js';
 import { env } from '@/env';
 import { db } from '@/lib/db';
 import { cycles, generations, members, submissions } from '@/db/schema';
@@ -8,10 +15,7 @@ import { createStatusMessage } from '@/services/discord';
 // Discord Bot 클라이언트 생성
 export const createDiscordBot = (): Client => {
   const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-    ],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   });
 
   // 봇 준비 완료 시
@@ -52,10 +56,7 @@ export const registerSlashCommands = async (): Promise<void> => {
       throw new Error('DISCORD_CLIENT_ID is not set');
     }
 
-    await rest.put(
-      Routes.applicationCommands(clientId),
-      { body: commands }
-    );
+    await rest.put(Routes.applicationCommands(clientId), { body: commands });
 
     console.log('✅ Successfully reloaded application (/) commands.');
   } catch (error) {
@@ -65,7 +66,9 @@ export const registerSlashCommands = async (): Promise<void> => {
 };
 
 // /check-submission 명령어 핸들러
-const handleCheckSubmission = async (interaction: ChatInputCommandInteraction): Promise<void> => {
+const handleCheckSubmission = async (
+  interaction: ChatInputCommandInteraction
+): Promise<void> => {
   // 응답 지연 (데이터 조회 시간 필요)
   await interaction.deferReply();
 
