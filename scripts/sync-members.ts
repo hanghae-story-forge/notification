@@ -4,23 +4,18 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { members, generationMembers, generations } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
+import { env } from '../src/env';
+import { getGitHubClient } from '../src/lib/github';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const DATABASE_URL = process.env.DATABASE_URL;
+let octokit: Octokit;
+let client: postgres.Sql<{}>;
+let db: ReturnType<typeof drizzle>;
 
-if (!GITHUB_TOKEN) {
-  console.error('❌ GITHUB_TOKEN environment variable is required');
-  process.exit(1);
+async function init() {
+  octokit = await getGitHubClient();
+  client = postgres(env.DATABASE_URL);
+  db = drizzle(client);
 }
-
-if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is required');
-  process.exit(1);
-}
-
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
-const client = postgres(DATABASE_URL);
-const db = drizzle(client);
 
 interface GitHubMember {
   login: string;
@@ -128,6 +123,7 @@ async function addMemberToGeneration(generationId: number, memberId: number) {
 
 // 메인 실행
 async function main() {
+  await init();
   const githubMembers = await getOrganizationMembers('hanghae-story-forge');
   console.log(`✅ Found ${githubMembers.length} members\n`);
 

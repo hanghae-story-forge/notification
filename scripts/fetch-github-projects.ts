@@ -1,15 +1,12 @@
 import 'dotenv/config';
 import { Octokit } from 'octokit';
+import { getGitHubClient } from '../src/lib/github';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+let octokit: Octokit;
 
-if (!GITHUB_TOKEN) {
-  console.error('❌ GITHUB_TOKEN environment variable is required');
-  console.error('Create a token at: https://github.com/settings/tokens');
-  process.exit(1);
+async function init() {
+  octokit = await getGitHubClient();
 }
-
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
 interface Project {
   id: string;
@@ -184,6 +181,7 @@ async function getProjectFields(projectId: string) {
 
 // 메인 실행
 async function main() {
+  await init();
   const projects = await getProjects();
 
   if (projects.length > 0) {
