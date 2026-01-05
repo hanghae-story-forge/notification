@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { members, generations, cycles, submissions } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { createStatusMessage } from '@/services/discord';
 import type { AppContext } from '@/libs';
 import * as HttpStatusCodes from 'stoker/http-status-codes';

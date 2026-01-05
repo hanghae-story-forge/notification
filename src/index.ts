@@ -8,6 +8,7 @@ import reminderRouter from './routes/reminder/reminder.index';
 import statusRouter from './routes/status/status.index';
 import { typeDefs } from './graphql/schema';
 import { resolvers } from './graphql/resolvers';
+import { createDiscordBot, registerSlashCommands } from './services/discord-bot';
 
 import './env';
 
@@ -63,6 +64,7 @@ const port = parseInt(process.env.PORT || '3000');
 
 console.log(`🚀 Server starting on port ${port}`);
 
+// HTTP 서버 시작
 serve({
   fetch: app.fetch,
   port,
@@ -70,3 +72,20 @@ serve({
 
 console.log(`✅ Server ready on http://localhost:${port}`);
 console.log(`📊 GraphQL: http://localhost:${port}/graphql`);
+
+// Discord Bot 시작 (토큰이 설정된 경우만)
+const { env } = await import('./env');
+if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
+  try {
+    // 슬래시 명령어 등록
+    await registerSlashCommands();
+
+    // Discord Bot 로그인
+    const discordBot = createDiscordBot();
+    await discordBot.login(env.DISCORD_BOT_TOKEN);
+  } catch (error) {
+    console.error('❌ Failed to start Discord Bot:', error);
+  }
+} else {
+  console.log('⚠️  Discord Bot not configured. Set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID to enable.');
+}
