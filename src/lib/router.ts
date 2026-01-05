@@ -8,15 +8,17 @@ export type Bindings = {
 
 export type Variables = Record<string, never>;
 
-export type AppOpenAPIHono = OpenAPIHono<{
+export type Env = {
   Bindings: Bindings;
   Variables: Variables;
-}>;
+};
 
-export type AppContext = Context<{ Bindings: Bindings; Variables: Variables }>;
+export type AppOpenAPIHono = OpenAPIHono<Env>;
+
+export type AppContext = Context<Env>;
 
 export function createRouter() {
-  return new OpenAPIHono<{ Bindings: Bindings; Variables: Variables }>();
+  return new OpenAPIHono<Env>();
 }
 
 export { createRoute, z };

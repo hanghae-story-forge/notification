@@ -41,8 +41,10 @@
     "graphql": "^16.12.0",
     "graphql-tag": "^2.12.6",
     "hono": "^4.7.5",
+    "inversify": "^7.10.8",
     "octokit": "^5.0.5",
     "postgres": "^3.4.7",
+    "reflect-metadata": "^0.2.2",
     "stoker": "^2.0.1",
     "zod": "^4.3.5"
   },
@@ -55,6 +57,7 @@
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "prettier": "^3.5.3",
+    "tsc-alias": "^1.8.16",
     "tsup": "^8.5.1",
     "tsx": "^4.20.0",
     "typescript": "^5.8.3",

@@ -13,8 +13,13 @@
     "resolveJsonModule": true,
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": ["./*"],
+      "@core/*": ["./core/*"],
+      "@infrastructure/*": ["./infrastructure/*"],
+      "@presentation/*": ["./presentation/*"]
+    },
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

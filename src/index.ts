@@ -1,31 +1,38 @@
+import 'reflect-metadata';
 import 'dotenv/config';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ApolloServer } from '@apollo/server';
 import { sql } from 'drizzle-orm';
-import githubRouter from './routes/github/github.index';
-import reminderRouter from './routes/reminder/reminder.index';
-import statusRouter from './routes/status/status.index';
-import { typeDefs } from './graphql/schema';
-import { resolvers } from './graphql/resolvers';
+import { createDIContainer } from './di/container';
+import { createGitHubWebhookRoutes } from './presentation/http/routes/webhook/github-webhook.routes';
+import { GitHubWebhookController } from './presentation/http/routes/webhook/github-webhook.controller';
+import { createReminderRoutes } from './presentation/http/routes/reminder.routes';
+import { ReminderController } from './presentation/http/controllers/reminder.controller';
+import { createStatusRoutes } from './presentation/http/routes/status.routes';
+import { StatusController } from './presentation/http/controllers/status.controller';
+import { createResolvers } from './presentation/graphql/resolvers';
+import { typeDefs } from './presentation/graphql/schema';
 import {
   createDiscordBot,
   registerSlashCommands,
-} from './services/discord-bot';
+} from './infrastructure/external-services/discord/discord-bot.service';
+import { db } from './lib/db';
+import { env } from './env';
+import type { Env } from './libs';
 
-import './env';
+const app = new Hono<Env>();
 
-const app = new Hono();
+// Create DI Container
+const di = createDIContainer(env.DISCORD_WEBHOOK_URL);
 
-// CORS 허용
+// CORS
 app.use('/*', cors());
 
 // Health check for Docker
 app.get('/health', async (c) => {
   try {
-    // DB 연결 확인
-    const { db } = await import('./lib/db');
     await db.execute(sql`SELECT 1`);
 
     return c.json({
@@ -49,21 +56,26 @@ app.get('/health', async (c) => {
 // Root endpoint
 app.get('/', (c) => c.json({ status: 'ok', message: '똥글똥글 API' }));
 
-// GitHub webhook
-app.route('/', githubRouter);
+// GitHub webhook (new architecture)
+const githubController = new GitHubWebhookController(di);
+app.route('/', createGitHubWebhookRoutes(githubController));
 
-// n8n용 API
-app.route('/', reminderRouter);
-app.route('/', statusRouter);
+// Reminder API (new architecture)
+const reminderController = new ReminderController(di);
+app.route('/', createReminderRoutes(reminderController));
 
-// Apollo Server 설정
+// Status API (new architecture)
+const statusController = new StatusController(di);
+app.route('/', createStatusRoutes(statusController));
+
+// Apollo Server setup with new resolvers
 const apollo = new ApolloServer({
   typeDefs,
-  resolvers,
-  introspection: true, // 개발용 스키마 탐색 허용
+  resolvers: createResolvers(di),
+  introspection: true,
 });
 
-// GraphQL 엔드포인트
+// GraphQL endpoint
 app.all('/graphql', async (c) => {
   const { method } = c.req;
   if (method !== 'GET' && method !== 'POST') {
@@ -96,7 +108,7 @@ const port = parseInt(process.env.PORT || '3000');
 
 console.log(`🚀 Server starting on port ${port}`);
 
-// HTTP 서버 시작
+// Start HTTP server
 serve({
   fetch: app.fetch,
   port,
@@ -105,14 +117,10 @@ serve({
 console.log(`✅ Server ready on http://localhost:${port}`);
 console.log(`📊 GraphQL: http://localhost:${port}/graphql`);
 
-// Discord Bot 시작 (토큰이 설정된 경우만)
-const { env } = await import('./env');
+// Discord Bot startup
 if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
   try {
-    // 슬래시 명령어 등록
     await registerSlashCommands();
-
-    // Discord Bot 로그인
     const discordBot = createDiscordBot();
     await discordBot.login(env.DISCORD_BOT_TOKEN);
   } catch (error) {
