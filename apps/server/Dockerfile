@@ -1,66 +1,48 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS base
 
-# Install pnpm
-RUN npm install -g pnpm@10.0.0
+FROM base AS pruner
+RUN apk add --no-cache libc6-compat && \
+    npm install turbo --global
+WORKDIR /app
+COPY . ./
+RUN turbo prune --docker --out-dir=output --scope=@dongueldonguel/server
 
-# Set working directory
+FROM base AS installer
+RUN apk add --no-cache libc6-compat curl
+WORKDIR /app
+COPY --from=pruner /app/output/json ./
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
+
+FROM base AS builder
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY --from=installer /app .
+COPY --from=pruner /app/output/full ./
+RUN corepack enable pnpm && pnpm build --filter=@dongueldonguel/server
+
+FROM base AS runner
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/server/package.json ./apps/server/
-COPY apps/client/package.json ./apps/client/
+ENV NODE_ENV=production \
+    PORT=3000
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN apk add --no-cache libc6-compat curl && \
+    addgroup --system --gid 1001 hono && \
+    adduser --system --uid 1001 -G hono hono
 
-# Copy workspace configuration and source files
-COPY turbo.json tsconfig.json ./
-COPY apps/server ./apps/server
-
-# Build the server
-RUN pnpm build --filter=@dongueldonguel/server
-
-# Production stage
-FROM node:18-alpine AS runner
-
-# Install pnpm
-RUN npm install -g pnpm@10.0.0
-
-# Set working directory
-WORKDIR /app
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 hono
-
-# Copy package files
-COPY package.json pnpm-workspace.yaml ./
-COPY apps/server/package.json ./apps/server/
-
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy built files from builder
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
-
-# Copy drizzle migrations if they exist
 COPY --from=builder /app/apps/server/drizzle ./apps/server/drizzle 2>/dev/null || true
+COPY --from=installer /app/node_modules ./node_modules
+COPY package.json pnpm-workspace.yaml ./
 
-# Set permissions
-RUN chown -R hono:nodejs /app
+RUN chown -R hono:hono /app
 
-# Switch to non-root user
 USER hono
 
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
 
-# Start the server
 CMD ["node", "apps/server/dist/index.js"]
