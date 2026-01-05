@@ -1,10 +1,6 @@
 import { db } from '@/lib/db';
-import { members, cycles, submissions, generations } from '@/db/schema';
+import { generations, cycles } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import {
-  sendDiscordWebhook,
-  createSubmissionMessage,
-} from '@/services/discord';
 import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import type { z } from 'zod';
@@ -13,8 +9,37 @@ import type {
   IssuesWebhookPayloadSchema,
 } from './github.routes';
 
+// DDD Layer imports
+import { RecordSubmissionCommand } from '@/application/commands';
+import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
+import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
+import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { SubmissionService } from '@/domain/submission/submission.service';
+import { DiscordWebhookService } from '@/infrastructure/external/discord/discord.webhook';
+import { ValidationError, NotFoundError, ConflictError } from '@/domain/common/errors';
+
+// ========================================
+// Repository & Service Instances
+// ========================================
+
+const submissionRepo = new DrizzleSubmissionRepository();
+const cycleRepo = new DrizzleCycleRepository();
+const memberRepo = new DrizzleMemberRepository();
+const submissionService = new SubmissionService(submissionRepo);
+const discordService = new DiscordWebhookService();
+
+const recordSubmissionCommand = new RecordSubmissionCommand(
+  cycleRepo,
+  memberRepo,
+  submissionRepo,
+  submissionService
+);
+
+// ========================================
+// Utilities
+// ========================================
+
 // 유틸리티: 회차 번호 추출 (이슈 제목에서 파싱)
-// 예: "[1주차] 제출하세요", "1주차", "[Week 1]" 등
 function parseWeekFromTitle(title: string): number | null {
   const patterns = [
     /\[(\d+)주차\]/, // [1주차]
@@ -60,7 +85,11 @@ function parseDatesFromBody(
   return null;
 }
 
-// 이슈 댓글 처리 (제출 기록)
+// ========================================
+// Handlers
+// ========================================
+
+// 이슈 댓글 처리 (제출 기록) - DDD로 리팩토링
 export const handleIssueComment = async (c: AppContext) => {
   const payload = (await c.req.json()) as z.infer<
     typeof IssueCommentWebhookPayloadSchema
@@ -82,73 +111,57 @@ export const handleIssueComment = async (c: AppContext) => {
 
   const blogUrl = urlMatch[1];
 
-  // 해당 Issue에 연결된 사이클 찾기
-  const activeCycles = await db
-    .select({
-      cycle: cycles,
-    })
-    .from(cycles)
-    .where(eq(cycles.githubIssueUrl, issue.html_url));
+  try {
+    // Command 실행 (DDD Use Case)
+    const result = await recordSubmissionCommand.execute({
+      githubUsername,
+      blogUrl,
+      githubCommentId: commentId,
+      githubIssueUrl: issue.html_url,
+    });
 
-  if (activeCycles.length === 0) {
+    // Discord 알림 전송
+    await discordService.sendSubmissionNotification(
+      result.memberName,
+      result.submission.url.value,
+      result.cycleName
+    );
+
     return c.json(
-      { message: 'No cycle found for this issue' },
-      HttpStatusCodes.NOT_FOUND
+      { message: 'Submission recorded' },
+      HttpStatusCodes.OK
+    );
+  } catch (error) {
+    // 도메인 에러 처리
+    if (error instanceof NotFoundError) {
+      return c.json(
+        { message: error.message },
+        HttpStatusCodes.NOT_FOUND
+      );
+    }
+    if (error instanceof ConflictError) {
+      return c.json(
+        { message: error.message },
+        HttpStatusCodes.OK // 이미 제출됨은 에러가 아님
+      );
+    }
+    if (error instanceof ValidationError) {
+      return c.json(
+        { message: error.message },
+        HttpStatusCodes.BAD_REQUEST
+      );
+    }
+
+    // 알 수 없는 에러
+    console.error('Unexpected error in handleIssueComment:', error);
+    return c.json(
+      { message: 'Internal server error' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
     );
   }
-
-  const cycle = activeCycles[0].cycle;
-
-  // 멤버 찾기 (GitHub username으로)
-  const memberList = await db
-    .select()
-    .from(members)
-    .where(eq(members.github, githubUsername));
-
-  if (memberList.length === 0) {
-    return c.json({ message: 'Member not found' }, HttpStatusCodes.NOT_FOUND);
-  }
-
-  const member = memberList[0];
-
-  // 이미 제출했는지 확인
-  const existingSubmission = await db
-    .select()
-    .from(submissions)
-    .where(
-      and(
-        eq(submissions.cycleId, cycle.id),
-        eq(submissions.memberId, member.id)
-      )
-    );
-
-  if (existingSubmission.length > 0) {
-    return c.json({ message: 'Already submitted' }, HttpStatusCodes.OK);
-  }
-
-  // 제출 저장
-  await db.insert(submissions).values({
-    cycleId: cycle.id,
-    memberId: member.id,
-    url: blogUrl,
-    githubCommentId: commentId,
-  });
-
-  // Discord 알림 전송
-  const discordWebhookUrl =
-    c.env.DISCORD_WEBHOOK_URL ?? process.env.DISCORD_WEBHOOK_URL;
-  if (discordWebhookUrl) {
-    const cycleName = `${cycle.week}주차`;
-    await sendDiscordWebhook(
-      discordWebhookUrl,
-      createSubmissionMessage(member.name, blogUrl, cycleName)
-    );
-  }
-
-  return c.json({ message: 'Submission recorded' }, HttpStatusCodes.OK);
 };
 
-// 이슈 생성 처리 (회차 생성)
+// 이슈 생성 처리 (회차 생성) - 향후 DDD로 리팩토링 예정
 export const handleIssues = async (c: AppContext) => {
   const payload = (await c.req.json()) as z.infer<
     typeof IssuesWebhookPayloadSchema
