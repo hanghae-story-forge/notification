@@ -1,20 +1,15 @@
-interface DiscordWebhookPayload {
-  content?: string;
-  embeds?: Array<{
-    title?: string;
-    description?: string;
-    color?: number;
-    fields?: Array<{ name: string; value: string; inline?: boolean }>;
-    timestamp?: string;
-  }>;
-}
+// Discord Message Builders
 
-// 제출 알림 메시지 생성
+import { DiscordMessage } from './discord.interface';
+
+/**
+ * 제출 알림 메시지 생성
+ */
 export function createSubmissionMessage(
   memberName: string,
   blogUrl: string,
   cycleName: string
-): DiscordWebhookPayload {
+): DiscordMessage {
   return {
     content: `🎉 ${memberName}님이 글을 제출했습니다!`,
     embeds: [
@@ -28,12 +23,14 @@ export function createSubmissionMessage(
   };
 }
 
-// 리마인더 알림 메시지 생성
+/**
+ * 리마인더 알림 메시지 생성
+ */
 export function createReminderMessage(
   cycleName: string,
   deadline: Date,
   notSubmitted: string[]
-): DiscordWebhookPayload {
+): DiscordMessage {
   const hoursLeft = Math.floor(
     (deadline.getTime() - Date.now()) / (1000 * 60 * 60)
   );
@@ -62,13 +59,15 @@ export function createReminderMessage(
   };
 }
 
-// 제출 현황 메시지 생성
+/**
+ * 제출 현황 메시지 생성
+ */
 export function createStatusMessage(
   cycleName: string,
   submitted: string[],
   notSubmitted: string[],
   deadline: Date
-): DiscordWebhookPayload {
+): DiscordMessage {
   return {
     embeds: [
       {
@@ -97,10 +96,12 @@ export function createStatusMessage(
   };
 }
 
-// Discord webhook 전송
+/**
+ * Discord webhook 전송 (내부 구현)
+ */
 export async function sendDiscordWebhook(
   webhookUrl: string,
-  payload: DiscordWebhookPayload
+  payload: DiscordMessage
 ): Promise<void> {
   const response = await fetch(webhookUrl, {
     method: 'POST',

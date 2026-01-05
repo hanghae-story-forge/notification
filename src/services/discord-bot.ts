@@ -7,10 +7,30 @@ import {
   ChatInputCommandInteraction,
 } from 'discord.js';
 import { env } from '@/env';
-import { db } from '@/lib/db';
-import { cycles, generations, members, submissions } from '@/db/schema';
-import { eq, desc, and, lt, gt } from 'drizzle-orm';
-import { createStatusMessage } from '@/services/discord';
+import { createStatusMessage } from '@/infrastructure/external/discord';
+
+// DDD Layer imports
+import { GetCycleStatusQuery } from '@/application/queries';
+import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
+import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
+import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
+import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+
+// ========================================
+// Repository & Query Instances
+// ========================================
+
+const cycleRepo = new DrizzleCycleRepository();
+const generationRepo = new DrizzleGenerationRepository();
+const submissionRepo = new DrizzleSubmissionRepository();
+const memberRepo = new DrizzleMemberRepository();
+
+const getCycleStatusQuery = new GetCycleStatusQuery(
+  cycleRepo,
+  generationRepo,
+  submissionRepo,
+  memberRepo
+);
 
 // Discord Bot 클라이언트 생성
 export const createDiscordBot = (): Client => {
@@ -99,41 +119,21 @@ const handleCurrentCycle = async (
   await interaction.deferReply();
 
   try {
-    const now = new Date();
+    const currentCycle = await getCycleStatusQuery.getCurrentCycle();
 
-    const currentCycle = await db
-      .select({
-        cycle: cycles,
-        generation: generations,
-      })
-      .from(cycles)
-      .innerJoin(generations, eq(cycles.generationId, generations.id))
-      .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
-      .orderBy(cycles.startDate)
-      .limit(1);
-
-    if (currentCycle.length === 0) {
+    if (!currentCycle) {
       await interaction.editReply({
         content: '❌ 현재 진행 중인 주차가 없습니다.',
       });
       return;
     }
 
-    const { cycle, generation } = currentCycle[0];
-
-    const daysUntilDeadline = Math.ceil(
-      (new Date(cycle.endDate).getTime() - now.getTime()) /
-        (1000 * 60 * 60 * 24)
-    );
+    const daysUntilDeadline = currentCycle.daysLeft;
 
     await interaction.editReply({
-      content: `📅 **현재 주차 정보**\n\n**기수**: ${
-        generation.name
-      }\n**주차**: ${cycle.week}주차\n**마감일**: ${new Date(
-        cycle.endDate
-      ).toLocaleDateString('ko-KR')} (${
+      content: `📅 **현재 주차 정보**\n\n**기수**: ${currentCycle.generationName}\n**주차**: ${currentCycle.week}주차\n**마감일**: ${new Date(currentCycle.endDate).toLocaleDateString('ko-KR')} (${
         daysUntilDeadline > 0 ? `D-${daysUntilDeadline}` : '오늘 마감'
-      })\n\n이슈 링크: ${cycle.githubIssueUrl}`,
+      })\n\n이슈 링크: ${currentCycle.githubIssueUrl}`,
     });
   } catch (error) {
     console.error('Error handling current-cycle command:', error);
@@ -151,67 +151,34 @@ const handleCheckSubmission = async (
   await interaction.deferReply();
 
   try {
-    // 현재 활성화된 기수 찾기
-    const activeGenerations = await db
-      .select()
-      .from(generations)
-      .where(eq(generations.isActive, true))
-      .orderBy(desc(generations.startedAt))
-      .limit(1);
+    // 현재 진행 중인 사이클 찾기
+    const currentCycle = await getCycleStatusQuery.getCurrentCycle();
 
-    if (activeGenerations.length === 0) {
+    if (!currentCycle) {
       await interaction.editReply({
-        content: '❌ 활성화된 기수가 없습니다.',
+        content: '❌ 현재 진행 중인 주차가 없습니다.',
       });
       return;
     }
 
-    const activeGeneration = activeGenerations[0];
+    // 제출 현황 조회
+    const participantNames = await getCycleStatusQuery.getCycleParticipantNames(
+      currentCycle.id
+    );
 
-    // 해당 기수의 가장 최근 사이클(현재 진행 중인 주차)
-    const currentCycle = await db
-      .select()
-      .from(cycles)
-      .where(eq(cycles.generationId, activeGeneration.id))
-      .orderBy(desc(cycles.week))
-      .limit(1);
-
-    if (currentCycle.length === 0) {
+    if (!participantNames) {
       await interaction.editReply({
-        content: '❌ 진행 중인 주차가 없습니다.',
+        content: '❌ 제출 현황 조회 중 오류가 발생했습니다.',
       });
       return;
     }
-
-    const cycle = currentCycle[0];
-
-    // 제출 목록 조회
-    const submissionList = await db
-      .select({
-        memberId: submissions.memberId,
-      })
-      .from(submissions)
-      .where(eq(submissions.cycleId, cycle.id));
-
-    // 전체 멤버 조회
-    const allMembers = await db.select().from(members);
-
-    const submittedIds = new Set(submissionList.map((s) => s.memberId));
-
-    const submittedNames = allMembers
-      .filter((m) => submittedIds.has(m.id))
-      .map((m) => m.name);
-
-    const notSubmittedNames = allMembers
-      .filter((m) => !submittedIds.has(m.id))
-      .map((m) => m.name);
 
     // Discord 메시지 생성
     const discordMessage = createStatusMessage(
-      `${activeGeneration.name} - ${cycle.week}주차`,
-      submittedNames,
-      notSubmittedNames,
-      cycle.endDate
+      participantNames.cycleName,
+      participantNames.submittedNames,
+      participantNames.notSubmittedNames,
+      participantNames.endDate
     );
 
     // 응답 전송

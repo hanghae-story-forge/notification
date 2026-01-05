@@ -1,4 +1,4 @@
-import { createStatusMessage } from '@/services/discord';
+import { createStatusMessage } from '@/infrastructure/external/discord';
 import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 

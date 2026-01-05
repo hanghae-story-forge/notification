@@ -20,7 +20,7 @@ import { eq, and } from 'drizzle-orm';
 
 // Import existing handlers
 import { handleIssueComment, handleIssues, handleUnknownEvent } from '../src/routes/github/github.handlers';
-import { sendDiscordWebhook, createSubmissionMessage } from '../src/services/discord';
+import { sendDiscordWebhook, createSubmissionMessage } from '../src/infrastructure/external/discord';
 
 // SQLite schema (simplified for testing)
 interface SQLiteSchema {
