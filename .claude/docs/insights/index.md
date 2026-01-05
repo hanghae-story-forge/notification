@@ -1,3 +1,12 @@
+---
+metadata:
+  version: "1.1.0"
+  created_at: "2026-01-05T10:00:00Z"
+  last_verified: "2026-01-05T10:00:00Z"
+  git_commit: "2ad26ee"
+  based_on_facts: "../facts/index.md"
+---
+
 # 똥글똥글 비즈니스 인사이트
 
 - **Scope**: 전체 비즈니스 컨텍스트 분석
@@ -16,6 +25,7 @@
 
 - [GitHub 웹훅 자동화](operations/github-webhook.md) - 제출 수집 및 회차 생성 자동화 흐름 분석
 - [Discord 알림 시스템](operations/discord-notifications.md) - 알림 전송 효율성과 신뢰성 분석
+- [Discord Bot](operations/discord-bot.md) - 슬래시 명령어 (/check-submission) 운영 분석
 - [리마인더 시스템](operations/reminder-system.md) - 마감 임박 알림 워크플로우 분석
 - [상태 추적 시스템](operations/status-tracking.md) - 제출 현황 조회 및 모니터링 분석
 
@@ -69,16 +79,21 @@
 
 ### 기회 (Opportunities)
 
-1. **기수-멤버 연결 테이블 활용** (`generation_members`)
+1. **Discord Bot 확장**
+   - 현재 `/check-submission` 하나만 제공
+   - 추가 명령어 가능: 미제출자 리마인드, 통계 조회 등
+   - 대화형 인터페이스로 멤버 경험 개선
+
+2. **기수-멤버 연결 테이블 활용** (`generation_members`)
    - 현재 TODO 상태로 미사용
    - 도입 시 기수별 멤버 관리 정교화 가능
    - 미제출자 계산 로직 개선 (현재 전체 멤버 대상)
 
-2. **다중 기수 동시 운영**
+3. **다중 기수 동시 운영**
    - 스키마는 이미 지원 (generations.isActive 플래그)
    - 운영 프로세스 정립 시 여러 기수 병행 운영 가능
 
-3. **제출 데이터 분석**
+4. **제출 데이터 분석**
    - 제출 패턴, 제출 시간 분석
    - 멤버 참여도 추적
 
@@ -145,9 +160,4 @@
 
 ---
 
-## 문서 버전
-
-- **Version**: 1.0.0
-- **Created**: 2026-01-05
-- **Last Updated**: 2026-01-05
-- **Git Commit**: f324133
+*See YAML frontmatter for detailed metadata.*

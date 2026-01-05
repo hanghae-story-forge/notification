@@ -1,9 +1,45 @@
+---
+metadata:
+  version: "1.1.0"
+  created_at: "2026-01-05T10:00:00Z"
+  last_verified: "2026-01-05T10:00:00Z"
+  git_commit: "2ad26ee"
+  source_files:
+    src/index.ts:
+      git_hash: "2ad26ee"
+      source_exists: true
+    src/db/schema.ts:
+      git_hash: "2ad26ee"
+      source_exists: true
+    src/routes/github.ts:
+      git_hash: "2ad26ee"
+      source_exists: true
+    src/routes/reminder.ts:
+      git_hash: "2ad26ee"
+      source_exists: true
+    src/routes/status.ts:
+      git_hash: "2ad26ee"
+      source_exists: true
+    src/services/discord.ts:
+      git_hash: "2ad26ee"
+      source_exists: true
+    src/services/discord-bot.ts:
+      git_hash: "6fc7717"
+      source_exists: true
+    scripts/test-webhook.ts:
+      git_hash: "cc8098c"
+      source_exists: true
+    scripts/test-server.ts:
+      git_hash: "cc8098c"
+      source_exists: true
+---
+
 # 똥글똥글 API 문서화 FACTS
 
 - **Scope**: Hono 기반 API 서버 전체 구조
 - **Source of Truth**: 소스 코드 및 Drizzle 스키마
-- **Last Verified**: 2025-01-05
-- **Repo Ref**: f32413325de67a3ad1bde6649d16474d236d164b
+- **Last Verified**: 2026-01-05
+- **Repo Ref**: 2ad26ee
 
 ## 개요
 
@@ -21,6 +57,7 @@
 
 ### [services/](./services/)
 - **[discord.md](./services/discord.md)** - Discord 웹훅 메시지 생성 및 전송 서비스
+- **[discord-bot.md](./services/discord-bot.md)** - Discord Bot 슬래시 명령어 (/check-submission)
 
 ### [config/](./config/)
 - **[environment.md](./config/environment.md)** - 환경변수 설정 및 검증
@@ -29,9 +66,10 @@
 
 - **Framework**: Hono (TypeScript web framework)
 - **ORM**: Drizzle ORM
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (Neon)
+- **Discord Bot**: discord.js
 - **API Documentation**: OpenAPI 3.0 (@hono/zod-openapi)
-- **External Integrations**: GitHub Webhooks, Discord Webhooks, n8n workflows
+- **External Integrations**: GitHub Webhooks, Discord Webhooks, Discord Bot, n8n workflows
 
 ## 핵심 엔드포인트
 
@@ -71,12 +109,14 @@ generation_members (기수-멤버 조인 테이블)
 - **Purpose**: 제출 알림, 마감 리마인더, 현황 공유
 - **Formats**: Embed 메시지 (컬러, 필드, 타임스탬프)
 
+### Discord Bot
+- **Purpose**: 슬래시 명령어로 제출 현황 조회
+- **Command**: `/check-submission` - 현재 활성화된 주차의 제출 현황 확인
+
 ### n8n Workflows
 - **Purpose**: 주기적 리마인더 발송 (cron job)
 - **Endpoints**: `/api/reminder?hoursBefore=N`, `/api/reminder/send-reminders`
 
 ---
 
-**Metadata Version**: 1.0.0
-**Created**: 2025-01-05T10:00:00Z
-**Git Commit**: f32413325de67a3ad1bde6649d16474d236d164b
+*See YAML frontmatter for detailed metadata.*
