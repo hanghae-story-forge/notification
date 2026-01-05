@@ -8,15 +8,15 @@ RUN npm install -g pnpm@10.0.0
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
+COPY apps/client/package.json ./apps/client/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy workspace files
-COPY turbo.json ./
-COPY tsconfig.json ./
+# Copy workspace configuration and source files
+COPY turbo.json tsconfig.json ./
 COPY apps/server ./apps/server
 
 # Build the server
@@ -36,7 +36,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 hono
 
 # Copy package files
-COPY package.json ./
+COPY package.json pnpm-workspace.yaml ./
 COPY apps/server/package.json ./apps/server/
 
 # Install production dependencies only
@@ -44,6 +44,7 @@ RUN pnpm install --prod --frozen-lockfile
 
 # Copy built files from builder
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
 
 # Copy drizzle migrations if they exist
 COPY --from=builder /app/apps/server/drizzle ./apps/server/drizzle 2>/dev/null || true
