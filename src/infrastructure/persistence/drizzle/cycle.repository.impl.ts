@@ -130,6 +130,7 @@ export class DrizzleCycleRepository implements CycleRepository {
     startDate: Date;
     endDate: Date;
     githubIssueUrl: string | null;
+    createdAt: Date;
   }): Cycle {
     return Cycle.create({
       id: row.id,
@@ -138,6 +139,7 @@ export class DrizzleCycleRepository implements CycleRepository {
       startDate: row.startDate,
       endDate: row.endDate,
       githubIssueUrl: row.githubIssueUrl ?? undefined,
+      createdAt: row.createdAt,
     });
   }
 }

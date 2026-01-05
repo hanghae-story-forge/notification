@@ -34,6 +34,7 @@ export interface CreateCycleData {
   startDate: Date;
   endDate: Date;
   githubIssueUrl?: string;
+  createdAt?: Date;
 }
 
 // 사이클 엔티티 (Aggregate Root)
@@ -43,7 +44,8 @@ export class Cycle extends AggregateRoot<CycleId> {
     private readonly _generationId: number,
     private readonly _week: Week,
     private readonly _dateRange: DateRange,
-    private readonly _githubIssueUrl: GitHubIssueUrl | null
+    private readonly _githubIssueUrl: GitHubIssueUrl | null,
+    private readonly _createdAt: Date
   ) {
     super(id);
   }
@@ -56,8 +58,16 @@ export class Cycle extends AggregateRoot<CycleId> {
 
     const id = data.id ? CycleId.create(data.id) : CycleId.create(0);
     const generationId = data.generationId;
+    const createdAt = data.createdAt ?? new Date();
 
-    const cycle = new Cycle(id, generationId, week, dateRange, githubIssueUrl);
+    const cycle = new Cycle(
+      id,
+      generationId,
+      week,
+      dateRange,
+      githubIssueUrl,
+      createdAt
+    );
 
     // 도메인 이벤트 발행 (새 생성 시에만)
     if (data.id === 0) {
@@ -75,6 +85,7 @@ export class Cycle extends AggregateRoot<CycleId> {
     startDate: Date;
     endDate: Date;
     githubIssueUrl?: string;
+    createdAt: Date;
   }): Cycle {
     return Cycle.create({
       id: data.id,
@@ -83,6 +94,7 @@ export class Cycle extends AggregateRoot<CycleId> {
       startDate: data.startDate,
       endDate: data.endDate,
       githubIssueUrl: data.githubIssueUrl,
+      createdAt: data.createdAt,
     });
   }
 
@@ -140,6 +152,7 @@ export class Cycle extends AggregateRoot<CycleId> {
       startDate: this._dateRange.startDate.toISOString(),
       endDate: this._dateRange.endDate.toISOString(),
       githubIssueUrl: this._githubIssueUrl?.value,
+      createdAt: this._createdAt.toISOString(),
     };
   }
 }
@@ -151,4 +164,5 @@ export interface CycleDTO {
   startDate: string;
   endDate: string;
   githubIssueUrl?: string;
+  createdAt: string;
 }
