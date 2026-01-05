@@ -11,4 +11,10 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   outDir: 'dist',
+  esbuildOptions(options) {
+    options.alias = {
+      ...options.alias,
+      '@/*': './src/*',
+    };
+  },
 });
