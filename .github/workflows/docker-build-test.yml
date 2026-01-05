@@ -24,7 +24,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./apps/server/Dockerfile
           target: builder
-          tags: winnipeg:test
+          tags: dongueldonguel:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
