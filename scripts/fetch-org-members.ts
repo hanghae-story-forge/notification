@@ -1,15 +1,12 @@
 import 'dotenv/config';
 import { Octokit } from 'octokit';
+import { getGitHubClient } from '../src/lib/github';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+let octokit: Octokit;
 
-if (!GITHUB_TOKEN) {
-  console.error('❌ GITHUB_TOKEN environment variable is required');
-  console.error('Create a token at: https://github.com/settings/tokens');
-  process.exit(1);
+async function init() {
+  octokit = await getGitHubClient();
 }
-
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
 interface OrganizationMember {
   login: string;
@@ -78,6 +75,7 @@ async function getOrganizationMembers(org: string): Promise<OrganizationMember[]
 }
 
 async function main() {
+  await init();
   const members = await getOrganizationMembers('hanghae-story-forge');
 
   console.log(`✅ Found ${members.length} members:\n`);

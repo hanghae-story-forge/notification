@@ -4,23 +4,18 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { generations, cycles } from '../src/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { env } from '../src/env';
+import { getGitHubClient } from '../src/lib/github';
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const DATABASE_URL = process.env.DATABASE_URL;
+let octokit: Octokit;
+let client: postgres.Sql<{}>;
+let db: ReturnType<typeof drizzle>;
 
-if (!GITHUB_TOKEN) {
-  console.error('❌ GITHUB_TOKEN environment variable is required');
-  process.exit(1);
+async function initGitHub() {
+  octokit = await getGitHubClient();
+  client = postgres(env.DATABASE_URL);
+  db = drizzle(client);
 }
-
-if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is required');
-  process.exit(1);
-}
-
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
-const client = postgres(DATABASE_URL);
-const db = drizzle(client);
 
 interface ProjectItem {
   id: string;
@@ -54,10 +49,14 @@ function parseCycleTitle(title: string): CycleData | null {
   // 연도는 현재 연도로 가정 (필요시 조정)
   const currentYear = new Date().getFullYear();
 
+  // KST 00:00:00 기준으로 UTC 변환
+  const startDate = new Date(`${currentYear}-${startMonth}-${startDay}T00:00:00+09:00`);
+  const endDate = new Date(`${currentYear}-${endMonth}-${endDay}T23:59:59+09:00`);
+
   return {
     week: parseInt(week, 10),
-    startDate: new Date(currentYear, parseInt(startMonth, 10) - 1, parseInt(startDay, 10)),
-    endDate: new Date(currentYear, parseInt(endMonth, 10) - 1, parseInt(endDay, 10)),
+    startDate,
+    endDate,
     githubIssueUrl: '', // 나중에 채움
   };
 }
@@ -233,6 +232,7 @@ async function syncCycle(generationId: number, cycleData: CycleData) {
 
 // 메인 실행
 async function main() {
+  await initGitHub();
   console.log('🔍 Fetching GitHub Projects for hanghae-story-forge...\n');
 
   const projects = await getProjects();

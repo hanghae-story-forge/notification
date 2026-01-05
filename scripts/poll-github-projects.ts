@@ -1,53 +1,27 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { Octokit } from 'octokit';
-import { createAppAuth } from '@octokit/auth-app';
 import postgres from 'postgres';
 import { generations } from '../src/db/schema.js';
+import { env } from '../src/env';
+import { getGitHubClient } from '../src/lib/github';
 
-// GitHub App credentials
-const APP_ID = process.env.APP_ID;
-const APP_PRIVATE_KEY = process.env.APP_PRIVATE_KEY;
-const INSTALLATION_ID = process.env.APP_INSTALLATION_ID;
-const DATABASE_URL = process.env.DATABASE_URL;
 const API_URL = process.env.API_URL;
 
-if (!APP_ID) {
-  console.error('❌ APP_ID environment variable is required');
-  process.exit(1);
-}
+let octokit: Octokit;
+let client: postgres.Sql<{}>;
+let db: ReturnType<typeof drizzle>;
 
-if (!APP_PRIVATE_KEY) {
-  console.error('❌ APP_PRIVATE_KEY environment variable is required');
-  process.exit(1);
-}
+async function init() {
+  octokit = await getGitHubClient();
+  client = postgres(env.DATABASE_URL);
+  db = drizzle(client);
 
-if (!INSTALLATION_ID) {
-  console.error('❌ APP_INSTALLATION_ID environment variable is required');
-  process.exit(1);
+  if (!API_URL) {
+    console.error('❌ API_URL environment variable is required');
+    process.exit(1);
+  }
 }
-
-if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL environment variable is required');
-  process.exit(1);
-}
-
-if (!API_URL) {
-  console.error('❌ API_URL environment variable is required');
-  process.exit(1);
-}
-
-// Octokit 생성 (GitHub App 인증 사용)
-const octokit = new Octokit({
-  authStrategy: createAppAuth,
-  auth: {
-    appId: Number(APP_ID),
-    privateKey: APP_PRIVATE_KEY,
-    installationId: Number(INSTALLATION_ID),
-  },
-});
-const client = postgres(DATABASE_URL);
-const db = drizzle(client);
 
 // 기수 이름 패턴 (예: "똥글똥글 1기", "똥글똥글 2기")
 const GENERATION_NAME_PATTERN = /^똥글똥글\s*\d+기$/;
@@ -128,6 +102,7 @@ async function createGenerationViaGraphQL(name: string, startedAt: string) {
 }
 
 async function main() {
+  await init();
   console.log('🔍 Polling GitHub Projects for new generations...\n');
 
   // GitHub Projects 조회
