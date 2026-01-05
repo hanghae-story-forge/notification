@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ApolloServer } from '@apollo/server';
+import { sql } from 'drizzle-orm';
 import githubRouter from './routes/github/github.index';
 import reminderRouter from './routes/reminder/reminder.index';
 import statusRouter from './routes/status/status.index';
@@ -22,7 +23,7 @@ app.get('/health', async (c) => {
   try {
     // DB 연결 확인
     const { db } = await import('./lib/db');
-    await db.execute({ sql: 'SELECT 1' });
+    await db.execute(sql`SELECT 1`);
 
     return c.json({
       status: 'healthy',
