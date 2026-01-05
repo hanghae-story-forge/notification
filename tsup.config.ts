@@ -11,4 +11,6 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   outDir: 'dist',
+  // Ensure TypeScript path resolution works correctly
+  tsconfig: './tsconfig.json',
 });

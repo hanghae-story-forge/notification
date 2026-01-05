@@ -4,5 +4,6 @@ dist
 .envrc
 .DS_Store
 *.log
-drizzle
 .pnpm-store
+# Only ignore drizzle folder in root (for migrations), not in src
+/drizzle

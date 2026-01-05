@@ -10,7 +10,7 @@ const CycleInfoSchema = z.object({
   cycleId: z.number(),
   cycleName: z.string(),
   endDate: z.string().datetime(),
-  githubIssueUrl: z.string().optional(),
+  githubIssueUrl: z.string().nullable(),
 });
 
 const ReminderListResponseSchema = z.object({
@@ -45,6 +45,10 @@ export const getReminderCycles = createRoute({
     [HttpStatusCodes.OK]: jsonContent(
       ReminderListResponseSchema,
       'Reminder cycles retrieved'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Generation not found'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
@@ -96,6 +100,10 @@ export const sendReminderNotifications = createRoute({
         ),
       }),
       'Reminder notifications sent'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Generation not found'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
