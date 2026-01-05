@@ -1,3 +1,13 @@
+---
+metadata:
+  version: "1.1.0"
+  created_at: "2026-01-05T10:00:00Z"
+  last_verified: "2026-01-05T10:00:00Z"
+  git_commit: "2ad26ee"
+  based_on_facts: "../facts/index.md"
+  based_on_insights: "../insights/index.md"
+---
+
 # 똥글똥글 기능 명세서 (Feature Specifications)
 
 - **Scope**: 전체 시스템 기능 명세
@@ -17,6 +27,10 @@
   - Issue 생성으로 자동 회차 생성
   - Issue 댓글로 제출 처리
   - Week 패턴 파싱 및 마감일 추출
+
+- **[Discord Bot](./discord-bot.md)** - Discord 슬래시 명령어
+  - `/check-submission` - 현재 활성화된 주차의 제출 현황 조회
+  - 자동으로 활성화된 기수와 최신 주차 탐색
 
 - **[Reminder System](./reminder-system.md)** - 마감 리마인더 자동화
   - 마감 임박 회차 조회
@@ -60,6 +74,10 @@ PostgreSQL Database (Drizzle ORM)
     ↓
 Discord Webhook (Notifications)
 
+Discord Bot
+    ↓ (Slash Commands)
+API Server
+
 n8n Workflows
     ↓ (Scheduled Polling)
 API Server (Reminder/Status APIs)
@@ -71,6 +89,7 @@ API Server (Reminder/Status APIs)
 |------|------|----------|------|
 | GitHub Webhook - Issue Comment | As-Is | P0 | 운영 중 |
 | GitHub Webhook - Issues (Auto Cycle Creation) | As-Is | P0 | 운영 중 |
+| Discord Bot - /check-submission | As-Is | P0 | 운영 중 |
 | Reminder - Query Cycles | As-Is | P0 | 운영 중 |
 | Reminder - Not Submitted Members | As-Is | P1 | 운영 중 (TODO: generation_members 활용) |
 | Reminder - Send Reminders | As-Is | P0 | 운영 중 |
@@ -122,6 +141,11 @@ API Server (Reminder/Status APIs)
    - 개선: 쿼리 파라미터로 커스텀
    - 참조: [reminder-system.md](./reminder-system.md)
 
+7. **Discord Bot 추가 명령어**
+   - 현재: `/check-submission` 하나만 제공
+   - 개선: `/remind`, `/stats`, `/history` 등
+   - 참조: [discord-bot.md](./discord-bot.md) (TODO)
+
 ## 비즈니스 가치 요약
 
 ### 운영 효율성
@@ -133,8 +157,9 @@ API Server (Reminder/Status APIs)
 ### 멤버 경험
 
 - **즉시 피드백**: 제출 후 1초 이내 Discord 알림
-- **투명성**: 제출 현황 실시간 확인 가능
+- **투명성**: 제출 현황 실시간 확인 가능 (API + Discord Bot)
 - **마감 준수**: 리마인더로 마감 놓침 방지
+- **대화형 인터페이스**: `/check-submission` 슬래시 명령어로 간편 조회
 
 ### 기술적 안정성
 
@@ -158,7 +183,4 @@ API Server (Reminder/Status APIs)
 
 ---
 
-**문서 버전**: 1.0.0
-**생성일**: 2026-01-05
-**마지막 업데이트**: 2026-01-05
-**Git Commit**: f324133
+*See YAML frontmatter for detailed metadata.*
