@@ -1,8 +1,8 @@
 // Generation Repository Implementation - Drizzle ORM
 
 import { eq } from 'drizzle-orm';
-import { db } from '../../../lib/db';
-import { generations } from '../../../db/schema';
+import { db } from '../../lib/db';
+import { generations } from '../drizzle-db/schema';
 import {
   Generation,
   GenerationId,

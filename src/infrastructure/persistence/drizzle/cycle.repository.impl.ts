@@ -1,8 +1,8 @@
 // Cycle Repository Implementation - Drizzle ORM
 
 import { eq, and, lt, gt } from 'drizzle-orm';
-import { db } from '../../../lib/db';
-import { cycles } from '../../../db/schema';
+import { db } from '../../lib/db';
+import { cycles } from '../drizzle-db/schema';
 import { Cycle, CycleId } from '../../../domain/cycle/cycle.domain';
 import { CycleRepository } from '../../../domain/cycle/cycle.repository';
 

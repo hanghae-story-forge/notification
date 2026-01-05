@@ -24,7 +24,7 @@ app.use('/*', cors());
 app.get('/health', async (c) => {
   try {
     // DB 연결 확인
-    const { db } = await import('./lib/db');
+    const { db } = await import('./infrastructure/lib/db');
     await db.execute(sql`SELECT 1`);
 
     return c.json({
