@@ -9,7 +9,7 @@ interface GraphQLContext {
   di: Container;
 }
 
-export const createResolvers = (di: Container) => ({
+export const createResolvers = (_di: Container) => ({
   Query: {
     // 멤버 조회
     members: async () => {

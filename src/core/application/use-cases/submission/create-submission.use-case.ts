@@ -5,8 +5,8 @@ import {
   ISubmissionRepository,
 } from '@core/domain';
 import { INotificationService, IGitHubParserService } from '@core/application/ports/services';
-import { Submission, CycleId, MemberId, BlogUrl, GitHubCommentId } from '@core/domain/submission';
-import { GitHubUsername, NotFoundException, InvalidBlogUrlError } from '@core/domain/shared';
+import { Submission, BlogUrl, GitHubCommentId } from '@core/domain/submission';
+import { GitHubUsername, NotFoundException, GitHubIssueUrl } from '@core/domain/shared';
 import { TYPES } from '@/di/tokens';
 
 interface CreateSubmissionRequest {
@@ -49,7 +49,7 @@ export class CreateSubmissionUseCase {
 
     // 3. Find cycle by issue URL
     const cycle = await this.cycleRepo.findByGitHubIssueUrl(
-      new (require('@core/domain/shared').GitHubIssueUrl)(parsedData.issueUrl)
+      new GitHubIssueUrl(parsedData.issueUrl)
     );
     if (!cycle) {
       throw new NotFoundException('Cycle', parsedData.issueUrl);

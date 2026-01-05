@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { Env, AppContext } from '../../../../libs';
+import type { Env } from '../../../../libs';
 import { GitHubWebhookController } from './github-webhook.controller';
 
 const IssueCommentWebhookPayloadSchema = z.object({
@@ -31,7 +31,7 @@ export const createGitHubWebhookRoutes = (controller: GitHubWebhookController) =
 
   app.post(
     '/webhook/github',
-    async (c, next) => {
+    async (c) => {
       const githubEvent = c.req.header('x-github-event');
 
       if (githubEvent === 'issue_comment') {
