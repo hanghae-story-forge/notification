@@ -8,11 +8,11 @@ import {
   DrizzleCycleRepository,
   DrizzleSubmissionRepository,
   DrizzleGenerationRepository,
-} from '../infrastructure/persistence/drizzle/repositories';
+} from '@/infrastructure/persistence/drizzle/repositories';
 
 // Services
-import { DiscordNotificationService } from '../infrastructure/external-services/discord/discord-notification.service';
-import { GitHubWebhookParserService } from '../infrastructure/external-services/github/github-webhook-parser.service';
+import { DiscordNotificationService } from '@/infrastructure/external-services/discord/discord-notification.service';
+import { GitHubWebhookParserService } from '@/infrastructure/external-services/github/github-webhook-parser.service';
 
 // Use Cases
 import {
@@ -21,17 +21,17 @@ import {
   FindUpcomingDeadlinesUseCase,
   HandleGitHubIssueCreatedUseCase,
   SendReminderNotificationUseCase,
-} from '../core/application/use-cases';
+} from '@/core/application/use-cases';
 
 // Interfaces
-import type { IMemberRepository } from '../core/domain/member';
-import type { ICycleRepository } from '../core/domain/cycle';
-import type { ISubmissionRepository } from '../core/domain/submission';
-import type { IGenerationRepository } from '../core/domain/generation';
+import type { IMemberRepository } from '@/core/domain/member';
+import type { ICycleRepository } from '@/core/domain/cycle';
+import type { ISubmissionRepository } from '@/core/domain/submission';
+import type { IGenerationRepository } from '@/core/domain/generation';
 import type {
   INotificationService,
   IGitHubParserService,
-} from '../core/application/ports/services';
+} from '@/core/application/ports/services';
 
 export function createDIContainer(discordWebhookUrl?: string) {
   const container = new Container({ defaultScope: 'Singleton' });
