@@ -228,3 +228,39 @@ Discord 메시지 포맷으로 제출 현황을 반환합니다.
 ### 4. Application ID 확인
 
 **General Information** 탭에서 **Application ID** 복사 → `DISCORD_CLIENT_ID`
+
+## Neon DB 브랜치 간 데이터 마이그레이션
+
+Neon DB의 develop 브랜치에서 production 브랜치로 데이터를 옮겨야 할 때 사용합니다.
+
+### 마이그레이션 스크립트 실행
+
+```bash
+# 환경 변수 설정
+export SOURCE_DB_URL="postgresql://user:password@ep-develop-xxx.aws.neon.tech/neondb?sslmode=require"
+export TARGET_DB_URL="postgresql://user:password@ep-production-xxx.aws.neon.tech/neondb?sslmode=require"
+
+# 스크립트 실행
+pnpm tsx scripts/migrate-branch-to-production.ts
+```
+
+### 마이그레이션 과정
+
+1. **데이터 내보내기** - 소스 브랜치에서 모든 테이블 데이터 추출
+2. **타겟 비우기** - 타겟 브랜치의 기존 데이터 삭제 (참조 무결성 유지)
+3. **데이터 가져오기** - 타겟 브랜치에 데이터 삽입
+4. **검증** - 데이터 일치 여부 확인
+
+### 주의사항
+
+- 타겟 브랜치의 **모든 기존 데이터가 삭제됩니다**
+- 외래 키 참조 무결성을 위해 테이블 순서를 자동으로 처리합니다
+- 시퀀스(ID 자동 증가)가 올바르게 재설정됩니다
+
+### 마이그레이션 대상 테이블
+
+- `members` - 멤버 정보
+- `generations` - 기수 정보
+- `generation_members` - 기수-멤버 조인 테이블
+- `cycles` - 주차 사이클
+- `submissions` - 제출 기록
