@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import pathAlias from 'esbuild-plugin-path-alias';
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -12,4 +13,17 @@ export default defineConfig({
   treeshake: false,
   outDir: 'dist',
   tsconfig: './tsconfig.json',
+  esbuildOptions(options) {
+    options.plugins = [
+      pathAlias({
+        baseUrl: './src',
+        aliases: {
+          '@/*': './*',
+          '@core/*': './core/*',
+          '@infrastructure/*': './infrastructure/*',
+          '@presentation/*': './presentation/*',
+        },
+      }),
+    ];
+  },
 });
