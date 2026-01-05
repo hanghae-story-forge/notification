@@ -16,7 +16,7 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { SubmissionService } from '@/domain/submission/submission.service';
-import { DiscordWebhookService } from '@/infrastructure/external/discord/discord.webhook';
+import { DiscordWebhookClient } from '@/infrastructure/external/discord';
 import {
   ValidationError,
   NotFoundError,
@@ -32,7 +32,7 @@ const cycleRepo = new DrizzleCycleRepository();
 const memberRepo = new DrizzleMemberRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const submissionService = new SubmissionService(submissionRepo);
-const discordService = new DiscordWebhookService();
+const discordClient = new DiscordWebhookClient();
 
 const recordSubmissionCommand = new RecordSubmissionCommand(
   cycleRepo,
@@ -119,6 +119,13 @@ export const handleIssueComment = async (c: AppContext) => {
 
   const blogUrl = urlMatch[1];
 
+  const discordWebhookUrl =
+    c.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
+
+  if (!discordWebhookUrl) {
+    console.warn('DISCORD_WEBHOOK_URL not configured');
+  }
+
   try {
     // Command 실행 (DDD Use Case)
     const result = await recordSubmissionCommand.execute({
@@ -129,11 +136,14 @@ export const handleIssueComment = async (c: AppContext) => {
     });
 
     // Discord 알림 전송
-    await discordService.sendSubmissionNotification(
-      result.memberName,
-      result.submission.url.value,
-      result.cycleName
-    );
+    if (discordWebhookUrl) {
+      await discordClient.sendSubmissionNotification(
+        discordWebhookUrl,
+        result.memberName,
+        result.cycleName,
+        blogUrl
+      );
+    }
 
     return c.json({ message: 'Submission recorded' }, HttpStatusCodes.OK);
   } catch (error) {

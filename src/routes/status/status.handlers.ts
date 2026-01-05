@@ -56,8 +56,17 @@ export const getCurrentCycle = async (c: AppContext) => {
 export const getCurrentCycleDiscord = async (c: AppContext) => {
   try {
     // 현재 진행 중인 사이클 찾기
+    const generation = await generationRepo.findActive();
+
+    if (!generation) {
+      return c.json(
+        { error: 'No active cycle found' },
+        HttpStatusCodes.NOT_FOUND
+      );
+    }
+
     const cycles = await cycleRepo.findActiveCyclesByGeneration(
-      (await generationRepo.findActive())!.id.value
+      generation.id.value
     );
 
     if (cycles.length === 0) {

@@ -1,6 +1,5 @@
 import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
-import { sendDiscordWebhook, createReminderMessage } from '@/services/discord';
 
 // DDD Layer imports
 import { GetReminderTargetsQuery } from '@/application/queries';
@@ -8,6 +7,7 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { DiscordWebhookClient } from '@/infrastructure/external/discord';
 import { NotFoundError } from '@/domain/common/errors';
 
 // ========================================
@@ -18,6 +18,7 @@ const cycleRepo = new DrizzleCycleRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const submissionRepo = new DrizzleSubmissionRepository();
 const memberRepo = new DrizzleMemberRepository();
+const discordClient = new DiscordWebhookClient();
 
 const getReminderTargetsQuery = new GetReminderTargetsQuery(
   cycleRepo,
@@ -104,9 +105,11 @@ export const sendReminderNotifications = async (c: AppContext) => {
       const endDate = new Date(result.endDate);
 
       // Discord 알림 전송
-      await sendDiscordWebhook(
+      await discordClient.sendReminderNotification(
         discordWebhookUrl,
-        createReminderMessage(cycleInfo.cycleName, endDate, notSubmittedNames)
+        cycleInfo.cycleName,
+        endDate,
+        notSubmittedNames
       );
 
       sentCycles.push({
