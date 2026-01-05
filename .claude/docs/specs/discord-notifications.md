@@ -3,9 +3,10 @@
 - **Status**: As-Is (현재 구현)
 - **Scope**: Discord webhook 메시지 생성 및 전송
 - **Based on**:
-  - Facts: [../facts/services/discord.md](../facts/services/discord.md)
-  - Insights: [../insights/operations/discord-notifications.md](../insights/operations/discord-notifications.md)
+  - Facts: [../facts/infrastructure/external.md](../facts/infrastructure/external.md), [../facts/application/event-handlers.md](../facts/application/event-handlers.md)
+  - Insights: [../insights/operations/discord-notifications.md](../insights/operations/discord-notifications.md), [../insights/operations/domain-model.md](../insights/operations/domain-model.md)
 - **Last Verified**: 2026-01-05
+- **Git Commit**: ac29965
 
 ## 개요 (Overview)
 
@@ -65,13 +66,18 @@
 ## 기술 사양 (Technical Specifications)
 
 - **아키텍처 개요**:
-  - 순수 함수로 메시지 생성 로직 캡슐화
+  - **이벤트 기반 아키텍처**:
+    - Domain Layer에서 도메인 이벤트 발행 (예: `SubmissionRecordedEvent`)
+    - Application Layer의 Event Handler가 도메인 이벤트 수신
+    - Infrastructure Layer에서 Discord webhook 전송
+  - 메시지 생성 로직은 순수 함수로 캡슐화
   - HTTP fetch API로 Discord webhook 전송
   - GitHub webhook, Reminder, Status API에서 호출
 
 - **의존성**:
   - Services:
-    - None (순수 함수)
+    - Event Handlers: [`SubmissionEventHandler`](../facts/application/event-handlers.md)
+    - Discord Service: [`DiscordService`](../facts/infrastructure/external.md)
   - Packages:
     - None (표준 fetch API만 사용)
   - Libraries:
@@ -80,6 +86,11 @@
     - `DISCORD_WEBHOOK_URL` - Discord webhook URL (선택, 미설정 시 알림 조용히 실패)
 
 - **구현 접근**:
+  - **이벤트 기반 패턴**:
+    - Command 실행 결과로 도메인 이벤트 발행
+    - Event Handler가 도메인 이벤트 수신
+    - Event Handler에서 Discord 메시지 생성 및 전송
+    - 비즈니스 로직과 알림 로직의 완전한 분리
   - `createSubmissionMessage()`: 제출 알림 페이로드 생성
   - `createReminderMessage()`: 리마인더 페이로드 생성 (시간 계산 포함)
   - `createStatusMessage()`: 현황 리포트 페이로드 생성
@@ -103,11 +114,20 @@
   ```
   이벤트 발생 (제출/리마인더/현황 조회)
     ↓
-  메시지 생성 함수 호출
+  Domain Layer (도메인 이벤트 발행)
+    - SubmissionRecordedEvent
+    - MemberRegisteredEvent
+    - CycleCreatedEvent
     ↓
-  DiscordWebhookPayload 생성
+  Application Layer (Event Handler)
+    - SubmissionEventHandler.handleSubmissionRecorded()
+    - MemberEventHandler.handleMemberRegistered()
+    - CycleEventHandler.handleCycleCreated()
     ↓
-  sendDiscordWebhook() 호출
+  Infrastructure Layer (Discord Service)
+    - 메시지 생성 함수 호출
+    - DiscordWebhookPayload 생성
+    - sendDiscordWebhook() 호출
     ↓
   HTTP POST to Discord API
     ↓
@@ -348,7 +368,7 @@
 
 ---
 
-**문서 버전**: 1.0.0
+**문서 버전**: 2.0.0
 **생성일**: 2026-01-05
 **마지막 업데이트**: 2026-01-05
-**Git Commit**: f324133
+**Git Commit**: ac29965

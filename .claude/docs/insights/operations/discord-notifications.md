@@ -1,7 +1,19 @@
 # Discord 알림 시스템 분석
 
+---
+metadata:
+  version: "2.0.0"
+  created_at: "2026-01-05T10:00:00Z"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "ac29965"
+  based_on_facts:
+    - "../../facts/infrastructure/external.md"
+    - "../../facts/application/event-handlers.md"
+    - "../../facts/presentation/http.md"
+---
+
 - **Scope**: Discord webhook 메시지 생성 및 전송 효율성
-- **Based on Facts**: [../../facts/services/discord.md](../../facts/services/discord.md)
+- **Based on Facts**: [Infrastructure/External](../../facts/infrastructure/external.md), [Event Handlers](../../facts/application/event-handlers.md), [Presentation/HTTP](../../facts/presentation/http.md)
 - **Last Verified**: 2026-01-05
 
 ## Executive Summary
@@ -13,18 +25,21 @@ Discord 알림 시스템은 **3가지 메시지 타입**(제출, 리마인더, �
 ### 메시지 타입 및 용도
 
 1. **제출 알림** (`createSubmissionMessage`)
+   - **DDD 구조**: 도메인 이벤트(`SubmissionRecordedEvent`) → Event Handler → Discord Webhook
    - **트리거**: GitHub Issue 댓글 생성 (제출 완료)
    - **색상**: 초록색 (0x00ff00) - 성공
    - **이모지**: 🎉
    - **내용**: 제출자 이름, 회차 이름, 블로그 URL 링크
 
 2. **마감 리마인더** (`createReminderMessage`)
+   - **DDD 구조**: Query API → n8n workflow → Discord Webhook
    - **트리거**: 리마인더 API 호출 (마감 N시간 전)
    - **색상**: 주황색 (0xffaa00) - 경고
    - **이모지**: ⏰
    - **내용**: 회차 이름, 남은 시간, 미제출자 목록, 마감 시간
 
 3. **제출 현황** (`createStatusMessage`)
+   - **DDD 구조**: Query API → Discord Bot → Discord Webhook
    - **트리거**: 상태 조회 API 호출 (Discord 봇 명령어)
    - **색상**: 파란색 (0x0099ff) - 정보
    - **이모지**: ✅ ❌ ⏰
@@ -357,9 +372,39 @@ components: [
 
 ---
 
+## DDD 아키텍처 영향
+
+### 구조 변경사항
+
+**Before (v1.0 - 결합된 로직)**:
+```
+GitHub Webhook Handler
+  → 직접 Discord Webhook 호출 (강하게 결합)
+```
+
+**After (v2.0 - 이벤트 기반 분리)**:
+```
+GitHub Webhook Handler
+  ↓
+RecordSubmissionCommand
+  ↓
+Submission Aggregate (도메인 이벤트 발행)
+  ↓
+SubmissionEventHandler (이벤트 수신)
+  ↓
+Discord Webhook (느슨하게 결합)
+```
+
+### 비즈니스 가치
+
+1. **확장성**: 새로운 알림 채널(Slack, Email 등) 추가 시 Event Handler만 추가
+2. **테스트 용이성**: Command와 Event Handler를 독립적으로 테스트 가능
+3. **유연성**: 알림 실패 시 재시도 로직을 Event Handler에만 추가 가능
+4. **A/B 테스트**: 동일 이벤트를 여러 Handler가 구독하여 다른 실험 가능
+
 ## 문서 버전
 
-- **Version**: 1.0.0
+- **Version**: 2.0.0
 - **Created**: 2026-01-05
 - **Last Updated**: 2026-01-05
-- **Git Commit**: f324133
+- **Git Commit**: ac29965

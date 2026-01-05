@@ -1,105 +1,102 @@
 ---
 metadata:
-  version: "1.2.0"
+  version: "2.0.0"
   created_at: "2026-01-05T10:00:00Z"
-  last_verified: "2026-01-05T12:00:00Z"
-  git_commit: "df3a0ab"
+  last_verified: "2026-01-05T10:00:00Z"
+  git_commit: "ac29965"
+  project: "똥글똥글 (Donguel-Donguel)"
+  description: "격주 글쓰기 모임 자동화 API 서버 - DDD Architecture"
   source_files:
     src/index.ts:
-      git_hash: "df3a0ab"
+      git_hash: "ac29965"
       source_exists: true
-    src/db/schema.ts:
-      git_hash: "df3a0ab"
+    src/domain/:
+      git_hash: "ac29965"
       source_exists: true
-    src/lib/router.ts:
-      git_hash: "df3a0ab"
+    src/application/:
+      git_hash: "ac29965"
       source_exists: true
-    src/lib/error.ts:
-      git_hash: "df3a0ab"
+    src/infrastructure/:
+      git_hash: "ac29965"
       source_exists: true
-    src/routes/github/github.routes.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/github/github.handlers.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/github/github.index.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/reminder/reminder.routes.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/reminder/reminder.handlers.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/reminder/reminder.index.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/status/status.routes.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/status/status.handlers.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/routes/status/status.index.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/services/discord.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/services/discord-bot.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/graphql/resolvers.ts:
-      git_hash: "df3a0ab"
-      source_exists: true
-    src/env.ts:
-      git_hash: "df3a0ab"
+    src/presentation/:
+      git_hash: "ac29965"
       source_exists: true
 ---
 
-# 똥글똥글 API 문서화 FACTS
+# FACTS - 똥글똥글 (Donguel-Donguel) Codebase Documentation
 
-- **Scope**: Hono 기반 API 서버 전체 구조
-- **Source of Truth**: 소스 코드 및 Drizzle 스키마
-- **Last Verified**: 2026-01-05
-- **Repo Ref**: 2ad26ee
+## 프로젝트 개요
 
-## 개요
+똥글똥글은 격주 글쓰기 모임의 자동화를 위한 API 서버입니다. 회원들이 GitHub Issue 댓글로 블로그 글을 제출하면, 시스템이 이를 기록하고 Discord로 알림을 발송합니다.
 
-똥글똥글 (Donguel-Donguel)은 격주 글쓰기 모임 자동화 API 서버입니다. 멤버들이 GitHub Issue 댓글로 블로그 포스트를 제출하면, 시스템이 이를 추적하고 Discord 알림을 전송합니다.
+**Tech Stack**:
+- **Framework**: Hono (TypeScript web framework)
+- **Database**: PostgreSQL with Drizzle ORM
+- **External Integrations**: Discord (webhook & bot), GitHub (webhook)
+- **Architecture**: Domain-Driven Design (DDD)
+
+## DDD 아키텍처 개요
+
+이 프로젝트는 4계층 DDD 아키텍처를 따릅니다:
+
+```
+src/
+├── domain/              # 도메인 계층 - 비즈니스 로직과 엔티티
+├── application/         # 애플리케이션 계층 - 유스케이스 (Command/Query)
+├── infrastructure/      # 인프라스트럭처 계층 - DB, 외부 서비스 연동
+└── presentation/        # 프레젠테이션 계층 - HTTP, Discord, GraphQL
+```
+
+### 계층별 책임
+
+1. **Domain Layer (`domain/`)**: 비즈니스 로직, 엔티티, 값 객체, 리포지토리 인터페이스
+2. **Application Layer (`application/`)**: 유스케이스 구현 (Command, Query, Event Handlers)
+3. **Infrastructure Layer (`infrastructure/`)**: 기술적 구현 (DB, 외부 API, 라이브러리)
+4. **Presentation Layer (`presentation/`)**: 외부 인터페이스 (HTTP routes, Discord bot, GraphQL)
+
+## 도메인 모델
+
+### 핵심 도메인 (Bounded Contexts)
+
+1. **Member Domain**: 회원 (GitHub username, Discord ID, 이름)
+2. **Generation Domain**: 기수 (똥글똥글 1기, 2기...)
+3. **Cycle Domain**: 주차 사이클 (1주차, 2주차...)
+4. **Submission Domain**: 제출 (회원별 블로그 글 제출 기록)
+
+### 도메인 관계
+
+```
+Generation (1) ──────< (N) Cycle (1) ──────< (N) Submission
+                       │
+                       └─────────────< (N) Member (global)
+```
 
 ## 문서 구조
 
-### [routes/](./routes/)
-- **[github.md](./routes/github.md)** - GitHub 웹훅 핸들러 (이슈 생성, 댓글 처리)
-- **[reminder.md](./routes/reminder.md)** - 리마인더 API (n8n 워크플로우용)
-- **[status.md](./routes/status.md)** - 제출 현황 API (Discord 봇용, 현재 회차 조회 포함)
+### Domain Layer
+- [domain/member.md](./domain/member.md) - 회원 도메인
+- [domain/generation.md](./domain/generation.md) - 기수 도메인
+- [domain/cycle.md](./domain/cycle.md) - 사이클 도메인
+- [domain/submission.md](./domain/submission.md) - 제출 도메인
 
-### [database/](./database/)
-- **[schema.md](./database/schema.md)** - 데이터베이스 스키마 정의 (members, generations, cycles, submissions)
+### Application Layer
+- [application/commands.md](./application/commands.md) - Command (상태 변경 유스케이스)
+- [application/queries.md](./application/queries.md) - Query (상태 조회 유스케이스)
+- [application/event-handlers.md](./application/event-handlers.md) - Event Handlers
 
-### [services/](./services/)
-- **[discord.md](./services/discord.md)** - Discord 웹훅 메시지 생성 및 전송 서비스
-- **[discord-bot.md](./services/discord-bot.md)** - Discord Bot 슬래시 명령어 (/check-submission)
+### Infrastructure Layer
+- [infrastructure/persistence.md](./infrastructure/persistence.md) - DB 스키마 및 리포지토리 구현
+- [infrastructure/external.md](./infrastructure/external.md) - 외부 연동 (Discord, GitHub)
 
-### [config/](./config/)
-- **[environment.md](./config/environment.md)** - 환경변수 설정 및 검증 (DISCORD_GUILD_ID 추가)
+### Presentation Layer
+- [presentation/http.md](./presentation/http.md) - HTTP Routes (GitHub webhook, Reminder, Status)
+- [presentation/discord.md](./presentation/discord.md) - Discord Bot
+- [presentation/graphql.md](./presentation/graphql.md) - GraphQL API
 
-### [lib/](./lib/)
-- **[router.md](./lib/router.md)** - 라우터 생성 헬퍼 및 타입 정의
-- **[error.md](./lib/error.md)** - OpenAPI 에러 스키마 정의
+## 빠른 참조
 
-## 기술 스택
-
-- **Framework**: Hono (TypeScript web framework)
-- **ORM**: Drizzle ORM
-- **Database**: PostgreSQL (Neon)
-- **Discord Bot**: discord.js
-- **API Documentation**: OpenAPI 3.0 (@hono/zod-openapi)
-- **External Integrations**: GitHub Webhooks, Discord Webhooks, Discord Bot, n8n workflows
-
-## 핵심 엔드포인트
+### 주요 엔드포인트
 
 | 경로 | 메서드 | 목적 |
 |------|--------|------|
@@ -115,41 +112,55 @@ metadata:
 | `/api/status/{cycleId}/discord` | GET | 제출 현황 조회 (Discord 포맷) |
 | `/graphql` | GET/POST | GraphQL 엔드포인트 |
 
-## 데이터 모델 관계도
+### 환경변수
 
-```
-generations (기수)
-    ↓ 1:N
-cycles (회차/주차)
-    ↓ 1:N
-submissions (제출 기록)
-    ↓ N:1
-members (멤버)
-
-generation_members (기수-멤버 조인 테이블)
-    ↓ N:1 (generations)
-    ↓ N:1 (members)
+```env
+DATABASE_URL=postgresql://localhost:5432/dongueldonguel
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+DISCORD_BOT_TOKEN=...
+DISCORD_CLIENT_ID=...
+DISCORD_GUILD_ID=... (optional, for guild commands)
+GITHUB_APP_WEBHOOK_SECRET=... (optional)
+PORT=3000
 ```
 
-## 외부 통합
+## 개발 커맨드
 
-### GitHub Webhook
-- **Event Types**: `issue_comment` (created), `issues` (opened)
-- **Purpose**: 이슈 생성 시 회차 자동 생성, 댓글 작성 시 제출 기록
+```bash
+pnpm install              # 의존성 설치
+pnpm dev                  # 개발 서버 실행 (hot reload)
+pnpm build                # TypeScript 빌드
+pnpm start                # 빌드된 코드 실행
 
-### Discord Webhook
-- **Purpose**: 제출 알림, 마감 리마인더, 현황 공유
-- **Formats**: Embed 메시지 (컬러, 필드, 타임스탬프)
+pnpm db:generate          # Migration 생성
+pnpm db:migrate           # Migration 실행
+pnpm db:push              # 스키마 직접 push (개발용)
+pnpm db:studio            # Drizzle Studio 실행
+```
 
-### Discord Bot
-- **Purpose**: 슬래시 명령어로 제출 현황 조회
-- **Command**: `/check-submission` - 현재 활성화된 주차의 제출 현황 확인
-- **Guild ID Support**: `DISCORD_GUILD_ID` 환경변수로 즉시 슬래시 명령어 등록 (개발용)
+## 아키텍처 원칙
 
-### n8n Workflows
-- **Purpose**: 주기적 리마인더 발송 (cron job)
-- **Endpoints**: `/api/reminder?hoursBefore=N`, `/api/reminder/send-reminders`
+1. **의존성 방향**: 상위 계층(Presentation/Application) → 하위 계층(Domain)
+2. **인터페이스 분리**: Domain 계층에서 리포지토리 인터페이스 정의, Infrastructure에서 구현
+3. **도메인 이벤트**: 중요한 비즈니스 이벤트를 도메인 계층에서 발행
+4. **CQRS**: Command(상태 변경)와 Query(상태 조회) 분리
 
----
+## Git 커밋 참조
 
-*See YAML frontmatter for detailed metadata.*
+- **Current Commit**: `ac29965` - "refactor: Consolidate Presentation Layer into unified presentation/ directory"
+- **Base Branch**: `BBAK-jun/gwangju`
+
+## 변경 이력
+
+### v2.0.0 (2026-01-05)
+- DDD 아키텍처로 완전 리팩토링
+- 4계층 구조 도입 (Domain, Application, Infrastructure, Presentation)
+- CQRS 패턴 적용 (Command/Query 분리)
+- 도메인 이벤트 기반 알림 시스템
+- GraphQL API 추가
+- Discord Bot 슬래시 명령어 추가
+
+### v1.0.0
+- 초기 Hono 기반 API 구현
+- GitHub Webhook 연동
+- Discord Webhook 알림

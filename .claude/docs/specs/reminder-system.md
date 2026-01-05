@@ -3,9 +3,10 @@
 - **Status**: As-Is (현재 구현)
 - **Scope**: 마감 리마인더 조회 및 발송 자동화
 - **Based on**:
-  - Facts: [../facts/routes/reminder.md](../facts/routes/reminder.md)
-  - Insights: [../insights/operations/reminder-system.md](../insights/operations/reminder-system.md)
+  - Facts: [../facts/routes/reminder.md](../facts/routes/reminder.md), [../facts/application/queries.md](../facts/application/queries.md)
+  - Insights: [../insights/operations/reminder-system.md](../insights/operations/reminder-system.md), [../insights/operations/cqrs-pattern.md](../insights/operations/cqrs-pattern.md)
 - **Last Verified**: 2026-01-05
+- **Git Commit**: ac29965
 
 ## 개요 (Overview)
 
@@ -50,15 +51,21 @@
 ## 기술 사양 (Technical Specifications)
 
 - **아키텍처 개요**:
-  - Hono 라우터로 3개의 엔드포인트 제공
+  - **CQRS 패턴**:
+    - Query: 상태 조회용 ([`GetReminderTargetsQuery`](../facts/application/queries.md))
+    - Presentation Layer (`src/presentation/http/reminder.ts`): Hono 라우터로 3개의 엔드포인트 제공
+    - Application Layer (`src/application/queries/`): Query로 상태 조회 구현
+    - Domain Layer (`src/domain/`): 비즈니스 로직 (CycleService, MemberService)
+    - Infrastructure Layer (`src/infrastructure/`): DB 리포지토리 구현, Discord webhook
   - n8n 워크플로우에서 주기적으로 호출 (스케줄링 외부 위임)
-  - Drizzle ORM으로 DB 조회
-  - Discord Service로 메시지 생성 및 전송
+  - Query는 상태를 변경하지 않음 (순수 함수)
+  - Discord webhook 호출은 비동기 고려 필요
 
 - **의존성**:
   - Services:
-    - Database Service ([`src/lib/db.ts`](../facts/database/schema.md))
-    - Discord Service ([`src/services/discord.ts`](../facts/services/discord.md))
+    - Queries: [`GetReminderTargetsQuery`](../facts/application/queries.md)
+    - Domain Services: `CycleService`, `MemberService`
+    - Repositories: `CycleRepository`, `MemberRepository`, `SubmissionRepository`
   - Packages:
     - `hono` - Web framework
     - `drizzle-orm` - ORM
@@ -69,9 +76,13 @@
     - `DISCORD_WEBHOOK_URL` - Discord webhook URL (필수, `POST /send-reminders`에서만)
 
 - **구현 접근**:
+  - **CQRS 패턴**:
+    - Query는 상태를 변경하지 않음 (순수 함수)
+    - Query는 독립적으로 캐싱 가능
+    - Query는 DB 읽기 전용 복제본에서 실행 가능 (미래 확장)
   - 시간 윈도우 쿼리로 마감 임박 회차 필터링
   - 전체 멤버 조회 후 제출자 ID 집합으로 차집합 계산
-  - Discord webhook 호출은 동기식 (응답을 기다림)
+  - Discord webhook 호출은 동기식 (비동기로 개선 필요)
 
 - **관측/운영**:
   - 리마인더 발송 기록 저장 미구현
@@ -102,13 +113,19 @@
   ```
   GET /api/reminder?hoursBefore=24
     ↓
-  현재 시간 계산
+  Presentation Layer (Handler)
     ↓
-  WHERE: generations.isActive = true
-    AND cycles.endDate < (now + 24h)
-    AND cycles.endDate > now
+  Application Layer (GetReminderTargetsQuery)
+    - 현재 시간 계산
+    - CycleRepository.findUpcomingCycles()
+    - WHERE: generations.isActive = true
+    - AND cycles.endDate < (now + 24h)
+    - AND cycles.endDate > now
+    - MemberService.findMembersNotInSet()
     ↓
   활성 회차 목록 반환
+    ↓
+  Discord webhook 발송 (POST /send-reminders)
   ```
 
 - **검증/제약**:
@@ -309,7 +326,7 @@
 
 ---
 
-**문서 버전**: 1.0.0
+**문서 버전**: 2.0.0
 **생성일**: 2026-01-05
 **마지막 업데이트**: 2026-01-05
-**Git Commit**: f324133
+**Git Commit**: ac29965
