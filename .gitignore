@@ -3,5 +3,6 @@ dist
 .env
 .DS_Store
 *.log
-drizzle
+# Drizzle folder (not config file)
+/drizzle
 .pnpm-store
