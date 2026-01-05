@@ -2,21 +2,24 @@
 
 - **Scope**: n8n 워크플로우용 리마인더 API
 - **Source of Truth**: `src/routes/reminder/`
-- **Last Verified**: 2025-01-05
-- **Repo Ref**: f32413325de67a3ad1bde6649d16474d236d164b
+- **Last Verified**: 2026-01-05
+- **Repo Ref**: df3a0ab
 
 ---
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   created_at: "2025-01-05T10:00:00Z"
-  last_verified: "2025-01-05T10:00:00Z"
-  git_commit: "f32413325de67a3ad1bde6649d16474d236d164b"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   source_files:
     src/routes/reminder/reminder.index.ts:
-      git_hash: "35a585609d52a0591ecff47ce4006698656356f6"
+      git_hash: "df3a0ab"
       source_exists: true
     src/routes/reminder/reminder.routes.ts:
-      git_hash: "6d90510d0ae6aaf3e8e549c8b61af6b3944c6f7d"
+      git_hash: "df3a0ab"
+      source_exists: true
+    src/routes/reminder/reminder.handlers.ts:
+      git_hash: "df3a0ab"
       source_exists: true
     src/routes/reminder/reminder.handlers.ts:
       git_hash: "70c2bdf3530c090d5e48c7649754b57b104f3fa5"

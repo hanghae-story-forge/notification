@@ -1,9 +1,9 @@
 ---
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   created_at: "2026-01-05T10:00:00Z"
-  last_verified: "2026-01-05T10:00:00Z"
-  git_commit: "2ad26ee"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   based_on_facts: "../facts/index.md"
   based_on_insights: "../insights/index.md"
 ---
@@ -38,9 +38,11 @@ metadata:
   - Discord 리마인더 발송
 
 - **[Status Tracking](./status-tracking.md)** - 제출 현황 조회
+  - 현재 진행중인 회차 자동 조회 (NEW)
   - 회차별 제출 현황 JSON 조회
   - Discord webhook 포맷 변환
   - 실시간 통계 계산
+  - 남은 시간 표시 (daysLeft, hoursLeft)
 
 - **[Discord Notifications](./discord-notifications.md)** - Discord 알림 시스템
   - 제출 알림 메시지 생성
@@ -90,16 +92,41 @@ API Server (Reminder/Status APIs)
 | GitHub Webhook - Issue Comment | As-Is | P0 | 운영 중 |
 | GitHub Webhook - Issues (Auto Cycle Creation) | As-Is | P0 | 운영 중 |
 | Discord Bot - /check-submission | As-Is | P0 | 운영 중 |
+| Discord Bot - Guild ID Support (NEW) | New | P1 | 개발 속도 개선 |
 | Reminder - Query Cycles | As-Is | P0 | 운영 중 |
 | Reminder - Not Submitted Members | As-Is | P1 | 운영 중 (TODO: generation_members 활용) |
 | Reminder - Send Reminders | As-Is | P0 | 운영 중 |
+| Status - Current Cycle Query (NEW) | New | P0 | 운영 중 |
 | Status - JSON Format | As-Is | P0 | 운영 중 (TODO: generation_members 활용) |
 | Status - Discord Format | As-Is | P0 | 운영 중 |
+| Health Check - Database Connection (NEW) | New | P0 | 운영 중 (Docker 지원) |
 | Discord Notifications - Submission | As-Is | P0 | 운영 중 |
 | Discord Notifications - Reminder | As-Is | P0 | 운영 중 |
 | Discord Notifications - Status | As-Is | P0 | 운영 중 |
 
 ## 주요 TODO 항목
+
+### 최신 개선사항 (Recent Improvements - df3a0ab)
+
+1. **라우트 구조 모듈화**
+   - 완료: routes, handlers, index 파일 분리
+   - 영향: 코드 유지보수성 향상, 팀 협업 효율화
+   - 참조: [src/routes/*](../../src/routes/)
+
+2. **현재 회차 조회 엔드포인트**
+   - 완료: `/api/status/current`, `/api/status/current/discord`
+   - 영향: 사용자 경험 개선, 회차 ID 기억 불필요
+   - 참조: [status-tracking.md](./status-tracking.md)
+
+3. **Docker 헬스체크 엔드포인트**
+   - 완료: `/health` 엔드포인트 (DB 연결 확인)
+   - 영향: 컨테이너 오케스트레이션 지원, 서비스 안정성 향상
+   - 참조: [src/index.ts:24-47](../../src/index.ts)
+
+4. **Discord Bot Guild ID 지원**
+   - 완료: `DISCORD_GUILD_ID` 환경변수 추가
+   - 영향: 개발 중 슬래시 명령어 즉시 등록 (1시간 → 즉시)
+   - 참조: [src/env.ts:23-26](../../src/env.ts)
 
 ### 높은 우선순위 (High Priority)
 

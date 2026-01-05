@@ -1,9 +1,9 @@
 ---
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   created_at: "2026-01-05T10:00:00Z"
-  last_verified: "2026-01-05T10:00:00Z"
-  git_commit: "2ad26ee"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   based_on_facts: "../facts/index.md"
 ---
 
@@ -79,21 +79,41 @@ metadata:
 
 ### 기회 (Opportunities)
 
-1. **Discord Bot 확장**
+1. **현재 회차 조회 자동화 (NEW)**
+   - `/api/status/current` 엔드포인트로 현재 진행중인 회차 자동 조회
+   - Discord Bot 슬래시 명령어와 연동하여 "지금 제출해야 할 회차" 즉시 확인
+   - 운영자가 매번 회차 ID를 기억할 필요 없음 → 사용자 경험 개선
+
+2. **Docker 헬스체크 도입 (NEW)**
+   - `/health` 엔드포인트로 DB 연결 상태 모니터링
+   - 컨테이너 오케스트레이션(Kubernetes, Docker Compose)에서 자동 재시작 가능
+   - 서비스 중단 시간 감소 및 운영 안정성 향상
+
+3. **Discord Bot 개발 속도 개선 (NEW)**
+   - `DISCORD_GUILD_ID` 환경변수로 슬래시 명령어 즉시 등록
+   - 개발 중 명령어 변경 시 1시간 기다릴 필요 없음
+   - 개발 생산성 향상 및 빠른 반복 가능
+
+4. **라우트 구조 모듈화 (NEW)**
+   - routes, handlers, index 분리로 코드 유지보수성 향상
+   - 새로운 엔드포인트 추가 시 일관된 패턴 적용 가능
+   - 팀 협업 시 충돌 감소 및 코드 리뷰 효율화
+
+5. **Discord Bot 확장**
    - 현재 `/check-submission` 하나만 제공
    - 추가 명령어 가능: 미제출자 리마인드, 통계 조회 등
    - 대화형 인터페이스로 멤버 경험 개선
 
-2. **기수-멤버 연결 테이블 활용** (`generation_members`)
+6. **기수-멤버 연결 테이블 활용** (`generation_members`)
    - 현재 TODO 상태로 미사용
    - 도입 시 기수별 멤버 관리 정교화 가능
    - 미제출자 계산 로직 개선 (현재 전체 멤버 대상)
 
-3. **다중 기수 동시 운영**
+7. **다중 기수 동시 운영**
    - 스키마는 이미 지원 (generations.isActive 플래그)
    - 운영 프로세스 정립 시 여러 기수 병행 운영 가능
 
-4. **제출 데이터 분석**
+8. **제출 데이터 분석**
    - 제출 패턴, 제출 시간 분석
    - 멤버 참여도 추적
 
@@ -103,6 +123,7 @@ metadata:
    - GitHub 웹훅 실패 시 제출 누락
    - Discord webhook 실패 시 알림 누락
    - 현재 재시도 로직 없음
+   - **개선됨**: `/health` 엔드포인트로 DB 연결 모니터링 가능
 
 2. **중복 제출 방지 의존성**
    - `github_comment_id` UNIQUE 제약조건에 의존
@@ -118,6 +139,12 @@ metadata:
    - `DISCORD_WEBHOOK_URL` 선택적 설정 (optional)
    - 미설정 시 알림 조용히 실패 (fallback 없음)
    - 운영자가 알림 누락 인지 어려움
+   - **新增**: `DISCORD_GUILD_ID` 미설정 시 개발 속도 저하 위험
+
+5. **현재 회차 조회 실패 시나리오 (NEW)**
+   - `/api/status/current`는 현재 시간이 `startDate`와 `endDate` 사이인 회차 조회
+   - 활성화된 회차가 없으면 404 반환
+   - 마감 직후/다음 회차 시작 전 "공백 기간" 발생 시 사용자 혼란 가능
 
 ## 필요한 추가 데이터
 

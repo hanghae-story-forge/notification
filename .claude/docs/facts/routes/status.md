@@ -2,25 +2,157 @@
 
 - **Scope**: 제출 현황 조회 API (Discord 봇용)
 - **Source of Truth**: `src/routes/status/`
-- **Last Verified**: 2025-01-05
-- **Repo Ref**: f32413325de67a3ad1bde6649d16474d236d164b
+- **Last Verified**: 2026-01-05
+- **Repo Ref**: df3a0ab
 
 ---
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   created_at: "2025-01-05T10:00:00Z"
-  last_verified: "2025-01-05T10:00:00Z"
-  git_commit: "f32413325de67a3ad1bde6649d16474d236d164b"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   source_files:
     src/routes/status/status.index.ts:
-      git_hash: "7a4e204e4416a06723d9365689f45b38244080fa"
+      git_hash: "df3a0ab"
       source_exists: true
     src/routes/status/status.routes.ts:
-      git_hash: "1f09ef62f9d4116431f6b9b84f697d68f079a2a7"
+      git_hash: "df3a0ab"
       source_exists: true
     src/routes/status/status.handlers.ts:
-      git_hash: "33d29e6be8fa86edcd93b5c19fb61b00cc66a7aa"
+      git_hash: "df3a0ab"
       source_exists: true
+---
+
+## GET /api/status/current
+
+- **Location**: `src/routes/status/status.handlers.ts` (L7-47)
+- **Purpose**: 현재 진행중인 사이클 조회 (JSON 형식)
+- **Handler**: `getCurrentCycle`
+- **Use Case**: Discord 봇 커맨드, 대시보드 표시
+
+### Request
+
+**Example**:
+```
+GET /api/status/current
+```
+
+### Response
+
+**200 OK**:
+```typescript
+{
+  id: number,
+  week: number,
+  generationName: string,
+  startDate: string,        // ISO 8601 datetime
+  endDate: string,          // ISO 8601 datetime
+  githubIssueUrl: string | null,
+  daysLeft: number,         // 남은 일수
+  hoursLeft: number         // 남은 시간
+}
+```
+
+**404 Not Found**:
+```typescript
+{ error: "No active cycle found" }
+```
+
+### Processing Logic
+
+1. **현재 시간 기준 조회**: `now`가 `startDate`와 `endDate` 사이인 사이클
+2. **활성화된 기수만**: `generations.isActive = true` 조건
+3. **남은 시간 계산**: `endDate - now`를 일/시간으로 변환
+4. **응답 구성**: 사이클 정보 + 남은 시간
+
+### Evidence
+
+```typescript
+// src/routes/status/status.handlers.ts:11-20
+const currentCycle = await db
+  .select({
+    cycle: cycles,
+    generation: generations,
+  })
+  .from(cycles)
+  .innerJoin(generations, eq(cycles.generationId, generations.id))
+  .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
+  .orderBy(cycles.startDate)
+  .limit(1);
+```
+
+---
+
+## GET /api/status/current/discord
+
+- **Location**: `src/routes/status/status.handlers.ts` (L50-117)
+- **Purpose**: 현재 사이클의 제출 현황을 Discord webhook 페이로드 형식으로 반환
+- **Handler**: `getCurrentCycleDiscord`
+- **Use Case**: Discord 봇이 직접 Discord 웹훅으로 전송
+
+### Request
+
+**Example**:
+```
+GET /api/status/current/discord
+```
+
+### Response
+
+**200 OK** (Discord webhook payload):
+```typescript
+{
+  embeds: [
+    {
+      title: string,          // "{generation.name} - {week}주차 제출 현황"
+      color: number,          // 0x0099ff (파란색)
+      fields: [
+        {
+          name: string,       // "✅ 제출 ({count})"
+          value: string,      // "name1, name2, ..."
+          inline: boolean     // false
+        },
+        {
+          name: string,       // "❌ 미제출 ({count})"
+          value: string,      // "name1, name2, ..."
+          inline: boolean     // false
+        },
+        {
+          name: string,       // "⏰ 마감 시간"
+          value: string,      // Discord timestamp (<t:{unix}:R>)
+          inline: boolean     // false
+        }
+      ],
+      timestamp: string       // ISO 8601 datetime
+    }
+  ]
+}
+```
+
+**404 Not Found**:
+```typescript
+{ error: "No active cycle found" }
+```
+
+### Processing Logic
+
+1. **현재 사이클 조회**: `GET /api/status/current`와 동일
+2. **제출 현황 조회**: 제출자/미제출자 이름 목록 추출
+3. **Discord 메시지 생성**: `createStatusMessage()` 호출
+
+### Evidence
+
+```typescript
+// src/routes/status/status.handlers.ts:89-104
+const discordMessage = createStatusMessage(
+  `${generation.name} - ${cycle.week}주차`,
+  submittedNames,
+  notSubmittedNames,
+  cycle.endDate
+);
+return c.json(discordMessage, HttpStatusCodes.OK);
+```
+
 ---
 
 ## GET /api/status/{cycleId}
@@ -192,15 +324,17 @@ return c.json(discordMessage, HttpStatusCodes.OK);
 
 ## Route Registration
 
-- **Location**: `src/routes/status/status.index.ts` (L5-8)
+- **Location**: `src/routes/status/status.index.ts` (L5-11)
 - **Router**: Hono OpenAPI router
-- **Mount**: `src/index.ts` (L27) - `app.route('/', statusRouter)`
+- **Mount**: `src/index.ts` (L57) - `app.route('/', statusRouter)`
 
 ### Evidence
 
 ```typescript
 // src/routes/status/status.index.ts
 const router = createRouter()
+  .openapi(routes.getCurrentCycle, handlers.getCurrentCycle)
+  .openapi(routes.getCurrentCycleDiscord, handlers.getCurrentCycleDiscord)
   .openapi(routes.getStatus, handlers.getStatus)
   .openapi(routes.getStatusDiscord, handlers.getStatusDiscord);
 ```

@@ -2,18 +2,18 @@
 
 - **Scope**: 환경변수 정의 및 검증
 - **Source of Truth**: `src/env.ts`
-- **Last Verified**: 2025-01-05
-- **Repo Ref**: f32413325de67a3ad1bde6649d16474d236d164b
+- **Last Verified**: 2026-01-05
+- **Repo Ref**: df3a0ab
 
 ---
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   created_at: "2025-01-05T10:00:00Z"
-  last_verified: "2025-01-05T10:00:00Z"
-  git_commit: "f32413325de67a3ad1bde6649d16474d236d164b"
+  last_verified: "2026-01-05T12:00:00Z"
+  git_commit: "df3a0ab"
   source_files:
     src/env.ts:
-      git_hash: "ad277f4acec76529ab0d1d32d9858fd781c24e89"
+      git_hash: "df3a0ab"
       source_exists: true
 ---
 
@@ -131,6 +131,145 @@ DISCORD_WEBHOOK_URL: z.string().url({ message: 'Invalid DISCORD_WEBHOOK_URL form
 
 ---
 
+### DISCORD_BOT_TOKEN
+
+- **Location**: `src/env.ts` (L15-18)
+- **Type**: `string` | `undefined`
+- **Required**: NO (Discord Bot 사용 시 필요)
+- **Description**: Discord Bot 토큰 (슬래시 명령어용)
+
+**Format**:
+```
+Bot [token] 또는 [token]
+```
+
+**Example**:
+```
+DISCORD_BOT_TOKEN=MTIzNDU2Nzg5MA.GhIjKl.MnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUv
+```
+
+**Usage**:
+```typescript
+// src/index.ts:110-117
+if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
+  await registerSlashCommands();
+  const discordBot = createDiscordBot();
+  await discordBot.login(env.DISCORD_BOT_TOKEN);
+}
+```
+
+**Optional Behavior**:
+- 설정되지 않은 경우 Discord Bot 시작하지 않음
+- 콘솔에 경고 메시지 출력
+
+**Evidence**:
+```typescript
+// src/env.ts:15-18
+DISCORD_BOT_TOKEN: z
+  .string()
+  .min(1, { message: 'DISCORD_BOT_TOKEN is required' })
+  .optional(),
+```
+
+---
+
+### DISCORD_CLIENT_ID
+
+- **Location**: `src/env.ts` (L19-22)
+- **Type**: `string` | `undefined`
+- **Required**: NO (Discord Bot 사용 시 필요)
+- **Description**: Discord 애플리케이션 클라이언트 ID
+
+**Format**:
+```
+18자리 숫자 (Snowflake ID)
+```
+
+**Example**:
+```
+DISCORD_CLIENT_ID=123456789012345678
+```
+
+**Usage**:
+```typescript
+// src/services/discord-bot.ts
+const rest = new REST().setToken(env.DISCORD_BOT_TOKEN);
+await rest.put(
+  Routes.applicationCommands(env.DISCORD_CLIENT_ID),
+  { body: commands }
+);
+```
+
+**Purpose**:
+- 슬래시 명령어 등록 (Global 또는 Guild)
+- Discord API 요청 시 애플리케이션 식별
+
+**Evidence**:
+```typescript
+// src/env.ts:19-22
+DISCORD_CLIENT_ID: z
+  .string()
+  .min(1, { message: 'DISCORD_CLIENT_ID is required' })
+  .optional(),
+```
+
+---
+
+### DISCORD_GUILD_ID
+
+- **Location**: `src/env.ts` (L23-26)
+- **Type**: `string` | `undefined`
+- **Required**: NO
+- **Description**: Discord 길드 ID (즉시 슬래시 명령어 등록용)
+
+**Format**:
+```
+18자리 숫자 (Snowflake ID)
+```
+
+**Example**:
+```
+DISCORD_GUILD_ID=987654321098765432
+```
+
+**Purpose**:
+- 개발 환경에서 즉시 슬래시 명령어 등록
+- 글로벌 등록은 최대 1시간 소요, 길드 등록은 즉시 반영
+- 프로덕션에서는 생략 가능 (글로벌 등록 사용)
+
+**Usage**:
+```typescript
+// src/services/discord-bot.ts
+const commands = [
+  {
+    name: 'check-submission',
+    description: '현재 활성화된 주차의 제출 현황을 확인합니다',
+  },
+];
+
+// 길드 ID가 있으면 길드 명령어로 등록 (즉시 반영)
+const endpoint = env.DISCORD_GUILD_ID
+  ? Routes.applicationGuildCommands(env.DISCORD_CLIENT_ID, env.DISCORD_GUILD_ID)
+  : Routes.applicationCommands(env.DISCORD_CLIENT_ID);
+
+await rest.put(endpoint, { body: commands });
+```
+
+**Development vs Production**:
+- **Development**: `DISCORD_GUILD_ID` 설정 → 즉시 명령어 등록
+- **Production**: 생략 → 글로벌 명령어 등록 (최대 1시간 소요)
+
+**Evidence**:
+```typescript
+// src/env.ts:23-26
+DISCORD_GUILD_ID: z
+  .string()
+  .min(1, { message: 'DISCORD_GUILD_ID is required' })
+  .optional(),
+```
+
+---
+
 ## Validation Behavior
 
 ### On Validation Success
@@ -197,11 +336,14 @@ skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 
 **Evidence**:
 ```typescript
-// src/env.ts:32-36
+// src/env.ts:32-38
 runtimeEnvStrict: {
   DATABASE_URL: process.env.DATABASE_URL,
   NODE_ENV: process.env.NODE_ENV,
   DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
+  DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
+  DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+  DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID,
 },
 ```
 
@@ -238,8 +380,13 @@ DATABASE_URL=postgresql://localhost:5432/dongueldonguel
 # Environment
 NODE_ENV=development
 
-# Discord
+# Discord Webhook (Notifications)
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Discord Bot (Slash Commands)
+DISCORD_BOT_TOKEN=MTIzNDU2Nzg5MA.GhIjKl.MnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUv
+DISCORD_CLIENT_ID=123456789012345678
+DISCORD_GUILD_ID=987654321098765432  # Optional: For instant command registration
 
 # Server
 PORT=3000
@@ -251,6 +398,9 @@ PORT=3000
 DATABASE_URL=postgresql://prod-db-server:5432/dongueldonguel
 NODE_ENV=production
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+DISCORD_BOT_TOKEN=MTIzNDU2Nzg5MA.GhIjKl.MnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUv
+DISCORD_CLIENT_ID=123456789012345678
+# DISCORD_GUILD_ID omitted in production (uses global commands)
 PORT=3000
 ```
 
