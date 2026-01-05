@@ -17,6 +17,38 @@
 
 ## 시작하기
 
+### 0. Direnv 설정 (권장, 워크트리 사용 시 필수)
+
+여러 git worktree에서 개발할 때 환경변수를 자동으로 로드하기 위해 **direnv**를 사용합니다.
+
+#### 설치
+
+```bash
+# macOS
+brew install direnv
+
+# 셸 설정 추가 (zsh)
+echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
+source ~/.zshrc
+
+# 셸 설정 추가 (bash)
+echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### 프로젝트 설정
+
+```bash
+# 프로젝트 루트에서 .envrc 활성화
+direnv allow
+
+# 워크트리를 사용하는 경우, 메인 워크트리의 .envrc를 심링크로 연결
+ln -s /path/to/main/worktree/.envrc .envrc
+direnv allow
+```
+
+이제 프로젝트 디렉토리에 진입하면 `.env` 파일의 환경변수가 자동으로 로드되고, 나가면 자동으로 언로드됩니다.
+
 ### 1. 의존성 설치
 
 ```bash
@@ -51,9 +83,17 @@ pnpm run db:push
 
 ### 4. 실행
 
+direnv가 설정된 경우 환경변수가 자동으로 로드됩니다:
+
 ```bash
+# direnv로 자동 로드되는지 확인
+echo $DATABASE_URL
+
+# 개발 서버 시작
 pnpm run dev
 ```
+
+**참고**: direnv를 사용하지 않는 경우 `dotenv` 클라이언트가 `.env`를 로드합니다.
 
 ## API 명세
 
