@@ -4,7 +4,15 @@ FROM base AS pruner
 RUN apk add --no-cache libc6-compat && \
     npm install turbo --global
 WORKDIR /app
-COPY . ./
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/server/package.json ./apps/server/
+COPY apps/client/package.json ./apps/client/
+
+# Copy source files for turbo prune
+COPY apps/server ./apps/server
+
 RUN turbo prune --docker --out-dir=output --scope=@dongueldonguel/server
 
 FROM base AS installer
@@ -32,7 +40,6 @@ RUN apk add --no-cache libc6-compat curl && \
 
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
-COPY --from=builder /app/apps/server/drizzle ./apps/server/drizzle 2>/dev/null || true
 COPY --from=installer /app/node_modules ./node_modules
 COPY package.json pnpm-workspace.yaml ./
 

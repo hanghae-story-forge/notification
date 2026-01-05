@@ -12,5 +12,3 @@ coverage
 !README.md
 apps/server/drizzle
 .turbo
-apps/client
-pnpm-lock.yaml
