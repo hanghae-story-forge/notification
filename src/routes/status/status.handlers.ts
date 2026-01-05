@@ -16,17 +16,15 @@ export const getCurrentCycle = async (c: AppContext) => {
     })
     .from(cycles)
     .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(
-      and(
-        lt(cycles.startDate, now),
-        gt(cycles.endDate, now)
-      )
-    )
+    .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
     .orderBy(cycles.startDate)
     .limit(1);
 
   if (currentCycle.length === 0) {
-    return c.json({ error: 'No active cycle found' }, HttpStatusCodes.NOT_FOUND);
+    return c.json(
+      { error: 'No active cycle found' },
+      HttpStatusCodes.NOT_FOUND
+    );
   }
 
   const { cycle, generation } = currentCycle[0];
@@ -61,17 +59,15 @@ export const getCurrentCycleDiscord = async (c: AppContext) => {
     })
     .from(cycles)
     .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(
-      and(
-        lt(cycles.startDate, now),
-        gt(cycles.endDate, now)
-      )
-    )
+    .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
     .orderBy(cycles.startDate)
     .limit(1);
 
   if (currentCycle.length === 0) {
-    return c.json({ error: 'No active cycle found' }, HttpStatusCodes.NOT_FOUND);
+    return c.json(
+      { error: 'No active cycle found' },
+      HttpStatusCodes.NOT_FOUND
+    );
   }
 
   const { cycle, generation } = currentCycle[0];

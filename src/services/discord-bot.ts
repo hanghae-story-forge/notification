@@ -108,12 +108,7 @@ const handleCurrentCycle = async (
       })
       .from(cycles)
       .innerJoin(generations, eq(cycles.generationId, generations.id))
-      .where(
-        and(
-          lt(cycles.startDate, now),
-          gt(cycles.endDate, now)
-        )
-      )
+      .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
       .orderBy(cycles.startDate)
       .limit(1);
 
@@ -125,11 +120,6 @@ const handleCurrentCycle = async (
     }
 
     const { cycle, generation } = currentCycle[0];
-
-    const nowMs = now.getTime();
-    const endMs = cycle.endDate.getTime();
-    const hoursLeft = Math.max(0, Math.floor((endMs - nowMs) / (1000 * 60 * 60)));
-    const daysLeft = Math.floor(hoursLeft / 24);
 
     const submissionList = await db
       .select({
