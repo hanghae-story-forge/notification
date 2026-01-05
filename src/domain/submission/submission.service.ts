@@ -34,9 +34,8 @@ export class SubmissionService {
     }
 
     // GitHub Comment ID 중복 확인
-    const byCommentId = await this.submissionRepo.findByGithubCommentId(
-      githubCommentId
-    );
+    const byCommentId =
+      await this.submissionRepo.findByGithubCommentId(githubCommentId);
     if (byCommentId) {
       return {
         canSubmit: false,
@@ -55,11 +54,7 @@ export class SubmissionService {
     memberId: MemberId,
     githubCommentId: string
   ): Promise<void> {
-    const result = await this.canSubmit(
-      cycleId,
-      memberId,
-      githubCommentId
-    );
+    const result = await this.canSubmit(cycleId, memberId, githubCommentId);
 
     if (!result.canSubmit) {
       throw new ConflictError(result.reason ?? 'Cannot submit');

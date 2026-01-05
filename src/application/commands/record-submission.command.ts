@@ -44,7 +44,9 @@ export class RecordSubmissionCommand {
     private readonly submissionService: SubmissionService
   ) {}
 
-  async execute(request: RecordSubmissionRequest): Promise<RecordSubmissionResult> {
+  async execute(
+    request: RecordSubmissionRequest
+  ): Promise<RecordSubmissionResult> {
     // 1. Cycle 찾기
     const cycle = await this.cycleRepo.findByIssueUrl(request.githubIssueUrl);
     if (!cycle) {

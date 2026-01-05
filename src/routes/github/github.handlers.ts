@@ -16,7 +16,11 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
 import { SubmissionService } from '@/domain/submission/submission.service';
 import { DiscordWebhookService } from '@/infrastructure/external/discord/discord.webhook';
-import { ValidationError, NotFoundError, ConflictError } from '@/domain/common/errors';
+import {
+  ValidationError,
+  NotFoundError,
+  ConflictError,
+} from '@/domain/common/errors';
 
 // ========================================
 // Repository & Service Instances
@@ -127,17 +131,11 @@ export const handleIssueComment = async (c: AppContext) => {
       result.cycleName
     );
 
-    return c.json(
-      { message: 'Submission recorded' },
-      HttpStatusCodes.OK
-    );
+    return c.json({ message: 'Submission recorded' }, HttpStatusCodes.OK);
   } catch (error) {
     // 도메인 에러 처리
     if (error instanceof NotFoundError) {
-      return c.json(
-        { message: error.message },
-        HttpStatusCodes.NOT_FOUND
-      );
+      return c.json({ message: error.message }, HttpStatusCodes.NOT_FOUND);
     }
     if (error instanceof ConflictError) {
       return c.json(
@@ -146,10 +144,7 @@ export const handleIssueComment = async (c: AppContext) => {
       );
     }
     if (error instanceof ValidationError) {
-      return c.json(
-        { message: error.message },
-        HttpStatusCodes.BAD_REQUEST
-      );
+      return c.json({ message: error.message }, HttpStatusCodes.BAD_REQUEST);
     }
 
     // 알 수 없는 에러

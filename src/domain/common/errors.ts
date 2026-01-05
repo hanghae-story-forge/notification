@@ -22,11 +22,7 @@ export class NotFoundError extends RepositoryError {
   readonly code = 'NOT_FOUND' as const;
 
   constructor(entity: string, id?: number | string) {
-    super(
-      id
-        ? `${entity} with ID ${id} not found`
-        : `${entity} not found`
-    );
+    super(id ? `${entity} with ID ${id} not found` : `${entity} not found`);
   }
 }
 
