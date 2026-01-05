@@ -12,7 +12,7 @@ RUN corepack enable pnpm && pnpm install --frozen-lockfile
 FROM base AS builder
 RUN corepack enable pnpm
 COPY package.json pnpm-lock.yaml ./
-COPY tsup.config.ts ./
+COPY tsconfig.json tsup.config.ts ./
 COPY src ./src
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
