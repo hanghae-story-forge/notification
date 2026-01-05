@@ -29,6 +29,7 @@ export interface CreateMemberData {
   githubUsername: string;
   name: string;
   discordId?: string;
+  createdAt?: Date;
 }
 
 // 회원 엔티티 (Aggregate Root)
@@ -37,7 +38,8 @@ export class Member extends AggregateRoot<MemberId> {
     id: MemberId,
     private readonly _githubUsername: GithubUsername,
     private readonly _name: MemberName,
-    private readonly _discordId: DiscordId | null
+    private readonly _discordId: DiscordId | null,
+    private readonly _createdAt: Date
   ) {
     super(id);
   }
@@ -49,7 +51,8 @@ export class Member extends AggregateRoot<MemberId> {
     const discordId = DiscordId.createOrNull(data.discordId);
 
     const id = data.id ? MemberId.create(data.id) : MemberId.create(0);
-    const member = new Member(id, githubUsername, name, discordId);
+    const createdAt = data.createdAt ?? new Date();
+    const member = new Member(id, githubUsername, name, discordId, createdAt);
 
     // 도메인 이벤트 발행 (새 생성 시에만)
     if (data.id === 0) {
@@ -65,12 +68,14 @@ export class Member extends AggregateRoot<MemberId> {
     github: string;
     name: string;
     discordId?: string;
+    createdAt: Date;
   }): Member {
     return Member.create({
       id: data.id,
       githubUsername: data.github,
       name: data.name,
       discordId: data.discordId,
+      createdAt: data.createdAt,
     });
   }
 
@@ -85,6 +90,10 @@ export class Member extends AggregateRoot<MemberId> {
 
   get discordId(): DiscordId | null {
     return this._discordId;
+  }
+
+  get createdAt(): Date {
+    return new Date(this._createdAt);
   }
 
   // 비즈니스 로직: GitHub 사용자명으로 회원 식별

@@ -72,12 +72,14 @@ export class DrizzleGenerationRepository implements GenerationRepository {
     name: string;
     startedAt: Date;
     isActive: boolean;
+    createdAt: Date;
   }): Generation {
     return Generation.reconstitute({
       id: row.id,
       name: row.name,
       startedAt: row.startedAt,
       isActive: row.isActive,
+      createdAt: row.createdAt,
     });
   }
 }

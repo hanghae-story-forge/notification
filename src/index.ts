@@ -4,15 +4,14 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ApolloServer } from '@apollo/server';
 import { sql } from 'drizzle-orm';
-import githubRouter from './routes/github/github.index';
-import reminderRouter from './routes/reminder/reminder.index';
-import statusRouter from './routes/status/status.index';
-import { typeDefs } from './graphql/schema';
-import { resolvers } from './graphql/resolvers';
+import githubRouter from './presentation/http/github/github.index';
+import reminderRouter from './presentation/http/reminder/reminder.index';
+import statusRouter from './presentation/http/status/status.index';
+import { typeDefs, resolvers } from './presentation/graphql';
 import {
   createDiscordBot,
   registerSlashCommands,
-} from './services/discord-bot';
+} from './presentation/discord/bot';
 
 import './env';
 

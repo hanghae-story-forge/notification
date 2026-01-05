@@ -74,7 +74,7 @@ export const env = createEnv({
   /**
    * Called when env validation fails.
    */
-  onValidationError: (error) => {
+  onValidationError: (error: unknown) => {
     console.error('❌ Invalid environment variables:');
     console.error(error);
     throw new Error('Invalid environment variables');
