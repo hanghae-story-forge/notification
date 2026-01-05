@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { members, generations, cycles, submissions } from '@/db/schema';
 import { eq, and, lt, gt } from 'drizzle-orm';
-import type { AppContext } from '@/libs';
+import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import { sendDiscordWebhook, createReminderMessage } from '@/services/discord';
 

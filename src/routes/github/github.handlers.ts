@@ -5,7 +5,7 @@ import {
   sendDiscordWebhook,
   createSubmissionMessage,
 } from '@/services/discord';
-import type { AppContext } from '@/libs';
+import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import type { z } from 'zod';
 import type {

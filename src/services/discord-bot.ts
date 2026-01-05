@@ -9,7 +9,7 @@ import {
 import { env } from '@/env';
 import { db } from '@/lib/db';
 import { cycles, generations, members, submissions } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, lt, gt } from 'drizzle-orm';
 import { createStatusMessage } from '@/services/discord';
 
 // Discord Bot 클라이언트 생성
@@ -31,6 +31,8 @@ export const createDiscordBot = (): Client => {
 
     if (commandName === 'check-submission') {
       await handleCheckSubmission(interaction);
+    } else if (commandName === 'current-cycle') {
+      await handleCurrentCycle(interaction);
     }
   });
 
@@ -43,6 +45,9 @@ export const registerSlashCommands = async (): Promise<void> => {
     new SlashCommandBuilder()
       .setName('check-submission')
       .setDescription('현재 활성화된 주차의 제출 현황을 확인합니다'),
+    new SlashCommandBuilder()
+      .setName('current-cycle')
+      .setDescription('현재 진행 중인 주차 정보를 확인합니다'),
   ].map((command) => command.toJSON());
 
   const botToken = env.DISCORD_BOT_TOKEN;
@@ -84,6 +89,80 @@ export const registerSlashCommands = async (): Promise<void> => {
   } catch (error) {
     console.error('❌ Error registering slash commands:', error);
     throw error;
+  }
+};
+
+// /current-cycle 명령어 핸들러
+const handleCurrentCycle = async (
+  interaction: ChatInputCommandInteraction
+): Promise<void> => {
+  await interaction.deferReply();
+
+  try {
+    const now = new Date();
+
+    const currentCycle = await db
+      .select({
+        cycle: cycles,
+        generation: generations,
+      })
+      .from(cycles)
+      .innerJoin(generations, eq(cycles.generationId, generations.id))
+      .where(
+        and(
+          lt(cycles.startDate, now),
+          gt(cycles.endDate, now)
+        )
+      )
+      .orderBy(cycles.startDate)
+      .limit(1);
+
+    if (currentCycle.length === 0) {
+      await interaction.editReply({
+        content: '❌ 현재 진행 중인 주차가 없습니다.',
+      });
+      return;
+    }
+
+    const { cycle, generation } = currentCycle[0];
+
+    const nowMs = now.getTime();
+    const endMs = cycle.endDate.getTime();
+    const hoursLeft = Math.max(0, Math.floor((endMs - nowMs) / (1000 * 60 * 60)));
+    const daysLeft = Math.floor(hoursLeft / 24);
+
+    const submissionList = await db
+      .select({
+        memberId: submissions.memberId,
+      })
+      .from(submissions)
+      .where(eq(submissions.cycleId, cycle.id));
+
+    const allMembers = await db.select().from(members);
+
+    const submittedIds = new Set(submissionList.map((s) => s.memberId));
+
+    const submittedNames = allMembers
+      .filter((m) => submittedIds.has(m.id))
+      .map((m) => m.name);
+
+    const notSubmittedNames = allMembers
+      .filter((m) => !submittedIds.has(m.id))
+      .map((m) => m.name);
+
+    const discordMessage = createStatusMessage(
+      `${generation.name} - ${cycle.week}주차`,
+      submittedNames,
+      notSubmittedNames,
+      cycle.endDate
+    );
+
+    await interaction.editReply(discordMessage);
+  } catch (error) {
+    console.error('Error handling current-cycle command:', error);
+    await interaction.editReply({
+      content: '❌ 주차 정보 조회 중 오류가 발생했습니다.',
+    });
   }
 };
 

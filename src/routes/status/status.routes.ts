@@ -1,4 +1,4 @@
-import { InternalServerErrorSchema, NotFoundErrorSchema } from '@/libs/error';
+import { InternalServerErrorSchema, NotFoundErrorSchema } from '@/lib/error';
 import { createRoute, z } from '@hono/zod-openapi';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import { jsonContent } from 'stoker/openapi/helpers';
@@ -63,6 +63,54 @@ const DiscordEmbedSchema = z.object({
 
 const DiscordWebhookResponseSchema = z.object({
   embeds: z.array(DiscordEmbedSchema).optional(),
+});
+
+const CurrentCycleSchema = z.object({
+  id: z.number(),
+  week: z.number(),
+  generationName: z.string(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  githubIssueUrl: z.string().url().nullable(),
+  daysLeft: z.number(),
+  hoursLeft: z.number(),
+});
+
+export const getCurrentCycle = createRoute({
+  path: '/api/status/current',
+  method: 'get',
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(CurrentCycleSchema, 'Current cycle info'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'No active cycle found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      InternalServerErrorSchema,
+      'Failed to get current cycle'
+    ),
+  },
+});
+
+export const getCurrentCycleDiscord = createRoute({
+  path: '/api/status/current/discord',
+  method: 'get',
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      DiscordWebhookResponseSchema,
+      'Discord webhook payload for current cycle'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'No active cycle found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      InternalServerErrorSchema,
+      'Failed to get current discord status'
+    ),
+  },
 });
 
 export const getStatus = createRoute({
