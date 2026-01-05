@@ -6,7 +6,7 @@ WORKDIR /app
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable pnpm && pnpm install --prod --frozen-lockfile
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
 # Builder stage
 FROM base AS builder
@@ -25,8 +25,8 @@ RUN addgroup --system --gid 1001 nodejs && \
   adduser --system --uid 1001 hono
 
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
-COPY package.json ./
 
 USER hono
 

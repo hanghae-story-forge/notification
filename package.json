@@ -2,6 +2,7 @@
   "name": "dongueldonguel",
   "version": "1.0.0",
   "description": "똥글똥글 자동화 API 서버",
+  "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
