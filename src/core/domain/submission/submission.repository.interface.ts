@@ -12,5 +12,8 @@ export abstract class ISubmissionRepository {
   ): Promise<Submission[]>;
   abstract findByMember(memberId: MemberId): Promise<Submission[]>;
   abstract delete(id: SubmissionId): Promise<void>;
-  abstract existsByCycleAndMember(cycleId: CycleId, memberId: MemberId): Promise<boolean>;
+  abstract existsByCycleAndMember(
+    cycleId: CycleId,
+    memberId: MemberId
+  ): Promise<boolean>;
 }

@@ -1,4 +1,10 @@
-import { CycleId, GenerationId, WeekNumber, GitHubIssueUrl, DateRange } from '../shared';
+import {
+  CycleId,
+  GenerationId,
+  WeekNumber,
+  GitHubIssueUrl,
+  DateRange,
+} from '../shared';
 
 export class Cycle {
   constructor(

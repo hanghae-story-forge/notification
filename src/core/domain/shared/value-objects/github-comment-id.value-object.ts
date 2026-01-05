@@ -9,7 +9,9 @@ export class GitHubCommentId {
 
   constructor(value: string) {
     if (!value || value.trim().length === 0) {
-      throw new InvalidGitHubCommentIdError('GitHub comment ID cannot be empty');
+      throw new InvalidGitHubCommentIdError(
+        'GitHub comment ID cannot be empty'
+      );
     }
     this.value = value;
   }

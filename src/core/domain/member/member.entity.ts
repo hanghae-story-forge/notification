@@ -1,9 +1,4 @@
-import {
-  MemberId,
-  GitHubUsername,
-  MemberName,
-  DiscordId,
-} from '../shared';
+import { MemberId, GitHubUsername, MemberName, DiscordId } from '../shared';
 
 export class Member {
   constructor(
@@ -47,12 +42,6 @@ export class Member {
     name: MemberName,
     discordId: DiscordId | null = null
   ): Member {
-    return new Member(
-      MemberId.create(),
-      github,
-      name,
-      discordId,
-      new Date()
-    );
+    return new Member(MemberId.create(), github, name, discordId, new Date());
   }
 }

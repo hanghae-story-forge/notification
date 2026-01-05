@@ -1,5 +1,9 @@
 import { injectable, inject } from 'inversify';
-import { ICycleRepository, IMemberRepository, ISubmissionRepository } from '@core/domain';
+import {
+  ICycleRepository,
+  IMemberRepository,
+  ISubmissionRepository,
+} from '@core/domain';
 import { INotificationService } from '@core/application/ports/services';
 import { CycleId } from '@core/domain/shared';
 import { TYPES } from '@/di/tokens';
@@ -30,7 +34,9 @@ export class SendReminderNotificationUseCase {
     );
     const submissions = await this.submissionRepo.findByCycle(id);
 
-    const submittedMemberIds = new Set(submissions.map((s) => s.memberId.value));
+    const submittedMemberIds = new Set(
+      submissions.map((s) => s.memberId.value)
+    );
 
     const notSubmitted = members
       .filter((m) => !submittedMemberIds.has(m.id.value))

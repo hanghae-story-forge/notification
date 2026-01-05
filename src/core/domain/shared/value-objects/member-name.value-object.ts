@@ -12,7 +12,9 @@ export class MemberName {
       throw new InvalidMemberNameError('Member name cannot be empty');
     }
     if (value.trim().length > 100) {
-      throw new InvalidMemberNameError('Member name cannot exceed 100 characters');
+      throw new InvalidMemberNameError(
+        'Member name cannot exceed 100 characters'
+      );
     }
     this.value = value.trim();
   }

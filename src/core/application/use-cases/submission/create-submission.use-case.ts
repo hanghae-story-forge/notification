@@ -4,9 +4,16 @@ import {
   ICycleRepository,
   ISubmissionRepository,
 } from '@core/domain';
-import { INotificationService, IGitHubParserService } from '@core/application/ports/services';
+import {
+  INotificationService,
+  IGitHubParserService,
+} from '@core/application/ports/services';
 import { Submission, BlogUrl, GitHubCommentId } from '@core/domain/submission';
-import { GitHubUsername, NotFoundException, GitHubIssueUrl } from '@core/domain/shared';
+import {
+  GitHubUsername,
+  NotFoundException,
+  GitHubIssueUrl,
+} from '@core/domain/shared';
 import { TYPES } from '@/di/tokens';
 
 interface CreateSubmissionRequest {
@@ -35,9 +42,13 @@ export class CreateSubmissionUseCase {
     private readonly githubParserService: IGitHubParserService
   ) {}
 
-  async execute(request: CreateSubmissionRequest): Promise<CreateSubmissionResponse> {
+  async execute(
+    request: CreateSubmissionRequest
+  ): Promise<CreateSubmissionResponse> {
     // 1. Parse GitHub webhook data
-    const parsedData = await this.githubParserService.parseComment(request.commentData);
+    const parsedData = await this.githubParserService.parseComment(
+      request.commentData
+    );
 
     // 2. Find member by GitHub username
     const member = await this.memberRepo.findByGitHub(

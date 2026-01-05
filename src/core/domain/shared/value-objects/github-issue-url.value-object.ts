@@ -16,7 +16,9 @@ export class GitHubIssueUrl {
     try {
       const url = new URL(value);
       if (!['http:', 'https:'].includes(url.protocol)) {
-        throw new InvalidGitHubIssueUrlError('URL must use HTTP or HTTPS protocol');
+        throw new InvalidGitHubIssueUrlError(
+          'URL must use HTTP or HTTPS protocol'
+        );
       }
       if (!url.hostname.endsWith('github.com')) {
         throw new InvalidGitHubIssueUrlError('URL must be a GitHub URL');

@@ -2,7 +2,12 @@ import { Container } from 'inversify';
 import { TYPES } from '../../di/tokens';
 import { FindSubmissionStatusUseCase } from '../../core/application/use-cases';
 import { db } from '../../lib/db';
-import { members, generations, cycles, submissions } from '../../infrastructure/persistence/drizzle/schema';
+import {
+  members,
+  generations,
+  cycles,
+  submissions,
+} from '../../infrastructure/persistence/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 interface GraphQLContext {
@@ -85,8 +90,14 @@ export const createResolvers = (_di: Container) => ({
     },
 
     // 제출 현황 (Use Case 사용)
-    cycleStatus: async (_: unknown, args: { cycleId: number }, context: GraphQLContext) => {
-      const useCase = context.di.get<FindSubmissionStatusUseCase>(TYPES.FindSubmissionStatusUseCase);
+    cycleStatus: async (
+      _: unknown,
+      args: { cycleId: number },
+      context: GraphQLContext
+    ) => {
+      const useCase = context.di.get<FindSubmissionStatusUseCase>(
+        TYPES.FindSubmissionStatusUseCase
+      );
       return await useCase.execute(args.cycleId);
     },
   },

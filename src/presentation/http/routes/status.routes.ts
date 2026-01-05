@@ -9,9 +9,8 @@ export const createStatusRoutes = (controller: StatusController) => {
   app.get('/api/status/:cycleId', async (c) => controller.getStatus(c));
 
   // 제출 현황을 Discord 메시지 포맷으로 반환
-  app.get(
-    '/api/status/:cycleId/discord',
-    async (c) => controller.getStatusDiscord(c)
+  app.get('/api/status/:cycleId/discord', async (c) =>
+    controller.getStatusDiscord(c)
   );
 
   return app;

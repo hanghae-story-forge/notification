@@ -1,5 +1,9 @@
 import { injectable, inject } from 'inversify';
-import { ICycleRepository, IMemberRepository, ISubmissionRepository } from '../../../domain';
+import {
+  ICycleRepository,
+  IMemberRepository,
+  ISubmissionRepository,
+} from '../../../domain';
 import { CycleId } from '../../../domain/shared';
 import { NotFoundException } from '../../../domain/shared';
 import { TYPES } from '../../../../di/tokens';
@@ -51,7 +55,9 @@ export class FindSubmissionStatusUseCase {
     );
     const submissions = await this.submissionRepo.findByCycle(id);
 
-    const submittedMemberIds = new Set(submissions.map((s) => s.memberId.value));
+    const submittedMemberIds = new Set(
+      submissions.map((s) => s.memberId.value)
+    );
 
     const submitted: SubmittedInfo[] = submissions.map((s) => {
       const member = members.find((m) => m.id.value === s.memberId.value);

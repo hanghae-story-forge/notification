@@ -57,9 +57,10 @@ export class ReminderController {
     const findDeadlinesUseCase = this.di.get<FindUpcomingDeadlinesUseCase>(
       TYPES.FindUpcomingDeadlinesUseCase
     );
-    const sendNotificationUseCase = this.di.get<SendReminderNotificationUseCase>(
-      TYPES.SendReminderNotificationUseCase
-    );
+    const sendNotificationUseCase =
+      this.di.get<SendReminderNotificationUseCase>(
+        TYPES.SendReminderNotificationUseCase
+      );
 
     const discordWebhookUrl =
       c.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;

@@ -26,43 +26,44 @@ const IssuesWebhookPayloadSchema = z.object({
   }),
 });
 
-export const createGitHubWebhookRoutes = (controller: GitHubWebhookController) => {
+export const createGitHubWebhookRoutes = (
+  controller: GitHubWebhookController
+) => {
   const app = new Hono<Env>();
 
-  app.post(
-    '/webhook/github',
-    async (c) => {
-      const githubEvent = c.req.header('x-github-event');
+  app.post('/webhook/github', async (c) => {
+    const githubEvent = c.req.header('x-github-event');
 
-      if (githubEvent === 'issue_comment') {
-        const payload = await c.req.json();
-        const validated = await IssueCommentWebhookPayloadSchema.safeParseAsync(payload);
+    if (githubEvent === 'issue_comment') {
+      const payload = await c.req.json();
+      const validated =
+        await IssueCommentWebhookPayloadSchema.safeParseAsync(payload);
 
-        if (!validated.success) {
-          return c.json({ message: 'Invalid payload' }, 400);
-        }
-
-        if (validated.data.action === 'created') {
-          return controller.handleIssueComment(c);
-        }
+      if (!validated.success) {
+        return c.json({ message: 'Invalid payload' }, 400);
       }
 
-      if (githubEvent === 'issues') {
-        const payload = await c.req.json();
-        const validated = await IssuesWebhookPayloadSchema.safeParseAsync(payload);
-
-        if (!validated.success) {
-          return c.json({ message: 'Invalid payload' }, 400);
-        }
-
-        if (validated.data.action === 'opened') {
-          return controller.handleIssueCreated(c);
-        }
+      if (validated.data.action === 'created') {
+        return controller.handleIssueComment(c);
       }
-
-      return controller.handleUnknownEvent(c);
     }
-  );
+
+    if (githubEvent === 'issues') {
+      const payload = await c.req.json();
+      const validated =
+        await IssuesWebhookPayloadSchema.safeParseAsync(payload);
+
+      if (!validated.success) {
+        return c.json({ message: 'Invalid payload' }, 400);
+      }
+
+      if (validated.data.action === 'opened') {
+        return controller.handleIssueCreated(c);
+      }
+    }
+
+    return controller.handleUnknownEvent(c);
+  });
 
   return app;
 };

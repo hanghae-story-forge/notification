@@ -1,4 +1,10 @@
-import { SubmissionId, CycleId, MemberId, BlogUrl, GitHubCommentId } from '../shared';
+import {
+  SubmissionId,
+  CycleId,
+  MemberId,
+  BlogUrl,
+  GitHubCommentId,
+} from '../shared';
 
 export class Submission {
   constructor(

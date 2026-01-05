@@ -1,7 +1,10 @@
 import { Container } from 'inversify';
 import type { AppContext } from '../../../../libs';
 import { TYPES } from '../../../../di/tokens';
-import { CreateSubmissionUseCase, HandleGitHubIssueCreatedUseCase } from '../../../../core/application/use-cases';
+import {
+  CreateSubmissionUseCase,
+  HandleGitHubIssueCreatedUseCase,
+} from '../../../../core/application/use-cases';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 export class GitHubWebhookController {
@@ -11,7 +14,9 @@ export class GitHubWebhookController {
     try {
       const payload = await c.req.json();
 
-      const useCase = this.di.get<CreateSubmissionUseCase>(TYPES.CreateSubmissionUseCase);
+      const useCase = this.di.get<CreateSubmissionUseCase>(
+        TYPES.CreateSubmissionUseCase
+      );
       await useCase.execute({ commentData: payload });
 
       return c.json({ message: 'Submission recorded' }, HttpStatusCodes.OK);

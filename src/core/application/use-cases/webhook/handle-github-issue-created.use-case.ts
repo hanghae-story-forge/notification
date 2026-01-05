@@ -32,7 +32,9 @@ export class HandleGitHubIssueCreatedUseCase {
     request: HandleGitHubIssueCreatedRequest
   ): Promise<HandleGitHubIssueCreatedResponse> {
     // 1. Parse GitHub issue data
-    const parsedData = await this.githubParserService.parseIssue(request.issueData);
+    const parsedData = await this.githubParserService.parseIssue(
+      request.issueData
+    );
 
     // 2. Find active generation
     const activeGeneration = await this.generationRepo.findActive();

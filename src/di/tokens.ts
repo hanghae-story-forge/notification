@@ -13,6 +13,10 @@ export const TYPES = {
   CreateSubmissionUseCase: Symbol.for('CreateSubmissionUseCase'),
   FindSubmissionStatusUseCase: Symbol.for('FindSubmissionStatusUseCase'),
   FindUpcomingDeadlinesUseCase: Symbol.for('FindUpcomingDeadlinesUseCase'),
-  HandleGitHubIssueCreatedUseCase: Symbol.for('HandleGitHubIssueCreatedUseCase'),
-  SendReminderNotificationUseCase: Symbol.for('SendReminderNotificationUseCase'),
+  HandleGitHubIssueCreatedUseCase: Symbol.for(
+    'HandleGitHubIssueCreatedUseCase'
+  ),
+  SendReminderNotificationUseCase: Symbol.for(
+    'SendReminderNotificationUseCase'
+  ),
 };

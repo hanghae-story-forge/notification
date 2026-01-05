@@ -18,7 +18,8 @@ export class DateRange {
 
   get durationInDays(): number {
     return Math.ceil(
-      (this.endDate.getTime() - this.startDate.getTime()) / (1000 * 60 * 60 * 24)
+      (this.endDate.getTime() - this.startDate.getTime()) /
+        (1000 * 60 * 60 * 24)
     );
   }
 

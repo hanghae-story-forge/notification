@@ -21,7 +21,9 @@ interface DiscordWebhookPayload {
 export class DiscordNotificationService implements INotificationService {
   constructor(private readonly webhookUrl: string) {}
 
-  async notifySubmissionCreated(data: SubmissionNotificationData): Promise<void> {
+  async notifySubmissionCreated(
+    data: SubmissionNotificationData
+  ): Promise<void> {
     const payload = this.createSubmissionMessage(
       data.memberName,
       data.blogUrl,

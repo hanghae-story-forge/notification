@@ -7,7 +7,9 @@ export abstract class IMemberRepository {
   abstract findById(id: MemberId): Promise<Member | null>;
   abstract findByGitHub(username: GitHubUsername): Promise<Member | null>;
   abstract findAll(): Promise<Member[]>;
-  abstract findMembersByGeneration(generationId: GenerationId): Promise<Member[]>;
+  abstract findMembersByGeneration(
+    generationId: GenerationId
+  ): Promise<Member[]>;
   abstract delete(id: MemberId): Promise<void>;
   abstract exists(github: GitHubUsername): Promise<boolean>;
 }
