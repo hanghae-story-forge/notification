@@ -1,0 +1,8 @@
+# .envrc Example
+# This file is automatically loaded by direnv when entering the project directory.
+# Copy this file to .envrc and run: direnv allow
+
+# Load environment variables from .env file
+if [ -f .env ]; then
+  export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
+fi
