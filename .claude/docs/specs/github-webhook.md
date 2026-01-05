@@ -3,9 +3,10 @@
 - **Status**: As-Is (현재 구현)
 - **Scope**: GitHub 이벤트 기반 자동화 (제출 수집, 회차 생성)
 - **Based on**:
-  - Facts: [../facts/routes/github.md](../facts/routes/github.md)
+  - Facts: [../facts/routes/github.md](../facts/routes/github.md), [../facts/application/commands.md](../facts/application/commands.md), [../facts/application/event-handlers.md](../facts/application/event-handlers.md)
   - Insights: [../insights/operations/github-webhook.md](../insights/operations/github-webhook.md)
 - **Last Verified**: 2026-01-05
+- **Git Commit**: ac29965
 
 ## 개요 (Overview)
 
@@ -64,18 +65,21 @@
 ## 기술 사양 (Technical Specifications)
 
 - **아키텍처 개요**:
-  - Hono 라우터로 GitHub 웹훅 엔드포인트 제공
+  - **DDD 4계층 구조**:
+    - Presentation Layer (`src/presentation/http/github.ts`): Hono 라우터로 GitHub 웹훅 엔드포인트 제공
+    - Application Layer (`src/application/commands/`): Command로 유스케이스 구현
+    - Domain Layer (`src/domain/`): 비즈니스 로직과 엔티티
+    - Infrastructure Layer (`src/infrastructure/`): DB 리포지토리 구현, Discord webhook
   - GitHub 이벤트 타입(`x-github-event` 헤더)으로 핸들러 라우팅
-  - Drizzle ORM으로 PostgreSQL에 데이터 저장
-  - Discord webhook으로 알림 전송
+  - Command 실행 후 도메인 이벤트 발행 → Event Handler가 Discord 알림 전송
 
 - **의존성**:
   - Services:
-    - Database Service ([`src/lib/db.ts`](../facts/database/schema.md))
-    - Discord Service ([`src/services/discord.ts`](../facts/services/discord.md))
+    - Commands: [`RecordSubmissionCommand`](../facts/application/commands.md), [`CreateCycleCommand`](../facts/application/commands.md)
+    - Event Handlers: [`SubmissionEventHandler`](../facts/application/event-handlers.md)
+    - Repositories: `MemberRepository`, `CycleRepository`, `SubmissionRepository` (Infrastructure에서 구현)
   - Packages:
     - `hono` - Web framework
-    - `@hono/zod-openapi` - OpenAPI specification
     - `drizzle-orm` - ORM
   - Libraries:
     - Zod (via Hono) - Request validation
@@ -87,7 +91,11 @@
   - 단일 엔드포인트 `POST /webhook/github`로 모든 GitHub 이벤트 수신
   - `x-github-event` 헤더 값으로 핸들러 함수 분기
   - 각 핸들러는 독립적으로 에러 처리 (하나가 실패해도 다른 이벤트 처리 가능)
-  - DB 트랜잭션은 사용하지 않음 (각 핸들러가 단일 INSERT/SELECT)
+  - **DDD 패턴**:
+    - Handler가 Command 실행 (비즈니스 로직은 Domain 계층)
+    - Command 실행 결과로 도메인 이벤트 발행
+    - Event Handler가 도메인 이벤트 수신하여 Discord 알림 전송
+    - 비즈니스 로직과 기술 구현의 완전한 분리
 
 - **관측/운영**:
   - GitHub webhook delivery ID 로깅 미구현
@@ -115,15 +123,21 @@
   ```
   GitHub Issue Comment Event
     ↓
-  URL 추출 (첫 번째 https:// 링크)
+  Presentation Layer (Handler)
+    URL 추출 (첫 번째 https:// 링크)
     ↓
-  cycles.githubIssueUrl로 회차 매칭
+  Application Layer (RecordSubmissionCommand)
+    - MemberService.findMemberByGithubOrThrow()
+    - CycleRepository.findByIssueUrl()
+    - SubmissionService.validateSubmission()
+    - SubmissionRepository.save()
+    - Domain Event 발행: SubmissionRecordedEvent
     ↓
-  members.github로 멤버 매칭
+  Application Layer (Event Handler)
+    - SubmissionEventHandler.handleSubmissionRecorded()
     ↓
-  submissions 테이블에 중복 확인 후 저장
-    ↓
-  Discord webhook 알림 발송 (선택)
+  Infrastructure Layer (External)
+    Discord webhook 알림 발송
   ```
 
 - **검증/제약**:
@@ -357,7 +371,7 @@
 
 ---
 
-**문서 버전**: 1.0.0
+**문서 버전**: 2.0.0
 **생성일**: 2026-01-05
 **마지막 업데이트**: 2026-01-05
-**Git Commit**: f324133
+**Git Commit**: ac29965

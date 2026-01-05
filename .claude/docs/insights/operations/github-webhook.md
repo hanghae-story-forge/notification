@@ -13,17 +13,22 @@ GitHub 웹훅 시스템은 똥글똥글의 핵심 자동화 엔진으로, 제출
 ### GitHub 웹훅 자동화 범위
 
 1. **제출 수집 자동화** (`POST /webhook/github` - `issue_comment`)
+   - **DDD 구조**: Presentation Layer → Application Layer (Command) → Domain Layer
    - Issue 댓글 생성 이벤트 수신
    - 첫 번째 HTTPS 링크 자동 추출
-   - `cycles.githubIssueUrl`로 회차 매칭
-   - `members.github`로 멤버 매칭
-   - `submissions` 테이블에 중복 확인 후 저장
-   - `githubCommentId`로 중복 제출 방지
+   - `RecordSubmissionCommand` 실행 ([commands.md](../../facts/application/commands.md))
+   - 도메인 서비스(`SubmissionService.canSubmit()`)로 중복 확인
+   - `Submission` 애그리거트 생성 및 저장
+   - `SubmissionRecordedEvent` 도메인 이벤트 발행
+   - `SubmissionEventHandler`가 Discord 알림 전송
 
 2. **회차 생성 자동화** (`POST /webhook/github` - `issues`)
+   - **DDD 구조**: Presentation Layer → Application Layer (Command) → Domain Layer
    - Issue 생성 이벤트 수신
    - 제목에서 주차 번호 파싱 (5개 패턴 지원: `[1주차]`, `1주차`, `[week 1]`, `week 1`, `[1] 주`)
    - 본문에서 마감일 파싱 (`마감: YYYY-MM-DD`, `DEADLINE: YYYY-MM-DDTHH:mm:ss`)
+   - `CreateCycleCommand` 실행
+   - `Cycle` 애그리거트 생성 및 저장
    - 활성 기수(`generations.isActive = true`)에 회차 자동 생성
 
 ### 처리 로직 특성
@@ -274,9 +279,41 @@ if (!weekPattern) {
 
 ---
 
+## DDD 아키텍처 영향
+
+### 구조 변경사항
+
+**Before (v1.0 - 단일 계층)**:
+```
+GitHub Webhook → Route Handler → 직접 DB 접근 → Discord Webhook
+```
+
+**After (v2.0 - DDD 4계층)**:
+```
+GitHub Webhook
+  ↓
+Presentation Layer (HTTP Handler)
+  ↓
+Application Layer (RecordSubmissionCommand, CreateCycleCommand)
+  ↓
+Domain Layer (Member, Cycle, Submission 애그리거트)
+  ↓
+Infrastructure Layer (Repository, DB)
+  ↓
+Application Layer (Event Handler)
+  ↓
+Infrastructure Layer (Discord Webhook)
+```
+
+### 비즈니스 가치
+
+1. **확장성**: 새로운 웹훅 이벤트 추가 시 Presentation Layer에 Handler만 추가
+2. **테스트 용이성**: Command/Query를 단위 테스트로 독립 검증 가능
+3. **유지보수성**: 비즈니스 로직이 Domain 계층에 캡슐화되어 웹훅 로직 변경 시 영향 최소화
+
 ## 문서 버전
 
-- **Version**: 1.0.0
+- **Version**: 2.0.0
 - **Created**: 2026-01-05
 - **Last Updated**: 2026-01-05
-- **Git Commit**: f324133
+- **Git Commit**: ac29965

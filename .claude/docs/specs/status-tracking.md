@@ -3,9 +3,10 @@
 - **Status**: As-Is (현재 구현)
 - **Scope**: 제출 현황 조회 및 Discord 포맷팅
 - **Based on**:
-  - Facts: [../facts/routes/status.md](../facts/routes/status.md)
-  - Insights: [../insights/operations/status-tracking.md](../insights/operations/status-tracking.md)
+  - Facts: [../facts/routes/status.md](../facts/routes/status.md), [../facts/application/queries.md](../facts/application/queries.md)
+  - Insights: [../insights/operations/status-tracking.md](../insights/operations/status-tracking.md), [../insights/operations/cqrs-pattern.md](../insights/operations/cqrs-pattern.md)
 - **Last Verified**: 2026-01-05
+- **Git Commit**: ac29965
 
 ## 개요 (Overview)
 
@@ -54,17 +55,25 @@
 ## 기술 사양 (Technical Specifications)
 
 - **아키텍처 개요**:
-  - Hono 라우터로 2개의 엔드포인트 제공
+  - **CQRS 패턴**:
+    - Query: 상태 조회용 ([`GetCycleStatusQuery`](../facts/application/queries.md))
+    - Presentation Layer (`src/presentation/http/status.ts`): Hono 라우터로 4개의 엔드포인트 제공
+    - Application Layer (`src/application/queries/`): Query로 상태 조회 구현
+    - Domain Layer (`src/domain/`): 비즈니스 로직 (SubmissionService, MemberService)
+    - Infrastructure Layer (`src/infrastructure/`): DB 리포지토리 구현, Discord webhook
   - Discord 봇에서 주로 호출
-  - Drizzle ORM으로 DB 조회
-  - Discord Service로 메시지 포맷팅
+  - GraphQL API에서도 사용 가능
+  - Query는 상태를 변경하지 않음 (순수 함수)
+  - 캐싱 가능 (미구현)
 
 - **의존성**:
   - Services:
-    - Database Service ([`src/lib/db.ts`](../facts/database/schema.md))
-    - Discord Service ([`src/services/discord.ts`](../facts/services/discord.md))
+    - Queries: [`GetCycleStatusQuery`](../facts/application/queries.md)
+    - Domain Services: `SubmissionService`, `MemberService`
+    - Repositories: `CycleRepository`, `MemberRepository`, `SubmissionRepository`
   - Packages:
     - `hono` - Web framework
+    - `graphql` - GraphQL 서버
     - `drizzle-orm` - ORM
   - Libraries:
     - Zod (via Hono) - Request validation
@@ -72,6 +81,10 @@
     - `DATABASE_URL` - PostgreSQL 연결 (필수)
 
 - **구현 접근**:
+  - **CQRS 패턴**:
+    - Query는 상태를 변경하지 않음 (순수 함수)
+    - Query는 독립적으로 캐싱 가능
+    - Query는 DB 읽기 전용 복제본에서 실행 가능 (미래 확장)
   - 사이클 조회 (cycles + generations JOIN)
   - 제출 목록 조회 (submissions + members JOIN)
   - 전체 멤버 조회 (members 테이블)
@@ -102,17 +115,16 @@
   ```
   GET /api/status/42
     ↓
-  cycles.id = 42 조회 (generations JOIN)
+  Presentation Layer (Handler)
     ↓
-  submissions.cycleId = 42 조회 (members JOIN)
+  Application Layer (GetCycleStatusQuery)
+    - CycleRepository.findById() (generations JOIN)
+    - SubmissionRepository.findByCycleId() (members JOIN)
+    - MemberRepository.findAll()
+    - MemberService.findMembersNotInSet()
+    - SubmissionService.getCycleStats()
     ↓
-  members 테이블 전체 조회
-    ↓
-  submittedIds Set 생성
-    ↓
-  제출자/미제출자 분리
-    ↓
-  요약 통계 계산
+  제출 현황 반환 (JSON or Discord 포맷)
   ```
 
 - **검증/제약**:
@@ -311,7 +323,7 @@
 
 ---
 
-**문서 버전**: 1.0.0
+**문서 버전**: 2.0.0
 **생성일**: 2026-01-05
 **마지막 업데이트**: 2026-01-05
-**Git Commit**: f324133
+**Git Commit**: ac29965
