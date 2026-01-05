@@ -154,9 +154,7 @@ const domainToGraphqlMember = (member: Member): GqlMember => {
   return new GqlMember(member);
 };
 
-const domainToGraphqlGeneration = (
-  generation: Generation
-): GqlGeneration => {
+const domainToGraphqlGeneration = (generation: Generation): GqlGeneration => {
   return new GqlGeneration(generation);
 };
 
@@ -193,7 +191,9 @@ const createGqlCycle = (data: {
     week: { value: data.week },
     startDate: new Date(data.startDate),
     endDate: new Date(data.endDate),
-    githubIssueUrl: data.githubIssueUrl ? { value: data.githubIssueUrl } : undefined,
+    githubIssueUrl: data.githubIssueUrl
+      ? { value: data.githubIssueUrl }
+      : undefined,
     createdAt: new Date(data.startDate),
   } as unknown as Cycle);
   return gqlCycle;
@@ -203,15 +203,18 @@ const submittedMemberToGraphql = (
   data: SubmittedMember
 ): GqlMemberSubmission => {
   const submission = new GqlMemberSubmission();
-  submission.member = createGqlMember(0, data.github, data.name, data.submittedAt);
+  submission.member = createGqlMember(
+    0,
+    data.github,
+    data.name,
+    data.submittedAt
+  );
   submission.url = data.url;
   submission.submittedAt = data.submittedAt;
   return submission;
 };
 
-const notSubmittedMemberToGraphql = (
-  data: NotSubmittedMember
-): GqlMember => {
+const notSubmittedMemberToGraphql = (data: NotSubmittedMember): GqlMember => {
   return createGqlMember(0, data.github, data.name, new Date().toISOString());
 };
 
@@ -255,10 +258,7 @@ export const graphql = {
     },
 
     // 사이클 목록 조회 (generationId로 필터링 가능)
-    cycles: async (
-      _: unknown,
-      generationId?: number
-    ): Promise<GqlCycle[]> => {
+    cycles: async (_: unknown, generationId?: number): Promise<GqlCycle[]> => {
       const cycles = await getCyclesByGenerationQuery.execute(generationId);
       return cycles.map(domainToGraphqlCycle);
     },
@@ -294,7 +294,9 @@ export const graphql = {
       cycleStatus.summary = summary;
 
       cycleStatus.submitted = status.submitted.map(submittedMemberToGraphql);
-      cycleStatus.notSubmitted = status.notSubmitted.map(notSubmittedMemberToGraphql);
+      cycleStatus.notSubmitted = status.notSubmitted.map(
+        notSubmittedMemberToGraphql
+      );
 
       return cycleStatus;
     },
@@ -349,11 +351,11 @@ export const graphql = {
 
     // 제출 추가 (현재는 GitHub webhook을 통해 처리)
     addSubmission: async (
-      _: unknown,
-      cycleId: number,
-      memberId: number,
-      url: string,
-      githubCommentId?: string
+      _unknown: unknown,
+      _cycleId: number,
+      _memberId: number,
+      _url: string,
+      _githubCommentId?: string
     ): Promise<never> => {
       throw new Error(
         'addSubmission mutation requires githubUsername and githubIssueUrl. Use the GitHub webhook endpoint instead.'
