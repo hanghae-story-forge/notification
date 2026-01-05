@@ -1,67 +1,24 @@
-import { Hono } from 'hono';
-import { db } from '../lib/db';
-import { members, cycles, submissions, generations } from '../db/schema';
+import { db } from '@/lib/db';
+import { members, cycles, submissions, generations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { sendDiscordWebhook, createSubmissionMessage } from '../services/discord';
+import { sendDiscordWebhook, createSubmissionMessage } from '@/services/discord';
+import type { AppContext } from '@/libs';
+import * as HttpStatusCodes from 'stoker/http-status-codes';
+import type { z } from 'zod';
+import type {
+  IssueCommentWebhookPayloadSchema,
+  IssuesWebhookPayloadSchema,
+} from './github.routes';
 
-interface Env {
-  DISCORD_WEBHOOK_URL?: string;
-  GITHUB_WEBHOOK_SECRET?: string;
-}
-
-// 이슈 댓글 웹훅 페이로드
-interface IssueCommentWebhookPayload {
-  action: string;
-  issue: {
-    number: number;
-    html_url: string;
-    title: string;
-  };
-  comment: {
-    id: number;
-    user: {
-      login: string;
-    };
-    body: string;
-    html_url: string;
-    created_at: string;
-  };
-  repository: {
-    name: string;
-    owner: {
-      login: string;
-    };
-  };
-}
-
-// 이슈 생성 웹훅 페이로드
-interface IssuesWebhookPayload {
-  action: string;
-  issue: {
-    number: number;
-    html_url: string;
-    title: string;
-    body: string | null;
-    created_at: string;
-  };
-  repository: {
-    name: string;
-    owner: {
-      login: string;
-    };
-  };
-}
-
-// 회차 번호 추출 (이슈 제목에서 파싱)
+// 유틸리티: 회차 번호 추출 (이슈 제목에서 파싱)
 // 예: "[1주차] 제출하세요", "1주차", "[Week 1]" 등
 function parseWeekFromTitle(title: string): number | null {
-  // 다양한 패턴 시도
   const patterns = [
-    /\[(\d+)주차\]/,           // [1주차]
-    /(\d+)주차/,               // 1주차
-    /\[week\s*(\d+)\]/i,       // [week 1]
-    /week\s*(\d+)/i,           // week 1
-    /\[(\d+)\]\s*주/,          // [1] 주
+    /\[(\d+)주차\]/, // [1주차]
+    /(\d+)주차/, // 1주차
+    /\[week\s*(\d+)\]/i, // [week 1]
+    /week\s*(\d+)/i, // week 1
+    /\[(\d+)\]\s*주/, // [1] 주
   ];
 
   for (const pattern of patterns) {
@@ -74,7 +31,7 @@ function parseWeekFromTitle(title: string): number | null {
   return null;
 }
 
-// 날짜 파싱 (이슈 본문에서 마감일 추출)
+// 유틸리티: 날짜 파싱 (이슈 본문에서 마감일 추출)
 function parseDatesFromBody(body: string | null): { start: Date; end: Date } | null {
   if (!body) return null;
 
@@ -93,33 +50,11 @@ function parseDatesFromBody(body: string | null): { start: Date; end: Date } | n
   return null;
 }
 
-const githubWebhook = new Hono<{ Bindings: Env }>();
-
-// GitHub 웹훅 메인 핸들러
-githubWebhook.post('/', async (c) => {
-  const githubEvent = c.req.header('x-github-event');
-  const payload = await c.req.json();
-
-  switch (githubEvent) {
-    case 'issue_comment':
-      return handleIssueComment(payload as IssueCommentWebhookPayload, c);
-
-    case 'issues':
-      return handleIssues(payload as IssuesWebhookPayload);
-
-    default:
-      return c.json({ message: `Unhandled event: ${githubEvent}` }, 200);
-  }
-});
-
 // 이슈 댓글 처리 (제출 기록)
-async function handleIssueComment(payload: IssueCommentWebhookPayload, c: any) {
-  // comment.created 이벤트만 처리
-  if (payload.action !== 'created') {
-    return c.json({ message: 'Ignored non-created action' });
-  }
-
+export const handleIssueComment = async (c: AppContext) => {
+  const payload = (await c.req.json()) as z.infer<typeof IssueCommentWebhookPayloadSchema>;
   const { comment, issue } = payload;
+
   const githubUsername = comment.user.login;
   const commentBody = comment.body;
   const commentId = String(comment.id);
@@ -127,7 +62,7 @@ async function handleIssueComment(payload: IssueCommentWebhookPayload, c: any) {
   // 댓글에서 URL 추출 (http/https로 시작하는 링크)
   const urlMatch = commentBody.match(/(https?:\/\/[^\s]+)/);
   if (!urlMatch) {
-    return c.json({ message: 'No URL found in comment' });
+    return c.json({ message: 'No URL found in comment' }, HttpStatusCodes.BAD_REQUEST);
   }
 
   const blogUrl = urlMatch[1];
@@ -141,19 +76,16 @@ async function handleIssueComment(payload: IssueCommentWebhookPayload, c: any) {
     .where(eq(cycles.githubIssueUrl, issue.html_url));
 
   if (activeCycles.length === 0) {
-    return c.json({ message: 'No cycle found for this issue' });
+    return c.json({ message: 'No cycle found for this issue' }, HttpStatusCodes.NOT_FOUND);
   }
 
   const cycle = activeCycles[0].cycle;
 
   // 멤버 찾기 (GitHub username으로)
-  const memberList = await db
-    .select()
-    .from(members)
-    .where(eq(members.github, githubUsername));
+  const memberList = await db.select().from(members).where(eq(members.github, githubUsername));
 
   if (memberList.length === 0) {
-    return c.json({ message: 'Member not found' });
+    return c.json({ message: 'Member not found' }, HttpStatusCodes.NOT_FOUND);
   }
 
   const member = memberList[0];
@@ -162,15 +94,10 @@ async function handleIssueComment(payload: IssueCommentWebhookPayload, c: any) {
   const existingSubmission = await db
     .select()
     .from(submissions)
-    .where(
-      and(
-        eq(submissions.cycleId, cycle.id),
-        eq(submissions.memberId, member.id)
-      )
-    );
+    .where(and(eq(submissions.cycleId, cycle.id), eq(submissions.memberId, member.id)));
 
   if (existingSubmission.length > 0) {
-    return c.json({ message: 'Already submitted' });
+    return c.json({ message: 'Already submitted' }, HttpStatusCodes.OK);
   }
 
   // 제출 저장
@@ -182,7 +109,7 @@ async function handleIssueComment(payload: IssueCommentWebhookPayload, c: any) {
   });
 
   // Discord 알림 전송
-  const discordWebhookUrl = c.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
+  const discordWebhookUrl = c.env.DISCORD_WEBHOOK_URL ?? process.env.DISCORD_WEBHOOK_URL;
   if (discordWebhookUrl) {
     const cycleName = `${cycle.week}주차`;
     await sendDiscordWebhook(
@@ -191,25 +118,18 @@ async function handleIssueComment(payload: IssueCommentWebhookPayload, c: any) {
     );
   }
 
-  return c.json({ message: 'Submission recorded' });
-}
+  return c.json({ message: 'Submission recorded' }, HttpStatusCodes.OK);
+};
 
 // 이슈 생성 처리 (회차 생성)
-async function handleIssues(payload: IssuesWebhookPayload) {
-  // opened 이벤트만 처리
-  if (payload.action !== 'opened') {
-    return new Response(JSON.stringify({ message: 'Ignored non-opened action' }), { status: 200 });
-  }
-
+export const handleIssues = async (c: AppContext) => {
+  const payload = (await c.req.json()) as z.infer<typeof IssuesWebhookPayloadSchema>;
   const { issue } = payload;
 
   // 이슈 제목에서 회차 번호 추출
   const week = parseWeekFromTitle(issue.title);
   if (!week) {
-    return new Response(
-      JSON.stringify({ message: 'No week pattern found in title, ignoring' }),
-      { status: 200 }
-    );
+    return c.json({ message: 'No week pattern found in title, ignoring' }, HttpStatusCodes.OK);
   }
 
   // 활성화된 기수 찾기 (가장 최근에 생성된 활성 기수)
@@ -220,10 +140,7 @@ async function handleIssues(payload: IssuesWebhookPayload) {
     .orderBy(generations.createdAt);
 
   if (activeGenerations.length === 0) {
-    return new Response(
-      JSON.stringify({ message: 'No active generation found' }),
-      { status: 400 }
-    );
+    return c.json({ message: 'No active generation found' }, HttpStatusCodes.BAD_REQUEST);
   }
 
   const generation = activeGenerations[0];
@@ -235,10 +152,7 @@ async function handleIssues(payload: IssuesWebhookPayload) {
     .where(and(eq(cycles.generationId, generation.id), eq(cycles.week, week)));
 
   if (existingCycle.length > 0) {
-    return new Response(
-      JSON.stringify({ message: 'Cycle already exists for this week' }),
-      { status: 200 }
-    );
+    return c.json({ message: 'Cycle already exists for this week' }, HttpStatusCodes.OK);
   }
 
   // 날짜 계산 (본문에서 파싱 또는 기본값 사용)
@@ -246,8 +160,8 @@ async function handleIssues(payload: IssuesWebhookPayload) {
   const now = new Date();
   const weekInMs = 7 * 24 * 60 * 60 * 1000;
 
-  const startDate = dates?.start || now;
-  const endDate = dates?.end || new Date(now.getTime() + weekInMs);
+  const startDate = dates?.start ?? now;
+  const endDate = dates?.end ?? new Date(now.getTime() + weekInMs);
 
   // 회차 생성
   const newCycle = await db
@@ -261,13 +175,16 @@ async function handleIssues(payload: IssuesWebhookPayload) {
     })
     .returning();
 
-  return new Response(
-    JSON.stringify({
+  return c.json(
+    {
       message: 'Cycle created',
       cycle: newCycle[0],
-    }),
-    { status: 201 }
+    },
+    HttpStatusCodes.CREATED
   );
-}
+};
 
-export { githubWebhook };
+export const handleUnknownEvent = async (c: AppContext) => {
+  const githubEvent = c.req.header('x-github-event');
+  return c.json({ message: `Unhandled event: ${githubEvent}` }, HttpStatusCodes.OK);
+};

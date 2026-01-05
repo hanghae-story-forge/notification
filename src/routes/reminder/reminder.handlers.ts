@@ -1,14 +1,12 @@
-import { Hono } from 'hono';
-import { db } from '../lib/db';
-import { members, generations, cycles, submissions } from '../db/schema';
+import { db } from '@/lib/db';
+import { members, generations, cycles, submissions } from '@/db/schema';
 import { eq, and, lt, gt } from 'drizzle-orm';
-
-const reminder = new Hono();
+import type { AppContext } from '@/libs';
+import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 // n8n용 리마인더 대상 목록 조회
-// GET /api/reminder?hoursBefore=24
-reminder.get('/', async (c) => {
-  const hoursBefore = parseInt(c.req.query('hoursBefore') || '24');
+export const getReminderCycles = async (c: AppContext) => {
+  const hoursBefore = parseInt(c.req.query('hoursBefore') ?? '24');
   const now = new Date();
   const deadline = new Date(now.getTime() + hoursBefore * 60 * 60 * 1000);
 
@@ -20,41 +18,27 @@ reminder.get('/', async (c) => {
     })
     .from(cycles)
     .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(
-      and(
-        eq(generations.isActive, true),
-        lt(cycles.endDate, deadline),
-        gt(cycles.endDate, now)
-      )
-    );
-
-  if (activeCycles.length === 0) {
-    return c.json({ cycles: [] });
-  }
+    .where(and(eq(generations.isActive, true), lt(cycles.endDate, deadline), gt(cycles.endDate, now)));
 
   const result = activeCycles.map(({ cycle, generation }) => ({
     cycleId: cycle.id,
     cycleName: `${generation.name} - ${cycle.week}주차`,
-    endDate: cycle.endDate,
-    githubIssueUrl: cycle.githubIssueUrl,
+    endDate: cycle.endDate.toISOString(),
+    githubIssueUrl: cycle.githubIssueUrl ?? undefined,
   }));
 
-  return c.json({ cycles: result });
-});
+  return c.json({ cycles: result }, HttpStatusCodes.OK);
+};
 
 // 특정 사이클의 미제출자 목록 조회
-// GET /api/reminder/:cycleId/not-submitted
-reminder.get('/:cycleId/not-submitted', async (c) => {
+export const getNotSubmittedMembers = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
 
   // 사이클 정보 조회
-  const cycleList = await db
-    .select()
-    .from(cycles)
-    .where(eq(cycles.id, cycleId));
+  const cycleList = await db.select().from(cycles).where(eq(cycles.id, cycleId));
 
   if (cycleList.length === 0) {
-    return c.json({ error: 'Cycle not found' }, 404);
+    return c.json({ error: 'Cycle not found' }, HttpStatusCodes.NOT_FOUND);
   }
 
   const cycle = cycleList[0];
@@ -81,14 +65,15 @@ reminder.get('/:cycleId/not-submitted', async (c) => {
       discordId: m.discordId,
     }));
 
-  return c.json({
-    cycleId: cycle.id,
-    week: cycle.week,
-    endDate: cycle.endDate,
-    notSubmitted,
-    submittedCount: submittedMembers.length,
-    totalMembers: allMembers.length,
-  });
-});
-
-export { reminder };
+  return c.json(
+    {
+      cycleId: cycle.id,
+      week: cycle.week,
+      endDate: cycle.endDate.toISOString(),
+      notSubmitted,
+      submittedCount: submittedMembers.length,
+      totalMembers: allMembers.length,
+    },
+    HttpStatusCodes.OK
+  );
+};

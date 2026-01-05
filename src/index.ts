@@ -3,9 +3,9 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { ApolloServer } from '@apollo/server';
-import { githubWebhook } from './routes/github';
-import { reminder } from './routes/reminder';
-import { status } from './routes/status';
+import githubRouter from './routes/github/github.index';
+import reminderRouter from './routes/reminder/reminder.index';
+import statusRouter from './routes/status/status.index';
 import { typeDefs } from './graphql/schema';
 import { resolvers } from './graphql/resolvers';
 
@@ -20,11 +20,11 @@ app.use('/*', cors());
 app.get('/', (c) => c.json({ status: 'ok', message: '똥글똥글 API' }));
 
 // GitHub webhook
-app.route('/webhook/github', githubWebhook);
+app.route('/', githubRouter);
 
 // n8n용 API
-app.route('/api/reminder', reminder);
-app.route('/api/status', status);
+app.route('/', reminderRouter);
+app.route('/', statusRouter);
 
 // Apollo Server 설정
 const apollo = new ApolloServer({
