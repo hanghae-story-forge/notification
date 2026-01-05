@@ -128,6 +128,10 @@ export const handleIssues = createRoute({
       WebhookSuccessResponseSchema,
       'Webhook processed but ignored'
     ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Generation not found'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Internal server error'

@@ -151,7 +151,7 @@ export class Cycle extends AggregateRoot<CycleId> {
       week: this._week.toNumber(),
       startDate: this._dateRange.startDate.toISOString(),
       endDate: this._dateRange.endDate.toISOString(),
-      githubIssueUrl: this._githubIssueUrl?.value,
+      githubIssueUrl: this._githubIssueUrl?.value ?? null,
       createdAt: this._createdAt.toISOString(),
     };
   }
@@ -163,6 +163,6 @@ export interface CycleDTO {
   week: number;
   startDate: string;
   endDate: string;
-  githubIssueUrl?: string;
+  githubIssueUrl: string | null;
   createdAt: string;
 }
