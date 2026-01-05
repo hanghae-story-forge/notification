@@ -1,6 +1,7 @@
 // GetReminderTargetsQuery - 리마인더 대상 조회 Query
 
 import { CycleRepository } from '../../domain/cycle/cycle.repository';
+import { CycleId } from '../../domain/cycle/cycle.domain';
 import { GenerationRepository } from '../../domain/generation/generation.repository';
 import { SubmissionRepository } from '../../domain/submission/submission.repository';
 import { MemberRepository } from '../../domain/member/member.repository';
@@ -13,16 +14,16 @@ export interface ReminderCycleInfo {
   cycleId: number;
   cycleName: string;
   endDate: string;
-  githubIssueUrl?: string;
+  githubIssueUrl: string | null;
 }
 
 /**
  * 미제출자 정보
  */
-export interface NotSubmittedMember {
+export interface NotSubmittedMemberInfo {
   github: string;
   name: string;
-  discordId?: string;
+  discordId: string | null;
 }
 
 /**
@@ -32,7 +33,7 @@ export interface NotSubmittedResult {
   cycleId: number;
   week: number;
   endDate: string;
-  notSubmitted: NotSubmittedMember[];
+  notSubmitted: NotSubmittedMemberInfo[];
   submittedCount: number;
   totalMembers: number;
 }
@@ -78,7 +79,7 @@ export class GetReminderTargetsQuery {
       cycleId: cycle.id.value,
       cycleName: `${generation.name} - ${cycle.week.toNumber()}주차`,
       endDate: cycle.endDate.toISOString(),
-      githubIssueUrl: cycle.githubIssueUrl?.value,
+      githubIssueUrl: cycle.githubIssueUrl?.value ?? null,
     }));
   }
 
@@ -87,9 +88,7 @@ export class GetReminderTargetsQuery {
    */
   async getNotSubmittedMembers(cycleId: number): Promise<NotSubmittedResult> {
     // 사이클 조회
-    const cycle = await this.cycleRepo.findById(
-      cycleId // CycleId는 내부에서 생성 필요
-    );
+    const cycle = await this.cycleRepo.findById(CycleId.create(cycleId));
     if (!cycle) {
       throw new NotFoundError(`Cycle with ID ${cycleId} not found`);
     }
@@ -105,7 +104,7 @@ export class GetReminderTargetsQuery {
       .map((m) => ({
         github: m.githubUsername.value,
         name: m.name.value,
-        discordId: m.discordId?.value,
+        discordId: m.discordId?.value ?? null,
       }));
 
     return {

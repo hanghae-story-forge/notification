@@ -1,7 +1,9 @@
 // GetCycleStatusQuery - 사이클 현황 조회 Query
 
 import { CycleRepository } from '../../domain/cycle/cycle.repository';
+import { CycleId } from '../../domain/cycle/cycle.domain';
 import { GenerationRepository } from '../../domain/generation/generation.repository';
+import { GenerationId } from '../../domain/generation/generation.domain';
 import { SubmissionRepository } from '../../domain/submission/submission.repository';
 import { MemberRepository } from '../../domain/member/member.repository';
 import { NotFoundError } from '../../domain/common/errors';
@@ -53,7 +55,7 @@ export interface CurrentCycleResult {
   generationName: string;
   startDate: string;
   endDate: string;
-  githubIssueUrl?: string;
+  githubIssueUrl: string | null;
   daysLeft: number;
   hoursLeft: number;
 }
@@ -102,7 +104,7 @@ export class GetCycleStatusQuery {
       generationName: generation.name,
       startDate: cycle.startDate.toISOString(),
       endDate: cycle.endDate.toISOString(),
-      githubIssueUrl: cycle.githubIssueUrl?.value,
+      githubIssueUrl: cycle.githubIssueUrl?.value ?? null,
       daysLeft,
       hoursLeft,
     };
@@ -113,16 +115,14 @@ export class GetCycleStatusQuery {
    */
   async getCycleStatus(cycleId: number): Promise<CycleStatusResult> {
     // 사이클 조회
-    const cycle = await this.cycleRepo.findById(
-      cycleId // CycleId는 내부에서 생성 필요
-    );
+    const cycle = await this.cycleRepo.findById(CycleId.create(cycleId));
     if (!cycle) {
       throw new NotFoundError(`Cycle with ID ${cycleId} not found`);
     }
 
     // 기수 조회
     const generation = await this.generationRepo.findById(
-      cycle.generationId // GenerationId는 내부에서 생성 필요
+      GenerationId.create(cycle.generationId)
     );
     if (!generation) {
       throw new NotFoundError(`Generation for cycle ${cycleId} not found`);
@@ -180,16 +180,14 @@ export class GetCycleStatusQuery {
     endDate: Date;
   } | null> {
     // 사이클 조회
-    const cycle = await this.cycleRepo.findById(
-      cycleId // CycleId는 내부에서 생성 필요
-    );
+    const cycle = await this.cycleRepo.findById(CycleId.create(cycleId));
     if (!cycle) {
       return null;
     }
 
     // 기수 조회
     const generation = await this.generationRepo.findById(
-      cycle.generationId // GenerationId는 내부에서 생성 필요
+      GenerationId.create(cycle.generationId)
     );
     if (!generation) {
       return null;

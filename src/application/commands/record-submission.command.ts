@@ -83,7 +83,7 @@ export class RecordSubmissionCommand {
     // 6. 결과 반환 (핸들러에서 Discord 알림 등 추가 작업 수행)
     return {
       submission,
-      memberName: member.name,
+      memberName: member.name.value,
       cycleName: `${cycle.week}주차`,
     };
   }

@@ -37,6 +37,11 @@ export interface SubmissionRepository {
   findByCycle(cycleId: CycleId): Promise<Submission[]>;
 
   /**
+   * 사이클 ID로 모든 제출 조회
+   */
+  findByCycleId(cycleId: CycleId): Promise<Submission[]>;
+
+  /**
    * 회원별 모든 제출 조회
    */
   findByMember(memberId: MemberId): Promise<Submission[]>;

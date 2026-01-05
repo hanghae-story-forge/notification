@@ -3,7 +3,8 @@
 import { GenerationId, Generation } from './generation.domain';
 
 export interface GenerationRepository {
-  findById(id: GenerationId): Promise<Generation | null>;
-  findActive(): Promise<Generation>;
   save(generation: Generation): Promise<void>;
+  findById(id: GenerationId): Promise<Generation | null>;
+  findActive(): Promise<Generation | null>;
+  findAll(): Promise<Generation[]>;
 }

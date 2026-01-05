@@ -97,6 +97,10 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
     return result.map((row) => this.mapToEntity(row));
   }
 
+  async findByCycleId(cycleId: CycleId): Promise<Submission[]> {
+    return this.findByCycle(cycleId);
+  }
+
   async findByMember(memberId: MemberId): Promise<Submission[]> {
     const result = await db
       .select()

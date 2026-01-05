@@ -40,6 +40,9 @@ export class CreateCycleCommand {
   async execute(request: CreateCycleRequest): Promise<CreateCycleResult> {
     // 1. 활성화된 기수 찾기
     const generation = await this.generationRepo.findActive();
+    if (!generation) {
+      throw new ConflictError('No active generation found');
+    }
 
     // 2. 이미 동일한 주차가 있는지 확인
     const existing = await this.cycleRepo.findByGenerationAndWeek(
