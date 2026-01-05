@@ -1,9 +1,23 @@
+# Dependencies
 node_modules
+.pnpm-store
+
+# Build outputs
 dist
+*.tsbuildinfo
+
+# Environment
 .env
 .envrc
+.env.local
+.env.*.local
+
+# OS
 .DS_Store
 *.log
-.pnpm-store
-# Only ignore drizzle folder in root (for migrations), not in src
-/drizzle
+
+# Turborepo
+.turbo
+
+# Drizzle migrations (only in apps/server)
+apps/server/drizzle

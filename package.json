@@ -1,64 +1,31 @@
 {
-  "name": "dongueldonguel",
+  "name": "dongueldonguel-monorepo",
   "version": "1.0.0",
-  "description": "똥글똥글 자동화 API 서버",
-  "type": "module",
-  "main": "src/index.ts",
+  "private": true,
+  "description": "똥글똥글 - Bi-weekly writing group automation platform",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsup",
-    "start": "node dist/index.js",
-    "type-check": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx scripts/seed.ts",
-    "github:fetch": "tsx scripts/fetch-github-projects.ts",
-    "github:sync": "tsx scripts/sync-cycles-from-github.ts",
-    "github:members": "tsx scripts/fetch-org-members.ts",
-    "github:sync-members": "tsx scripts/sync-members.ts",
-    "github:assign": "tsx scripts/assign-members-to-generation.ts",
-    "github:fetch-comments": "tsx scripts/fetch-issue-comments.ts",
-    "github:poll-projects": "tsx scripts/poll-github-projects.ts",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
-    "test:server": "tsx scripts/test-server.ts",
-    "test:webhook": "tsx scripts/test-webhook.ts"
-  },
-  "dependencies": {
-    "@getcronit/pylon": "^2.9.6",
-    "@hono/node-server": "^1.14.1",
-    "@hono/zod-openapi": "^1.2.0",
-    "@octokit/auth-app": "^8.1.2",
-    "@t3-oss/env-core": "^0.13.10",
-    "@t3-oss/env-nextjs": "^0.13.10",
-    "discord.js": "^14.25.1",
-    "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.42.0",
-    "hono": "^4.7.5",
-    "octokit": "^5.0.5",
-    "postgres": "^3.4.7",
-    "stoker": "^2.0.1",
-    "zod": "^4.3.5"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check",
+    "type-check": "turbo run type-check",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate",
+    "db:push": "turbo run db:push",
+    "db:studio": "turbo run db:studio"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^22.19.3",
-    "better-sqlite3": "^12.5.0",
-    "drizzle-kit": "^0.31.0",
-    "eslint": "^9.22.0",
-    "eslint-config-prettier": "^10.1.1",
-    "prettier": "^3.5.3",
-    "tsc-alias": "^1.8.16",
-    "tsup": "^8.5.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.51.0",
-    "typescript-transform-paths": "^3.5.6"
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3"
   },
-  "packageManager": "pnpm@10.0.0"
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "workspaces": [
+    "apps/*"
+  ]
 }
