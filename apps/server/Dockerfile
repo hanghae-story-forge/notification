@@ -39,9 +39,7 @@ RUN apk add --no-cache libc6-compat curl && \
     adduser --system --uid 1001 -G hono hono
 
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
-COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
-COPY --from=installer /app/node_modules ./node_modules
-COPY package.json pnpm-workspace.yaml ./
+COPY --from=installer /app/. .
 
 RUN chown -R hono:hono /app
 
