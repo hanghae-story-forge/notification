@@ -1,4 +1,3 @@
-// Presentation Layer - GraphQL
+// Presentation Layer - GraphQL (Pylon)
 
-export { typeDefs } from './schema';
-export { resolvers } from './resolvers';
+export { default, graphql } from './pylon.service';
