@@ -121,33 +121,20 @@ const handleCurrentCycle = async (
 
     const { cycle, generation } = currentCycle[0];
 
-    const submissionList = await db
-      .select({
-        memberId: submissions.memberId,
-      })
-      .from(submissions)
-      .where(eq(submissions.cycleId, cycle.id));
-
-    const allMembers = await db.select().from(members);
-
-    const submittedIds = new Set(submissionList.map((s) => s.memberId));
-
-    const submittedNames = allMembers
-      .filter((m) => submittedIds.has(m.id))
-      .map((m) => m.name);
-
-    const notSubmittedNames = allMembers
-      .filter((m) => !submittedIds.has(m.id))
-      .map((m) => m.name);
-
-    const discordMessage = createStatusMessage(
-      `${generation.name} - ${cycle.week}주차`,
-      submittedNames,
-      notSubmittedNames,
-      cycle.endDate
+    const daysUntilDeadline = Math.ceil(
+      (new Date(cycle.endDate).getTime() - now.getTime()) /
+        (1000 * 60 * 60 * 24)
     );
 
-    await interaction.editReply(discordMessage);
+    await interaction.editReply({
+      content: `📅 **현재 주차 정보**\n\n**기수**: ${
+        generation.name
+      }\n**주차**: ${cycle.week}주차\n**마감일**: ${new Date(
+        cycle.endDate
+      ).toLocaleDateString('ko-KR')} (${
+        daysUntilDeadline > 0 ? `D-${daysUntilDeadline}` : '오늘 마감'
+      })\n\n이슈 링크: ${cycle.githubIssueUrl}`,
+    });
   } catch (error) {
     console.error('Error handling current-cycle command:', error);
     await interaction.editReply({
