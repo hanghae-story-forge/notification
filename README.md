@@ -13,7 +13,7 @@
 
 1. **GitHub Issue 댓글 감지** - 글 제출 시 Discord 알림
 2. **리마인더 API** - n8n에서 주기적으로 호출하여 미제출자 알림
-3. **제출 현황 조회** - Discord 명령어용 제출 현황 API
+3. **제출 현황 조회** - Discord 슬래시 명령어 `/check-submission` 지원
 
 ## 시작하기
 
@@ -30,7 +30,16 @@ pnpm install
 ```env
 # Neon PostgreSQL (브랜치별로 다른 URL 사용)
 DATABASE_URL=postgresql://user:password@ep-xxx.aws.neon.tech/neondb?sslmode=require
+
+# Discord Webhook (제출/리마인더 알림)
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Discord Bot (슬래시 명령어용)
+DISCORD_BOT_TOKEN=your_bot_token_here
+DISCORD_CLIENT_ID=your_application_id_here
+DISCORD_GUILD_ID=your_server_id_here
+
+# Server
 PORT=3000
 ```
 
@@ -192,3 +201,30 @@ Discord 메시지 포맷으로 제출 현황을 반환합니다.
 3. Content type: `application/json`
 4. Events: Issue comments > `Comment created`
 5. Secret 설정 (선택)
+
+## Discord Bot 설정
+
+`/check-submission` 슬래시 명령어를 사용하려면 Discord Bot이 필요합니다.
+
+### 1. Discord 앱 생성
+
+1. [Discord Developer Portal](https://discord.com/developers/applications) 접속
+2. **New Application** 클릭 → 이름 입력
+3. **Bot** 탭 → **Add Bot** 클릭
+4. **Reset Token**으로 토큰 복사 → `DISCORD_BOT_TOKEN`
+
+### 2. 봇을 서버에 초대
+
+1. **OAuth2** → **URL Generator** 탭
+2. Scopes: `bot`, `applications.commands` 체크
+3. Bot Permissions: `Send Messages`, `Embed Links` 체크
+4. 생성된 URL로 접속하여 봇을 서버에 초대
+
+### 3. 서버 ID 확인
+
+1. Discord 설정 → **고급** → **개발자 모드** 켜기
+2. 서버 우클릭 → **ID 복사** → `DISCORD_GUILD_ID`
+
+### 4. Application ID 확인
+
+**General Information** 탭에서 **Application ID** 복사 → `DISCORD_CLIENT_ID`
