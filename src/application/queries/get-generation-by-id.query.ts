@@ -1,7 +1,10 @@
 // GetGenerationByIdQuery - ID로 기수 조회 Query
 
 import { GenerationRepository } from '../../domain/generation/generation.repository';
-import { Generation, GenerationId } from '../../domain/generation/generation.domain';
+import {
+  Generation,
+  GenerationId,
+} from '../../domain/generation/generation.domain';
 
 /**
  * ID로 기수 조회 Query (Use Case)

@@ -51,9 +51,7 @@ function getErrorResponse(error: Error): { error: string } {
  * });
  * ```
  */
-export const asyncHandler = (
-  handler: (c: AppContext) => Promise<Response>
-) => {
+export const asyncHandler = (handler: (c: AppContext) => Promise<Response>) => {
   return async (c: AppContext): Promise<Response> => {
     try {
       return await handler(c);
@@ -65,7 +63,13 @@ export const asyncHandler = (
         // Hono의 c.json은 ContentfulStatusCode만 허용
         return c.json(
           getErrorResponse(error),
-          statusCode as typeof HttpStatusCodes.OK | typeof HttpStatusCodes.BAD_REQUEST | typeof HttpStatusCodes.NOT_FOUND | typeof HttpStatusCodes.CONFLICT | typeof HttpStatusCodes.UNAUTHORIZED | typeof HttpStatusCodes.INTERNAL_SERVER_ERROR
+          statusCode as
+            | typeof HttpStatusCodes.OK
+            | typeof HttpStatusCodes.BAD_REQUEST
+            | typeof HttpStatusCodes.NOT_FOUND
+            | typeof HttpStatusCodes.CONFLICT
+            | typeof HttpStatusCodes.UNAUTHORIZED
+            | typeof HttpStatusCodes.INTERNAL_SERVER_ERROR
         );
       }
 
