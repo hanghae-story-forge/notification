@@ -7,6 +7,29 @@ import { Member, MemberId } from '../../../domain/member/member.domain';
 import { MemberRepository } from '../../../domain/member/member.repository';
 
 export class DrizzleMemberRepository implements MemberRepository {
+  async save(member: Member): Promise<void> {
+    const dto = member.toDTO();
+
+    // ID가 0이면 새로운 회원 (생성)
+    if (dto.id === 0) {
+      await db.insert(members).values({
+        github: dto.githubUsername,
+        name: dto.name,
+        discordId: dto.discordId,
+      });
+    } else {
+      // 기존 회원 업데이트
+      await db
+        .update(members)
+        .set({
+          github: dto.githubUsername,
+          name: dto.name,
+          discordId: dto.discordId,
+        })
+        .where(eq(members.id, dto.id));
+    }
+  }
+
   async findById(id: MemberId): Promise<Member | null> {
     const result = await db
       .select()
@@ -40,16 +63,18 @@ export class DrizzleMemberRepository implements MemberRepository {
     return result.map((row) => this.mapToEntity(row));
   }
 
-  async save(member: Member): Promise<void> {
-    const dto = member.toDTO();
-    await db
-      .update(members)
-      .set({
-        github: dto.github,
-        name: dto.name,
-        discordId: dto.discordId,
-      })
-      .where(eq(members.id, dto.id));
+  async findByDiscordId(discordId: string): Promise<Member | null> {
+    const result = await db
+      .select()
+      .from(members)
+      .where(eq(members.discordId, discordId))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return this.mapToEntity(result[0]);
   }
 
   private mapToEntity(row: {
@@ -58,7 +83,7 @@ export class DrizzleMemberRepository implements MemberRepository {
     name: string;
     discordId: string | null;
   }): Member {
-    return Member.create({
+    return Member.reconstitute({
       id: row.id,
       github: row.github,
       name: row.name,

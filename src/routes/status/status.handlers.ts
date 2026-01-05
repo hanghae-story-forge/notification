@@ -1,221 +1,150 @@
-import { db } from '@/lib/db';
-import { members, generations, cycles, submissions } from '@/db/schema';
-import { eq, and, gt, lt } from 'drizzle-orm';
 import { createStatusMessage } from '@/services/discord';
 import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
+// DDD Layer imports
+import { GetCycleStatusQuery } from '@/application/queries';
+import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
+import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
+import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
+import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { NotFoundError } from '@/domain/common/errors';
+
+// ========================================
+// Repository & Query Instances
+// ========================================
+
+const cycleRepo = new DrizzleCycleRepository();
+const generationRepo = new DrizzleGenerationRepository();
+const submissionRepo = new DrizzleSubmissionRepository();
+const memberRepo = new DrizzleMemberRepository();
+
+const getCycleStatusQuery = new GetCycleStatusQuery(
+  cycleRepo,
+  generationRepo,
+  submissionRepo,
+  memberRepo
+);
+
+// ========================================
+// Handlers
+// ========================================
+
 // 현재 진행중인 사이클 조회
 export const getCurrentCycle = async (c: AppContext) => {
-  const now = new Date();
+  try {
+    const result = await getCycleStatusQuery.getCurrentCycle();
 
-  const currentCycle = await db
-    .select({
-      cycle: cycles,
-      generation: generations,
-    })
-    .from(cycles)
-    .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
-    .orderBy(cycles.startDate)
-    .limit(1);
+    if (!result) {
+      return c.json(
+        { error: 'No active cycle found' },
+        HttpStatusCodes.NOT_FOUND
+      );
+    }
 
-  if (currentCycle.length === 0) {
+    return c.json(result, HttpStatusCodes.OK);
+  } catch (error) {
+    console.error('Unexpected error in getCurrentCycle:', error);
     return c.json(
-      { error: 'No active cycle found' },
-      HttpStatusCodes.NOT_FOUND
+      { error: 'Internal server error' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
     );
   }
-
-  const { cycle, generation } = currentCycle[0];
-  const nowMs = now.getTime();
-  const endMs = cycle.endDate.getTime();
-  const hoursLeft = Math.max(0, Math.floor((endMs - nowMs) / (1000 * 60 * 60)));
-  const daysLeft = Math.floor(hoursLeft / 24);
-
-  return c.json(
-    {
-      id: cycle.id,
-      week: cycle.week,
-      generationName: generation.name,
-      startDate: cycle.startDate.toISOString(),
-      endDate: cycle.endDate.toISOString(),
-      githubIssueUrl: cycle.githubIssueUrl,
-      daysLeft,
-      hoursLeft,
-    },
-    HttpStatusCodes.OK
-  );
 };
 
 // 현재 진행중인 사이클을 Discord 메시지 포맷으로 반환
 export const getCurrentCycleDiscord = async (c: AppContext) => {
-  const now = new Date();
+  try {
+    // 현재 진행 중인 사이클 찾기
+    const cycles = await cycleRepo.findActiveCyclesByGeneration(
+      (await generationRepo.findActive())!.id.value
+    );
 
-  const currentCycle = await db
-    .select({
-      cycle: cycles,
-      generation: generations,
-    })
-    .from(cycles)
-    .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
-    .orderBy(cycles.startDate)
-    .limit(1);
+    if (cycles.length === 0) {
+      return c.json(
+        { error: 'No active cycle found' },
+        HttpStatusCodes.NOT_FOUND
+      );
+    }
 
-  if (currentCycle.length === 0) {
+    const cycle = cycles[0];
+    const names = await getCycleStatusQuery.getCycleParticipantNames(
+      cycle.id.value
+    );
+
+    if (!names) {
+      return c.json(
+        { error: 'Failed to get cycle participants' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+
+    const discordMessage = createStatusMessage(
+      names.cycleName,
+      names.submittedNames,
+      names.notSubmittedNames,
+      names.endDate
+    );
+
+    return c.json(discordMessage, HttpStatusCodes.OK);
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return c.json({ error: error.message }, HttpStatusCodes.NOT_FOUND);
+    }
+    console.error('Unexpected error in getCurrentCycleDiscord:', error);
     return c.json(
-      { error: 'No active cycle found' },
-      HttpStatusCodes.NOT_FOUND
+      { error: 'Internal server error' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
     );
   }
-
-  const { cycle, generation } = currentCycle[0];
-
-  const submissionList = await db
-    .select({
-      memberId: submissions.memberId,
-    })
-    .from(submissions)
-    .where(eq(submissions.cycleId, cycle.id));
-
-  const allMembers = await db.select().from(members);
-
-  const submittedIds = new Set(submissionList.map((s) => s.memberId));
-
-  const submittedNames = allMembers
-    .filter((m) => submittedIds.has(m.id))
-    .map((m) => m.name);
-
-  const notSubmittedNames = allMembers
-    .filter((m) => !submittedIds.has(m.id))
-    .map((m) => m.name);
-
-  const discordMessage = createStatusMessage(
-    `${generation.name} - ${cycle.week}주차`,
-    submittedNames,
-    notSubmittedNames,
-    cycle.endDate
-  );
-
-  return c.json(discordMessage, HttpStatusCodes.OK);
 };
 
 // 제출 현황 조회
 export const getStatus = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
 
-  // 사이클 정보 조회
-  const cycleInfo = await db
-    .select({
-      cycle: cycles,
-      generation: generations,
-    })
-    .from(cycles)
-    .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(eq(cycles.id, cycleId));
-
-  if (cycleInfo.length === 0) {
-    return c.json({ error: 'Cycle not found' }, HttpStatusCodes.NOT_FOUND);
+  try {
+    const result = await getCycleStatusQuery.getCycleStatus(cycleId);
+    return c.json(result, HttpStatusCodes.OK);
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return c.json({ error: error.message }, HttpStatusCodes.NOT_FOUND);
+    }
+    console.error('Unexpected error in getStatus:', error);
+    return c.json(
+      { error: 'Internal server error' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-
-  const { cycle, generation } = cycleInfo[0];
-
-  // 제출 목록 조회
-  const submissionList = await db
-    .select({
-      submission: submissions,
-      member: members,
-    })
-    .from(submissions)
-    .innerJoin(members, eq(submissions.memberId, members.id))
-    .where(eq(submissions.cycleId, cycleId));
-
-  // 전체 멤버
-  const allMembers = await db.select().from(members);
-
-  const submittedIds = new Set(
-    submissionList.map((s) => s.submission.memberId)
-  );
-  const submitted = submissionList.map((s) => ({
-    name: s.member.name,
-    github: s.member.github,
-    url: s.submission.url,
-    submittedAt: s.submission.submittedAt.toISOString(),
-  }));
-
-  const notSubmitted = allMembers
-    .filter((m) => !submittedIds.has(m.id))
-    .map((m) => ({
-      name: m.name,
-      github: m.github,
-    }));
-
-  return c.json(
-    {
-      cycle: {
-        id: cycle.id,
-        week: cycle.week,
-        startDate: cycle.startDate.toISOString(),
-        endDate: cycle.endDate.toISOString(),
-        generationName: generation.name,
-      },
-      summary: {
-        total: allMembers.length,
-        submitted: submitted.length,
-        notSubmitted: notSubmitted.length,
-      },
-      submitted,
-      notSubmitted,
-    },
-    HttpStatusCodes.OK
-  );
 };
 
 // 제출 현황을 Discord 메시지 포맷으로 반환
 export const getStatusDiscord = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
 
-  const cycleInfo = await db
-    .select({
-      cycle: cycles,
-      generation: generations,
-    })
-    .from(cycles)
-    .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(eq(cycles.id, cycleId));
+  try {
+    const names = await getCycleStatusQuery.getCycleParticipantNames(cycleId);
 
-  if (cycleInfo.length === 0) {
-    return c.json({ error: 'Cycle not found' }, HttpStatusCodes.NOT_FOUND);
+    if (!names) {
+      return c.json({ error: 'Cycle not found' }, HttpStatusCodes.NOT_FOUND);
+    }
+
+    const discordMessage = createStatusMessage(
+      names.cycleName,
+      names.submittedNames,
+      names.notSubmittedNames,
+      names.endDate
+    );
+
+    return c.json(discordMessage, HttpStatusCodes.OK);
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return c.json({ error: error.message }, HttpStatusCodes.NOT_FOUND);
+    }
+    console.error('Unexpected error in getStatusDiscord:', error);
+    return c.json(
+      { error: 'Internal server error' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
-
-  const { cycle, generation } = cycleInfo[0];
-
-  const submissionList = await db
-    .select({
-      memberId: submissions.memberId,
-    })
-    .from(submissions)
-    .where(eq(submissions.cycleId, cycleId));
-
-  const allMembers = await db.select().from(members);
-
-  const submittedIds = new Set(submissionList.map((s) => s.memberId));
-
-  const submittedNames = allMembers
-    .filter((m) => submittedIds.has(m.id))
-    .map((m) => m.name);
-
-  const notSubmittedNames = allMembers
-    .filter((m) => !submittedIds.has(m.id))
-    .map((m) => m.name);
-
-  const discordMessage = createStatusMessage(
-    `${generation.name} - ${cycle.week}주차`,
-    submittedNames,
-    notSubmittedNames,
-    cycle.endDate
-  );
-
-  return c.json(discordMessage, HttpStatusCodes.OK);
 };

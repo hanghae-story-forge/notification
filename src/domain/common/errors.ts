@@ -64,6 +64,18 @@ export class ValidationError extends ApplicationError {
   }
 }
 
+export class InvalidValueError extends ValidationError {
+  constructor(fieldName: string, value: unknown, reason?: string) {
+    super(
+      reason
+        ? `${fieldName}: ${reason}`
+        : `Invalid value for ${fieldName}: ${String(value)}`,
+      fieldName,
+      value
+    );
+  }
+}
+
 export class UnauthorizedError extends ApplicationError {
   readonly code = 'UNAUTHORIZED' as const;
 
