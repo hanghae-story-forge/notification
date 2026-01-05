@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { Env } from '../../../libs';
+import type { Env } from '@/libs';
 import { StatusController } from '../controllers/status.controller';
 
 export const createStatusRoutes = (controller: StatusController) => {

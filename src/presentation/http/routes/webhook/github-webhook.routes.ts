@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { Env } from '../../../../libs';
+import type { Env } from '@/libs';
 import { GitHubWebhookController } from './github-webhook.controller';
 
 const IssueCommentWebhookPayloadSchema = z.object({

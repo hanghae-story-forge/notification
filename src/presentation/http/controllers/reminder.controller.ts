@@ -1,11 +1,11 @@
 import { Container } from 'inversify';
-import type { AppContext } from '../../../libs';
-import { TYPES } from '../../../di/tokens';
+import type { AppContext } from '@/libs';
+import { TYPES } from '@/di/tokens';
 import {
   FindUpcomingDeadlinesUseCase,
   SendReminderNotificationUseCase,
   FindSubmissionStatusUseCase,
-} from '../../../core/application/use-cases';
+} from '@core/application/use-cases';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 export class ReminderController {

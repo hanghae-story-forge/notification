@@ -1,13 +1,13 @@
 import { Container } from 'inversify';
-import { TYPES } from '../../di/tokens';
-import { FindSubmissionStatusUseCase } from '../../core/application/use-cases';
-import { db } from '../../lib/db';
+import { TYPES } from '@/di/tokens';
+import { FindSubmissionStatusUseCase } from '@core/application/use-cases';
+import { db } from '@/lib/db';
 import {
   members,
   generations,
   cycles,
   submissions,
-} from '../../infrastructure/persistence/drizzle/schema';
+} from '@infrastructure/persistence/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 interface GraphQLContext {

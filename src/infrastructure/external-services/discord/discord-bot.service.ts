@@ -6,14 +6,14 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
 } from 'discord.js';
-import { env } from '../../../env';
-import { db } from '../../../lib/db';
+import { env } from '@/env';
+import { db } from '@/lib/db';
 import {
   cycles,
   generations,
   members,
   submissions,
-} from '../../persistence/drizzle/schema';
+} from '@infrastructure/persistence/drizzle/schema';
 import { eq, desc, and, lt, gt } from 'drizzle-orm';
 import { createStatusMessage } from './discord-notification.service';
 

@@ -3,10 +3,10 @@ import {
   ICycleRepository,
   IMemberRepository,
   ISubmissionRepository,
-} from '../../../domain';
-import { CycleId } from '../../../domain/shared';
-import { NotFoundException } from '../../../domain/shared';
-import { TYPES } from '../../../../di/tokens';
+} from '@core/domain';
+import { CycleId } from '@core/domain/shared';
+import { NotFoundException } from '@core/domain/shared';
+import { TYPES } from '@/di/tokens';
 
 export interface SubmissionSummary {
   total: number;

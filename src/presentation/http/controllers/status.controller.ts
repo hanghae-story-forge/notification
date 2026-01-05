@@ -1,8 +1,8 @@
 import { Container } from 'inversify';
-import type { AppContext } from '../../../libs';
-import { TYPES } from '../../../di/tokens';
-import { FindSubmissionStatusUseCase } from '../../../core/application/use-cases';
-import { createStatusMessage } from '../../../infrastructure/external-services/discord/discord-notification.service';
+import type { AppContext } from '@/libs';
+import { TYPES } from '@/di/tokens';
+import { FindSubmissionStatusUseCase } from '@core/application/use-cases';
+import { createStatusMessage } from '@infrastructure/external-services/discord/discord-notification.service';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 export class StatusController {
