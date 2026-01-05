@@ -7,6 +7,9 @@
     "dev": "echo 'Client app not yet implemented'",
     "build": "echo 'Client app not yet implemented'",
     "lint": "echo 'Client app not yet implemented'",
+    "lint:fix": "echo 'Client app not yet implemented'",
+    "format": "echo 'Client app not yet implemented'",
+    "format:check": "echo 'Client app not yet implemented'",
     "type-check": "echo 'Client app not yet implemented'"
   },
   "dependencies": {},
