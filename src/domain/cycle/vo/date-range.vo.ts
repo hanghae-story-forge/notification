@@ -61,9 +61,7 @@ export class DateRange {
    */
   isActive(): boolean {
     const now = Date.now();
-    return (
-      this.startDate.getTime() <= now && this.endDate.getTime() >= now
-    );
+    return this.startDate.getTime() <= now && this.endDate.getTime() >= now;
   }
 
   toDTO(): DateRangeDTO {

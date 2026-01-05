@@ -3,7 +3,10 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../../lib/db';
 import { generations } from '../../../db/schema';
-import { Generation, GenerationId } from '../../../domain/generation/generation.domain';
+import {
+  Generation,
+  GenerationId,
+} from '../../../domain/generation/generation.domain';
 import { GenerationRepository } from '../../../domain/generation/generation.repository';
 import { NotFoundError } from '../../../domain/common/errors';
 

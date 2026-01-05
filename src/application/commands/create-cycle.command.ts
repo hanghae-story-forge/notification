@@ -55,7 +55,8 @@ export class CreateCycleCommand {
     // 3. 날짜 계산 (기본값: 현재부터 7일간)
     const now = new Date();
     const startDate = request.startDate ?? now;
-    const endDate = request.endDate ?? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const endDate =
+      request.endDate ?? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // 4. 사이클 생성
     const cycle = Cycle.create({
