@@ -83,9 +83,10 @@ app.all('/graphql', async (c) => {
     headers[key] = value;
   });
 
+  // 표준 GraphQL 응답 형식으로 변환
   const result =
     'body' in response
-      ? (response.body as { singleResult: unknown })
+      ? (response.body as { singleResult: { data: unknown; errors?: unknown } }).singleResult
       : response;
 
   return c.json(result, 200, headers);

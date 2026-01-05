@@ -10,16 +10,19 @@ import {
 import { GenerationRepository } from '../../../domain/generation/generation.repository';
 
 export class DrizzleGenerationRepository implements GenerationRepository {
-  async save(generation: Generation): Promise<void> {
+  async save(generation: Generation): Promise<Generation> {
     const dto = generation.toDTO();
 
     // ID가 0이면 새로운 기수 (생성)
     if (dto.id === 0) {
-      await db.insert(generations).values({
+      const result = await db.insert(generations).values({
         name: dto.name,
         startedAt: new Date(dto.startedAt),
         isActive: dto.isActive,
-      });
+      }).returning();
+
+      // 생성된 ID로 엔티티 업데이트
+      return this.mapToEntity(result[0]);
     } else {
       // 기존 기수 업데이트
       await db
@@ -30,6 +33,8 @@ export class DrizzleGenerationRepository implements GenerationRepository {
           isActive: dto.isActive,
         })
         .where(eq(generations.id, dto.id));
+
+      return generation;
     }
   }
 

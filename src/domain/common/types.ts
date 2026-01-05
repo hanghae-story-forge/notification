@@ -3,9 +3,19 @@
 // Entity ID를 위한 기반 클래스
 export abstract class EntityId {
   protected constructor(public readonly value: number) {
-    if (value <= 0) {
-      throw new Error('ID must be a positive number');
+    if (value < 0) {
+      throw new Error('ID must be a non-negative number');
     }
+  }
+
+  // 새 엔티티 생성용 임시 ID (저장 전)
+  static createTemp(): EntityId {
+    return new (class extends EntityId {})(0);
+  }
+
+  // 저장되지 않은 엔티티인지 확인
+  isTemp(): boolean {
+    return this.value === 0;
   }
 
   equals(other: EntityId): boolean {
