@@ -1,4 +1,4 @@
-import { createRouter } from '@/libs';
+import { createRouter } from '@/lib/router';
 import * as routes from './reminder.routes';
 import * as handlers from './reminder.handlers';
 

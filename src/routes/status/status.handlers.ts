@@ -1,9 +1,105 @@
 import { db } from '@/lib/db';
 import { members, generations, cycles, submissions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, gt, lt } from 'drizzle-orm';
 import { createStatusMessage } from '@/services/discord';
-import type { AppContext } from '@/libs';
+import type { AppContext } from '@/lib/router';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
+
+// 현재 진행중인 사이클 조회
+export const getCurrentCycle = async (c: AppContext) => {
+  const now = new Date();
+
+  const currentCycle = await db
+    .select({
+      cycle: cycles,
+      generation: generations,
+    })
+    .from(cycles)
+    .innerJoin(generations, eq(cycles.generationId, generations.id))
+    .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
+    .orderBy(cycles.startDate)
+    .limit(1);
+
+  if (currentCycle.length === 0) {
+    return c.json(
+      { error: 'No active cycle found' },
+      HttpStatusCodes.NOT_FOUND
+    );
+  }
+
+  const { cycle, generation } = currentCycle[0];
+  const nowMs = now.getTime();
+  const endMs = cycle.endDate.getTime();
+  const hoursLeft = Math.max(0, Math.floor((endMs - nowMs) / (1000 * 60 * 60)));
+  const daysLeft = Math.floor(hoursLeft / 24);
+
+  return c.json(
+    {
+      id: cycle.id,
+      week: cycle.week,
+      generationName: generation.name,
+      startDate: cycle.startDate.toISOString(),
+      endDate: cycle.endDate.toISOString(),
+      githubIssueUrl: cycle.githubIssueUrl,
+      daysLeft,
+      hoursLeft,
+    },
+    HttpStatusCodes.OK
+  );
+};
+
+// 현재 진행중인 사이클을 Discord 메시지 포맷으로 반환
+export const getCurrentCycleDiscord = async (c: AppContext) => {
+  const now = new Date();
+
+  const currentCycle = await db
+    .select({
+      cycle: cycles,
+      generation: generations,
+    })
+    .from(cycles)
+    .innerJoin(generations, eq(cycles.generationId, generations.id))
+    .where(and(lt(cycles.startDate, now), gt(cycles.endDate, now)))
+    .orderBy(cycles.startDate)
+    .limit(1);
+
+  if (currentCycle.length === 0) {
+    return c.json(
+      { error: 'No active cycle found' },
+      HttpStatusCodes.NOT_FOUND
+    );
+  }
+
+  const { cycle, generation } = currentCycle[0];
+
+  const submissionList = await db
+    .select({
+      memberId: submissions.memberId,
+    })
+    .from(submissions)
+    .where(eq(submissions.cycleId, cycle.id));
+
+  const allMembers = await db.select().from(members);
+
+  const submittedIds = new Set(submissionList.map((s) => s.memberId));
+
+  const submittedNames = allMembers
+    .filter((m) => submittedIds.has(m.id))
+    .map((m) => m.name);
+
+  const notSubmittedNames = allMembers
+    .filter((m) => !submittedIds.has(m.id))
+    .map((m) => m.name);
+
+  const discordMessage = createStatusMessage(
+    `${generation.name} - ${cycle.week}주차`,
+    submittedNames,
+    notSubmittedNames,
+    cycle.endDate
+  );
+
+  return c.json(discordMessage, HttpStatusCodes.OK);
+};
 
 // 제출 현황 조회
 export const getStatus = async (c: AppContext) => {
