@@ -19,7 +19,13 @@ export const getReminderCycles = async (c: AppContext) => {
     })
     .from(cycles)
     .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(and(eq(generations.isActive, true), lt(cycles.endDate, deadline), gt(cycles.endDate, now)));
+    .where(
+      and(
+        eq(generations.isActive, true),
+        lt(cycles.endDate, deadline),
+        gt(cycles.endDate, now)
+      )
+    );
 
   const result = activeCycles.map(({ cycle, generation }) => ({
     cycleId: cycle.id,
@@ -36,7 +42,10 @@ export const getNotSubmittedMembers = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
 
   // 사이클 정보 조회
-  const cycleList = await db.select().from(cycles).where(eq(cycles.id, cycleId));
+  const cycleList = await db
+    .select()
+    .from(cycles)
+    .where(eq(cycles.id, cycleId));
 
   if (cycleList.length === 0) {
     return c.json({ error: 'Cycle not found' }, HttpStatusCodes.NOT_FOUND);
@@ -93,12 +102,22 @@ export const sendReminderNotifications = async (c: AppContext) => {
     })
     .from(cycles)
     .innerJoin(generations, eq(cycles.generationId, generations.id))
-    .where(and(eq(generations.isActive, true), lt(cycles.endDate, deadline), gt(cycles.endDate, now)));
+    .where(
+      and(
+        eq(generations.isActive, true),
+        lt(cycles.endDate, deadline),
+        gt(cycles.endDate, now)
+      )
+    );
 
-  const discordWebhookUrl = c.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
+  const discordWebhookUrl =
+    c.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
 
   if (!discordWebhookUrl) {
-    return c.json({ error: 'DISCORD_WEBHOOK_URL not configured' }, HttpStatusCodes.INTERNAL_SERVER_ERROR);
+    return c.json(
+      { error: 'DISCORD_WEBHOOK_URL not configured' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    );
   }
 
   const sentCycles: Array<{ cycleId: number; cycleName: string }> = [];

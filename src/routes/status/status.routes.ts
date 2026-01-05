@@ -75,8 +75,14 @@ export const getStatus = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(StatusResponseSchema, 'Status retrieved successfully'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Cycle not found'),
+    [HttpStatusCodes.OK]: jsonContent(
+      StatusResponseSchema,
+      'Status retrieved successfully'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Cycle not found'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Failed to get status'
@@ -94,8 +100,14 @@ export const getStatusDiscord = createRoute({
     }),
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(DiscordWebhookResponseSchema, 'Discord webhook payload'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(NotFoundErrorSchema, 'Cycle not found'),
+    [HttpStatusCodes.OK]: jsonContent(
+      DiscordWebhookResponseSchema,
+      'Discord webhook payload'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      NotFoundErrorSchema,
+      'Cycle not found'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       InternalServerErrorSchema,
       'Failed to get discord status'

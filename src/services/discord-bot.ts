@@ -1,4 +1,11 @@
-import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+} from 'discord.js';
 import { env } from '@/env';
 import { db } from '@/lib/db';
 import { cycles, generations, members, submissions } from '@/db/schema';
@@ -8,10 +15,7 @@ import { createStatusMessage } from '@/services/discord';
 // Discord Bot 클라이언트 생성
 export const createDiscordBot = (): Client => {
   const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMessages,
-    ],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   });
 
   // 봇 준비 완료 시
@@ -41,7 +45,13 @@ export const registerSlashCommands = async (): Promise<void> => {
       .setDescription('현재 활성화된 주차의 제출 현황을 확인합니다'),
   ].map((command) => command.toJSON());
 
-  const rest = new REST({ version: '10' }).setToken(env.DISCORD_BOT_TOKEN);
+  const botToken = env.DISCORD_BOT_TOKEN;
+
+  if (!botToken) {
+    throw new Error('DISCORD_BOT_TOKEN is not set');
+  }
+
+  const rest = new REST({ version: '10' }).setToken(botToken);
 
   try {
     console.log('🔄 Started refreshing application (/) commands.');
@@ -52,10 +62,7 @@ export const registerSlashCommands = async (): Promise<void> => {
       throw new Error('DISCORD_CLIENT_ID is not set');
     }
 
-    await rest.put(
-      Routes.applicationCommands(clientId),
-      { body: commands }
-    );
+    await rest.put(Routes.applicationCommands(clientId), { body: commands });
 
     console.log('✅ Successfully reloaded application (/) commands.');
   } catch (error) {
@@ -65,7 +72,9 @@ export const registerSlashCommands = async (): Promise<void> => {
 };
 
 // /check-submission 명령어 핸들러
-const handleCheckSubmission = async (interaction: ChatInputCommandInteraction): Promise<void> => {
+const handleCheckSubmission = async (
+  interaction: ChatInputCommandInteraction
+): Promise<void> => {
   // 응답 지연 (데이터 조회 시간 필요)
   await interaction.deferReply();
 

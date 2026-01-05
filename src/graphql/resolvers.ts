@@ -10,7 +10,10 @@ export const resolvers = {
     },
 
     member: async (_: unknown, args: { github: string }) => {
-      const result = await db.select().from(members).where(eq(members.github, args.github));
+      const result = await db
+        .select()
+        .from(members)
+        .where(eq(members.github, args.github));
       return result[0];
     },
 
@@ -20,30 +23,45 @@ export const resolvers = {
     },
 
     generation: async (_: unknown, args: { id: number }) => {
-      const result = await db.select().from(generations).where(eq(generations.id, args.id));
+      const result = await db
+        .select()
+        .from(generations)
+        .where(eq(generations.id, args.id));
       return result[0];
     },
 
     activeGeneration: async () => {
-      const result = await db.select().from(generations).where(eq(generations.isActive, true));
+      const result = await db
+        .select()
+        .from(generations)
+        .where(eq(generations.isActive, true));
       return result[0];
     },
 
     // 사이클 조회
     cycles: async (_: unknown, args: { generationId?: number }) => {
       if (args.generationId) {
-        return await db.select().from(cycles).where(eq(cycles.generationId, args.generationId));
+        return await db
+          .select()
+          .from(cycles)
+          .where(eq(cycles.generationId, args.generationId));
       }
       return await db.select().from(cycles);
     },
 
     cycle: async (_: unknown, args: { id: number }) => {
-      const result = await db.select().from(cycles).where(eq(cycles.id, args.id));
+      const result = await db
+        .select()
+        .from(cycles)
+        .where(eq(cycles.id, args.id));
       return result[0];
     },
 
     activeCycle: async () => {
-      const activeGen = await db.select().from(generations).where(eq(generations.isActive, true));
+      const activeGen = await db
+        .select()
+        .from(generations)
+        .where(eq(generations.isActive, true));
       if (activeGen.length === 0) return null;
 
       const now = new Date();
@@ -61,7 +79,10 @@ export const resolvers = {
 
     // 제출 현황
     cycleStatus: async (_: unknown, args: { cycleId: number }) => {
-      const cycleList = await db.select().from(cycles).where(eq(cycles.id, args.cycleId));
+      const cycleList = await db
+        .select()
+        .from(cycles)
+        .where(eq(cycles.id, args.cycleId));
       if (cycleList.length === 0) {
         throw new Error('Cycle not found');
       }
@@ -78,7 +99,9 @@ export const resolvers = {
         .innerJoin(members, eq(submissions.memberId, members.id))
         .where(eq(submissions.cycleId, args.cycleId));
 
-      const submittedIds = new Set(submissionList.map((s) => s.submission.memberId));
+      const submittedIds = new Set(
+        submissionList.map((s) => s.submission.memberId)
+      );
 
       const submitted = submissionList.map((s) => ({
         member: s.member,
@@ -102,7 +125,10 @@ export const resolvers = {
   },
 
   Mutation: {
-    addMember: async (_: unknown, args: { github: string; name: string; discordId?: string }) => {
+    addMember: async (
+      _: unknown,
+      args: { github: string; name: string; discordId?: string }
+    ) => {
       const result = await db
         .insert(members)
         .values({
@@ -114,7 +140,10 @@ export const resolvers = {
       return result[0];
     },
 
-    addGeneration: async (_: unknown, args: { name: string; startedAt: string }) => {
+    addGeneration: async (
+      _: unknown,
+      args: { name: string; startedAt: string }
+    ) => {
       const result = await db
         .insert(generations)
         .values({

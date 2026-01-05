@@ -34,10 +34,13 @@ export function createReminderMessage(
   deadline: Date,
   notSubmitted: string[]
 ): DiscordWebhookPayload {
-  const hoursLeft = Math.floor((deadline.getTime() - Date.now()) / (1000 * 60 * 60));
-  const timeText = hoursLeft >= 24
-    ? `${Math.floor(hoursLeft / 24)}일 ${hoursLeft % 24}시간`
-    : `${hoursLeft}시간`;
+  const hoursLeft = Math.floor(
+    (deadline.getTime() - Date.now()) / (1000 * 60 * 60)
+  );
+  const timeText =
+    hoursLeft >= 24
+      ? `${Math.floor(hoursLeft / 24)}일 ${hoursLeft % 24}시간`
+      : `${hoursLeft}시간`;
 
   return {
     content: `⏰ ${cycleName} 마감까지 ${timeText} 남았습니다!`,
@@ -47,7 +50,11 @@ export function createReminderMessage(
         description: notSubmitted.join(', '),
         color: 0xffaa00, // 주황색
         fields: [
-          { name: '마감 시간', value: `<t:${Math.floor(deadline.getTime() / 1000)}:F>`, inline: false },
+          {
+            name: '마감 시간',
+            value: `<t:${Math.floor(deadline.getTime() / 1000)}:F>`,
+            inline: false,
+          },
         ],
         timestamp: new Date().toISOString(),
       },

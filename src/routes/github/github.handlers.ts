@@ -1,7 +1,10 @@
 import { db } from '@/lib/db';
 import { members, cycles, submissions, generations } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { sendDiscordWebhook, createSubmissionMessage } from '@/services/discord';
+import {
+  sendDiscordWebhook,
+  createSubmissionMessage,
+} from '@/services/discord';
 import type { AppContext } from '@/libs';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 import type { z } from 'zod';
@@ -32,15 +35,22 @@ function parseWeekFromTitle(title: string): number | null {
 }
 
 // 유틸리티: 날짜 파싱 (이슈 본문에서 마감일 추출)
-function parseDatesFromBody(body: string | null): { start: Date; end: Date } | null {
+function parseDatesFromBody(
+  body: string | null
+): { start: Date; end: Date } | null {
   if (!body) return null;
 
   // 마감일 패턴: "마감: 2025-01-15" 또는 "DEADLINE: 2025-01-15T23:59:59"
-  const deadlinePattern = /(?:마감|deadline|due)[:\s]*(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}:\d{2}))?/i;
+  const deadlinePattern =
+    /(?:마감|deadline|due)[:\s]*(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}:\d{2}))?/i;
   const deadlineMatch = body.match(deadlinePattern);
 
   if (deadlineMatch) {
-    const deadline = new Date(`${deadlineMatch[1]}${deadlineMatch[2] ? 'T' + deadlineMatch[2] : 'T23:59:59'}`);
+    const deadline = new Date(
+      `${deadlineMatch[1]}${
+        deadlineMatch[2] ? 'T' + deadlineMatch[2] : 'T23:59:59'
+      }`
+    );
     const start = new Date(deadline);
     start.setDate(start.getDate() - 7); // 기본적으로 7일 전 시작
 
@@ -52,7 +62,9 @@ function parseDatesFromBody(body: string | null): { start: Date; end: Date } | n
 
 // 이슈 댓글 처리 (제출 기록)
 export const handleIssueComment = async (c: AppContext) => {
-  const payload = (await c.req.json()) as z.infer<typeof IssueCommentWebhookPayloadSchema>;
+  const payload = (await c.req.json()) as z.infer<
+    typeof IssueCommentWebhookPayloadSchema
+  >;
   const { comment, issue } = payload;
 
   const githubUsername = comment.user.login;
@@ -62,7 +74,10 @@ export const handleIssueComment = async (c: AppContext) => {
   // 댓글에서 URL 추출 (http/https로 시작하는 링크)
   const urlMatch = commentBody.match(/(https?:\/\/[^\s]+)/);
   if (!urlMatch) {
-    return c.json({ message: 'No URL found in comment' }, HttpStatusCodes.BAD_REQUEST);
+    return c.json(
+      { message: 'No URL found in comment' },
+      HttpStatusCodes.BAD_REQUEST
+    );
   }
 
   const blogUrl = urlMatch[1];
@@ -76,13 +91,19 @@ export const handleIssueComment = async (c: AppContext) => {
     .where(eq(cycles.githubIssueUrl, issue.html_url));
 
   if (activeCycles.length === 0) {
-    return c.json({ message: 'No cycle found for this issue' }, HttpStatusCodes.NOT_FOUND);
+    return c.json(
+      { message: 'No cycle found for this issue' },
+      HttpStatusCodes.NOT_FOUND
+    );
   }
 
   const cycle = activeCycles[0].cycle;
 
   // 멤버 찾기 (GitHub username으로)
-  const memberList = await db.select().from(members).where(eq(members.github, githubUsername));
+  const memberList = await db
+    .select()
+    .from(members)
+    .where(eq(members.github, githubUsername));
 
   if (memberList.length === 0) {
     return c.json({ message: 'Member not found' }, HttpStatusCodes.NOT_FOUND);
@@ -94,7 +115,12 @@ export const handleIssueComment = async (c: AppContext) => {
   const existingSubmission = await db
     .select()
     .from(submissions)
-    .where(and(eq(submissions.cycleId, cycle.id), eq(submissions.memberId, member.id)));
+    .where(
+      and(
+        eq(submissions.cycleId, cycle.id),
+        eq(submissions.memberId, member.id)
+      )
+    );
 
   if (existingSubmission.length > 0) {
     return c.json({ message: 'Already submitted' }, HttpStatusCodes.OK);
@@ -109,7 +135,8 @@ export const handleIssueComment = async (c: AppContext) => {
   });
 
   // Discord 알림 전송
-  const discordWebhookUrl = c.env.DISCORD_WEBHOOK_URL ?? process.env.DISCORD_WEBHOOK_URL;
+  const discordWebhookUrl =
+    c.env.DISCORD_WEBHOOK_URL ?? process.env.DISCORD_WEBHOOK_URL;
   if (discordWebhookUrl) {
     const cycleName = `${cycle.week}주차`;
     await sendDiscordWebhook(
@@ -123,13 +150,18 @@ export const handleIssueComment = async (c: AppContext) => {
 
 // 이슈 생성 처리 (회차 생성)
 export const handleIssues = async (c: AppContext) => {
-  const payload = (await c.req.json()) as z.infer<typeof IssuesWebhookPayloadSchema>;
+  const payload = (await c.req.json()) as z.infer<
+    typeof IssuesWebhookPayloadSchema
+  >;
   const { issue } = payload;
 
   // 이슈 제목에서 회차 번호 추출
   const week = parseWeekFromTitle(issue.title);
   if (!week) {
-    return c.json({ message: 'No week pattern found in title, ignoring' }, HttpStatusCodes.OK);
+    return c.json(
+      { message: 'No week pattern found in title, ignoring' },
+      HttpStatusCodes.OK
+    );
   }
 
   // 활성화된 기수 찾기 (가장 최근에 생성된 활성 기수)
@@ -140,7 +172,10 @@ export const handleIssues = async (c: AppContext) => {
     .orderBy(generations.createdAt);
 
   if (activeGenerations.length === 0) {
-    return c.json({ message: 'No active generation found' }, HttpStatusCodes.BAD_REQUEST);
+    return c.json(
+      { message: 'No active generation found' },
+      HttpStatusCodes.BAD_REQUEST
+    );
   }
 
   const generation = activeGenerations[0];
@@ -152,7 +187,10 @@ export const handleIssues = async (c: AppContext) => {
     .where(and(eq(cycles.generationId, generation.id), eq(cycles.week, week)));
 
   if (existingCycle.length > 0) {
-    return c.json({ message: 'Cycle already exists for this week' }, HttpStatusCodes.OK);
+    return c.json(
+      { message: 'Cycle already exists for this week' },
+      HttpStatusCodes.OK
+    );
   }
 
   // 날짜 계산 (본문에서 파싱 또는 기본값 사용)
@@ -186,5 +224,8 @@ export const handleIssues = async (c: AppContext) => {
 
 export const handleUnknownEvent = async (c: AppContext) => {
   const githubEvent = c.req.header('x-github-event');
-  return c.json({ message: `Unhandled event: ${githubEvent}` }, HttpStatusCodes.OK);
+  return c.json(
+    { message: `Unhandled event: ${githubEvent}` },
+    HttpStatusCodes.OK
+  );
 };
