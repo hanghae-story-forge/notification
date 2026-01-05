@@ -2,12 +2,11 @@ import 'dotenv/config';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { ApolloServer } from '@apollo/server';
 import { sql } from 'drizzle-orm';
 import githubRouter from './presentation/http/github/github.index';
 import reminderRouter from './presentation/http/reminder/reminder.index';
 import statusRouter from './presentation/http/status/status.index';
-import { typeDefs, resolvers } from './presentation/graphql';
+import pylonApp from './presentation/graphql';
 import {
   createDiscordBot,
   registerSlashCommands,
@@ -55,41 +54,9 @@ app.route('/', githubRouter);
 app.route('/', reminderRouter);
 app.route('/', statusRouter);
 
-// Apollo Server 설정
-const apollo = new ApolloServer({
-  typeDefs,
-  resolvers,
-  introspection: true, // 개발용 스키마 탐색 허용
-});
-
-// GraphQL 엔드포인트
-app.all('/graphql', async (c) => {
-  const { method } = c.req;
-  if (method !== 'GET' && method !== 'POST') {
-    return c.text('Method Not Allowed', 405);
-  }
-
-  const query = c.req.query();
-  const body = method === 'POST' ? await c.req.json() : null;
-
-  const response = await apollo.executeOperation({
-    query: body?.query || query.query,
-    variables: body?.variables || query.variables,
-    operationName: body?.operationName || query.operationName,
-  });
-
-  const headers: Record<string, string> = {};
-  response.http.headers.forEach((value, key) => {
-    headers[key] = value;
-  });
-
-  const result =
-    'body' in response
-      ? (response.body as { singleResult: unknown })
-      : response;
-
-  return c.json(result, 200, headers);
-});
+// Pylon GraphQL 엔드포인트
+// Pylon은 Hono 앱으로 직접 라우팅할 수 있습니다
+app.route('/', pylonApp);
 
 const port = parseInt(process.env.PORT || '3000');
 
