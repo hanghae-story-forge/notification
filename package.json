@@ -22,7 +22,8 @@
     "github:sync-members": "tsx apps/server/scripts/sync-members.ts",
     "github:assign": "tsx apps/server/scripts/assign-members-to-generation.ts",
     "github:fetch-comments": "tsx apps/server/scripts/fetch-issue-comments.ts",
-    "github:poll-projects": "tsx apps/server/scripts/poll-github-projects.ts"
+    "github:poll-projects": "tsx apps/server/scripts/poll-github-projects.ts",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
