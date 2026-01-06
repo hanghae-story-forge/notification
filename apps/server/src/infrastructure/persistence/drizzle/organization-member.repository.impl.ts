@@ -222,12 +222,13 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     joinedAt: Date;
     updatedAt: Date;
   }): OrganizationMember {
+    // reconstitute 내부에서 VO.create()를 통해 값 검증을 수행하므로 타입 단언 불필요
     return OrganizationMember.reconstitute({
       id: row.id,
       organizationId: row.organizationId,
       memberId: row.memberId,
-      role: row.role as OrganizationRole,
-      status: row.status as OrganizationMemberStatus,
+      role: row.role,
+      status: row.status,
       joinedAt: row.joinedAt,
       updatedAt: row.updatedAt,
     });

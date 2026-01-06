@@ -62,7 +62,7 @@ export class Organization extends AggregateRoot<OrganizationId> {
     id: OrganizationId,
     private readonly _name: OrganizationName,
     private readonly _slug: OrganizationSlug,
-    private readonly _discordWebhookUrl: DiscordWebhookUrl,
+    private _discordWebhookUrl: DiscordWebhookUrl,
     private _isActive: boolean,
     private readonly _createdAt: Date
   ) {
@@ -161,9 +161,7 @@ export class Organization extends AggregateRoot<OrganizationId> {
 
   // 비즈니스 로직: Discord 웹훅 URL 업데이트
   updateDiscordWebhookUrl(url: string | null): void {
-    const newUrl = DiscordWebhookUrl.create(url);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any)._discordWebhookUrl = newUrl;
+    this._discordWebhookUrl = DiscordWebhookUrl.create(url);
   }
 
   // DTO로 변환

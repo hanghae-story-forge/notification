@@ -90,7 +90,7 @@ export class OrganizationMember {
     private readonly _id: OrganizationMemberId,
     private readonly _organizationId: OrganizationId,
     private readonly _memberId: MemberId,
-    private readonly _role: OrganizationRoleVO,
+    private _role: OrganizationRoleVO,
     private _status: OrganizationMemberStatusVO,
     private readonly _joinedAt: Date,
     private _updatedAt: Date
@@ -198,8 +198,7 @@ export class OrganizationMember {
 
   // 비즈니스 로직: 역할 변경
   changeRole(newRole: string): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any)._role = OrganizationRoleVO.create(newRole);
+    this._role = OrganizationRoleVO.create(newRole);
     this._updatedAt = new Date();
   }
 

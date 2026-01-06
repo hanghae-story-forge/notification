@@ -43,10 +43,10 @@ export interface CreateMemberData {
 export class Member extends AggregateRoot<MemberId> {
   private constructor(
     id: MemberId,
-    private readonly _discordId: DiscordId,
-    private readonly _discordUsername: DiscordUsername | null,
-    private readonly _discordAvatar: string | null,
-    private readonly _githubUsername: GithubUsername | null,
+    private _discordId: DiscordId,
+    private _discordUsername: DiscordUsername | null,
+    private _discordAvatar: string | null,
+    private _githubUsername: GithubUsername | null,
     private readonly _name: MemberName,
     private readonly _createdAt: Date
   ) {
@@ -143,20 +143,17 @@ export class Member extends AggregateRoot<MemberId> {
 
   // 비즈니스 로직: GitHub 사용자명 업데이트
   updateGithubUsername(username: string): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any)._githubUsername = GithubUsername.create(username);
+    this._githubUsername = GithubUsername.create(username);
   }
 
   // 비즈니스 로직: Discord username 업데이트 (사용자 변경 가능)
   updateDiscordUsername(username: string): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any)._discordUsername = DiscordUsername.create(username);
+    this._discordUsername = DiscordUsername.create(username);
   }
 
   // 비즈니스 로직: Discord avatar 업데이트
   updateDiscordAvatar(avatar: string): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any)._discordAvatar = avatar;
+    this._discordAvatar = avatar;
   }
 
   // DTO로 변환
