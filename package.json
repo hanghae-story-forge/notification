@@ -15,7 +15,14 @@
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
     "db:push": "turbo run db:push",
-    "db:studio": "turbo run db:studio"
+    "db:studio": "turbo run db:studio",
+    "github:fetch": "tsx apps/server/scripts/fetch-github-projects.ts",
+    "github:sync": "tsx apps/server/scripts/sync-cycles-from-github.ts",
+    "github:members": "tsx apps/server/scripts/fetch-org-members.ts",
+    "github:sync-members": "tsx apps/server/scripts/sync-members.ts",
+    "github:assign": "tsx apps/server/scripts/assign-members-to-generation.ts",
+    "github:fetch-comments": "tsx apps/server/scripts/fetch-issue-comments.ts",
+    "github:poll-projects": "tsx apps/server/scripts/poll-github-projects.ts"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
