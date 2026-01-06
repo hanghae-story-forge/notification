@@ -139,7 +139,8 @@ const handleCurrentCycle = async (
 
   try {
     console.log('🔵 handleCurrentCycle: Querying getCurrentCycle...');
-    const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+    const currentCycle =
+      await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
     console.log('🔵 handleCurrentCycle: getCurrentCycle result:', currentCycle);
 
     if (!currentCycle) {

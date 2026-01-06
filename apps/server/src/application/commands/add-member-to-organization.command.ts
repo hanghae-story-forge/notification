@@ -58,7 +58,9 @@ export class AddMemberToOrganizationCommand {
     }
 
     // 2. 멤버 존재 확인
-    const member = await this.memberRepo.findById(MemberId.create(request.memberId));
+    const member = await this.memberRepo.findById(
+      MemberId.create(request.memberId)
+    );
     if (!member) {
       throw new Error(`Member with ID ${request.memberId} not found`);
     }
