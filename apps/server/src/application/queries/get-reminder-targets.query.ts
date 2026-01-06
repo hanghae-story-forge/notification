@@ -66,7 +66,8 @@ export class GetReminderTargetsQuery {
     hoursBefore: number
   ): Promise<ReminderCycleInfo[]> {
     // 조직 조회
-    const organization = await this.organizationRepo.findBySlug(organizationSlug);
+    const organization =
+      await this.organizationRepo.findBySlug(organizationSlug);
     if (!organization) {
       return [];
     }
@@ -75,11 +76,12 @@ export class GetReminderTargetsQuery {
     const deadline = new Date(now.getTime() + hoursBefore * 60 * 60 * 1000);
 
     // 해당 조직의 마감 시간이 deadline 근처인 사이클 찾기
-    const cycles = await this.cycleRepo.findCyclesWithDeadlineInRangeByOrganization(
-      organization.id.value,
-      now,
-      deadline
-    );
+    const cycles =
+      await this.cycleRepo.findCyclesWithDeadlineInRangeByOrganization(
+        organization.id.value,
+        now,
+        deadline
+      );
 
     return cycles.map((cycle) => ({
       cycleId: cycle.id.value,
@@ -98,7 +100,8 @@ export class GetReminderTargetsQuery {
     organizationSlug: string
   ): Promise<NotSubmittedResult> {
     // 조직 조회
-    const organization = await this.organizationRepo.findBySlug(organizationSlug);
+    const organization =
+      await this.organizationRepo.findBySlug(organizationSlug);
     if (!organization) {
       throw new NotFoundError(`Organization "${organizationSlug}" not found`);
     }
@@ -114,9 +117,10 @@ export class GetReminderTargetsQuery {
     const submittedIds = new Set(submissions.map((s) => s.memberId.value));
 
     // 해당 조직의 활성 멤버 목록
-    const orgMembers = await this.organizationMemberRepo.findActiveByOrganization(
-      organization.id
-    );
+    const orgMembers =
+      await this.organizationMemberRepo.findActiveByOrganization(
+        organization.id
+      );
 
     // 활성 멤버 중 미제출자 필터링
     const notSubmitted: NotSubmittedMemberInfo[] = [];

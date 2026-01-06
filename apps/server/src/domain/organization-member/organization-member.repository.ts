@@ -1,9 +1,12 @@
 // OrganizationMember Repository Interface
 
-import { OrganizationMember, OrganizationMemberId } from './organization-member.domain';
+import {
+  OrganizationMember,
+  OrganizationMemberId,
+} from './organization-member.domain';
 import { OrganizationId } from '../organization/organization.domain';
 import { MemberId } from '../member/member.domain';
-import { OrganizationMemberStatus, OrganizationRole } from './organization-member.vo';
+import { OrganizationRole } from './organization-member.vo';
 
 export interface OrganizationMemberRepository {
   // 조직원 저장 (생성 또는 업데이트)
@@ -19,13 +22,19 @@ export interface OrganizationMemberRepository {
   ): Promise<OrganizationMember | null>;
 
   // 조직의 모든 멤버 조회
-  findByOrganization(organizationId: OrganizationId): Promise<OrganizationMember[]>;
+  findByOrganization(
+    organizationId: OrganizationId
+  ): Promise<OrganizationMember[]>;
 
   // 조직의 활성 멤버만 조회
-  findActiveByOrganization(organizationId: OrganizationId): Promise<OrganizationMember[]>;
+  findActiveByOrganization(
+    organizationId: OrganizationId
+  ): Promise<OrganizationMember[]>;
 
   // 조직의 대기중인 멤버 조회
-  findPendingByOrganization(organizationId: OrganizationId): Promise<OrganizationMember[]>;
+  findPendingByOrganization(
+    organizationId: OrganizationId
+  ): Promise<OrganizationMember[]>;
 
   // 조직의 특정 역할을 가진 멤버 조회
   findByOrganizationAndRole(
@@ -37,7 +46,10 @@ export interface OrganizationMemberRepository {
   findByMember(memberId: MemberId): Promise<OrganizationMember[]>;
 
   // 멤버가 특정 조직에 활성 상태로 속해 있는지 확인
-  isActiveMember(organizationId: OrganizationId, memberId: MemberId): Promise<boolean>;
+  isActiveMember(
+    organizationId: OrganizationId,
+    memberId: MemberId
+  ): Promise<boolean>;
 
   // 조직에서 멤버 제거 (soft delete - status를 INACTIVE로 변경)
   remove(organizationId: OrganizationId, memberId: MemberId): Promise<void>;

@@ -1,8 +1,9 @@
 // GetOrganizationMembersQuery - 조직 멤버 조회 Query
 
-import { OrganizationMember } from '../../domain/organization-member/organization-member.domain';
-import { Member } from '../../domain/member/member.domain';
 import { OrganizationMemberStatus } from '../../domain/organization-member/organization-member.vo';
+import { OrganizationRepository } from '../../domain/organization/organization.repository';
+import { OrganizationMemberRepository } from '../../domain/organization-member/organization-member.repository';
+import { MemberRepository } from '../../domain/member/member.repository';
 
 /**
  * 조직 멤버 조회 Query 요청
@@ -42,14 +43,18 @@ export interface GetOrganizationMembersResult {
  */
 export class GetOrganizationMembersQuery {
   constructor(
-    private readonly organizationRepo: any,
-    private readonly organizationMemberRepo: any,
-    private readonly memberRepo: any
+    private readonly organizationRepo: OrganizationRepository,
+    private readonly organizationMemberRepo: OrganizationMemberRepository,
+    private readonly memberRepo: MemberRepository
   ) {}
 
-  async execute(request: GetOrganizationMembersRequest): Promise<GetOrganizationMembersResult> {
+  async execute(
+    request: GetOrganizationMembersRequest
+  ): Promise<GetOrganizationMembersResult> {
     // 1. 조직 존재 확인
-    const organization = await this.organizationRepo.findBySlug(request.organizationSlug);
+    const organization = await this.organizationRepo.findBySlug(
+      request.organizationSlug
+    );
     if (!organization) {
       throw new Error(`Organization "${request.organizationSlug}" not found`);
     }
@@ -60,23 +65,27 @@ export class GetOrganizationMembersQuery {
       // 상태 필터가 있는 경우
       switch (request.status) {
         case OrganizationMemberStatus.APPROVED:
-          organizationMembers = await this.organizationMemberRepo.findActiveByOrganization(
-            organization.id
-          );
+          organizationMembers =
+            await this.organizationMemberRepo.findActiveByOrganization(
+              organization.id
+            );
           break;
         case OrganizationMemberStatus.PENDING:
-          organizationMembers = await this.organizationMemberRepo.findPendingByOrganization(
-            organization.id
-          );
+          organizationMembers =
+            await this.organizationMemberRepo.findPendingByOrganization(
+              organization.id
+            );
           break;
         default:
-          organizationMembers = await this.organizationMemberRepo.findByOrganization(
-            organization.id
-          );
+          organizationMembers =
+            await this.organizationMemberRepo.findByOrganization(
+              organization.id
+            );
       }
     } else {
       // 모든 멤버
-      organizationMembers = await this.organizationMemberRepo.findByOrganization(organization.id);
+      organizationMembers =
+        await this.organizationMemberRepo.findByOrganization(organization.id);
     }
 
     // 3. 멤버 정보 조인

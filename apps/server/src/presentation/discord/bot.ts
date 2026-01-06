@@ -125,7 +125,8 @@ const handleCurrentCycle = async (
   await interaction.deferReply();
 
   try {
-    const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+    const currentCycle =
+      await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
 
     if (!currentCycle) {
       await interaction.editReply({
@@ -158,7 +159,8 @@ const handleCheckSubmission = async (
 
   try {
     // 현재 진행 중인 사이클 찾기
-    const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+    const currentCycle =
+      await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
 
     if (!currentCycle) {
       await interaction.editReply({

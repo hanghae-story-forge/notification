@@ -1,6 +1,7 @@
 // GetOrganizationQuery - 조직 조회 Query
 
 import { Organization } from '../../domain/organization/organization.domain';
+import { OrganizationRepository } from '../../domain/organization/organization.repository';
 
 /**
  * 조직 조회 Query 요청
@@ -23,9 +24,11 @@ export interface GetOrganizationResult {
  * 1. Slug로 조직 조회
  */
 export class GetOrganizationQuery {
-  constructor(private readonly organizationRepo: any) {}
+  constructor(private readonly organizationRepo: OrganizationRepository) {}
 
-  async execute(request: GetOrganizationRequest): Promise<GetOrganizationResult> {
+  async execute(
+    request: GetOrganizationRequest
+  ): Promise<GetOrganizationResult> {
     const organization = await this.organizationRepo.findBySlug(request.slug);
 
     return {

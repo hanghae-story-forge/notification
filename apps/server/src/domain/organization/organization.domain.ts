@@ -1,7 +1,11 @@
 // Organization Domain - 조직 도메인
 
 import { EntityId, AggregateRoot } from '../common/types';
-import { OrganizationName, OrganizationSlug, DiscordWebhookUrl } from './organization.vo';
+import {
+  OrganizationName,
+  OrganizationSlug,
+  DiscordWebhookUrl,
+} from './organization.vo';
 
 // Organization ID
 export class OrganizationId extends EntityId {
@@ -71,12 +75,23 @@ export class Organization extends AggregateRoot<OrganizationId> {
     const slug = data.slug
       ? OrganizationSlug.create(data.slug)
       : OrganizationSlug.create(data.name);
-    const discordWebhookUrl = DiscordWebhookUrl.create(data.discordWebhookUrl ?? null);
+    const discordWebhookUrl = DiscordWebhookUrl.create(
+      data.discordWebhookUrl ?? null
+    );
 
-    const id = data.id ? OrganizationId.create(data.id) : OrganizationId.create(0);
+    const id = data.id
+      ? OrganizationId.create(data.id)
+      : OrganizationId.create(0);
     const isActive = data.isActive ?? true;
     const createdAt = data.createdAt ?? new Date();
-    const organization = new Organization(id, name, slug, discordWebhookUrl, isActive, createdAt);
+    const organization = new Organization(
+      id,
+      name,
+      slug,
+      discordWebhookUrl,
+      isActive,
+      createdAt
+    );
 
     // 도메인 이벤트 발행 (새 생성 시에만)
     if (data.id === 0) {
@@ -147,6 +162,7 @@ export class Organization extends AggregateRoot<OrganizationId> {
   // 비즈니스 로직: Discord 웹훅 URL 업데이트
   updateDiscordWebhookUrl(url: string | null): void {
     const newUrl = DiscordWebhookUrl.create(url);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any)._discordWebhookUrl = newUrl;
   }
 

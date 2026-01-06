@@ -10,12 +10,10 @@ import {
 } from 'drizzle-orm/pg-core';
 
 // Enums
-export const organizationMemberStatusEnum = pgEnum('organization_member_status', [
-  'PENDING',
-  'APPROVED',
-  'REJECTED',
-  'INACTIVE',
-]);
+export const organizationMemberStatusEnum = pgEnum(
+  'organization_member_status',
+  ['PENDING', 'APPROVED', 'REJECTED', 'INACTIVE']
+);
 
 export const organizationRoleEnum = pgEnum('organization_role', [
   'OWNER',
@@ -173,5 +171,9 @@ export type Submission = typeof submissions.$inferSelect;
 export type NewSubmission = typeof submissions.$inferInsert;
 
 // Enum 타입 - Drizzle pgEnum은 직접 enum values를 export
-export type OrganizationMemberStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
+export type OrganizationMemberStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'INACTIVE';
 export type OrganizationRole = 'OWNER' | 'ADMIN' | 'MEMBER';

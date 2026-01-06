@@ -3,7 +3,12 @@
 
 import { db } from '../infrastructure/lib/db';
 import { sql } from 'drizzle-orm';
-import { members, generations, organizations, organizationMembers } from '../infrastructure/persistence/drizzle-db/schema';
+import {
+  members,
+  generations,
+  organizations,
+  organizationMembers,
+} from '../infrastructure/persistence/drizzle-db/schema';
 
 async function up() {
   console.log('🔄 Starting migration: Add multi-tenant support...\n');
@@ -85,9 +90,13 @@ async function up() {
         await tx.execute(sql`
           ALTER TABLE members ADD CONSTRAINT members_discord_id_key UNIQUE (discord_id);
         `);
-        console.log(`   ✅ Made discordId unique for ${existingMembersWithDiscord.length} members`);
+        console.log(
+          `   ✅ Made discordId unique for ${existingMembersWithDiscord.length} members`
+        );
       } else {
-        console.log('   ⚠️  No members with discordId found - skipping unique constraint');
+        console.log(
+          '   ⚠️  No members with discordId found - skipping unique constraint'
+        );
       }
 
       // Make github optional
@@ -152,7 +161,9 @@ async function up() {
           })
           .returning();
         defaultOrgId = newOrg.id;
-        console.log(`   ✅ Created default organization: ${defaultOrgId} (똥글똥글)`);
+        console.log(
+          `   ✅ Created default organization: ${defaultOrgId} (똥글똥글)`
+        );
       } else {
         defaultOrgId = existingOrgs[0].id;
         console.log(`   ℹ️  Using existing organization: ${defaultOrgId}`);
@@ -186,7 +197,9 @@ async function up() {
         migratedCount++;
       }
 
-      console.log(`   ✅ Migrated ${migratedCount} members to organization_members\n`);
+      console.log(
+        `   ✅ Migrated ${migratedCount} members to organization_members\n`
+      );
 
       console.log('✨ Migration completed successfully!\n');
     });
@@ -208,20 +221,34 @@ async function down() {
       console.log('   ✅ Dropped\n');
 
       console.log('2️⃣  Removing Discord columns from members...');
-      await tx.execute(sql`ALTER TABLE members DROP COLUMN IF EXISTS discord_username`);
-      await tx.execute(sql`ALTER TABLE members DROP COLUMN IF EXISTS discord_avatar`);
+      await tx.execute(
+        sql`ALTER TABLE members DROP COLUMN IF EXISTS discord_username`
+      );
+      await tx.execute(
+        sql`ALTER TABLE members DROP COLUMN IF EXISTS discord_avatar`
+      );
       console.log('   ✅ Removed\n');
 
       console.log('3️⃣  Reverting members to GitHub auth...');
       // Note: This is a simplified rollback - in production you'd want to be more careful
-      await tx.execute(sql`ALTER TABLE members ADD CONSTRAINT IF NOT EXISTS members_github_unique UNIQUE (github)`);
-      await tx.execute(sql`ALTER TABLE members ALTER COLUMN github SET NOT NULL`);
-      await tx.execute(sql`ALTER TABLE members DROP CONSTRAINT IF EXISTS members_discord_id_key`);
-      await tx.execute(sql`ALTER TABLE members ALTER COLUMN discord_id DROP NOT NULL`);
+      await tx.execute(
+        sql`ALTER TABLE members ADD CONSTRAINT IF NOT EXISTS members_github_unique UNIQUE (github)`
+      );
+      await tx.execute(
+        sql`ALTER TABLE members ALTER COLUMN github SET NOT NULL`
+      );
+      await tx.execute(
+        sql`ALTER TABLE members DROP CONSTRAINT IF EXISTS members_discord_id_key`
+      );
+      await tx.execute(
+        sql`ALTER TABLE members ALTER COLUMN discord_id DROP NOT NULL`
+      );
       console.log('   ✅ Reverted\n');
 
       console.log('4️⃣  Removing organizationId from generations...');
-      await tx.execute(sql`ALTER TABLE generations DROP COLUMN IF EXISTS organization_id`);
+      await tx.execute(
+        sql`ALTER TABLE generations DROP COLUMN IF EXISTS organization_id`
+      );
       console.log('   ✅ Removed\n');
 
       console.log('5️⃣  Dropping organizations...');
@@ -230,7 +257,9 @@ async function down() {
 
       console.log('6️⃣  Dropping ENUM types...');
       await tx.execute(sql`DROP TYPE IF EXISTS organization_role CASCADE`);
-      await tx.execute(sql`DROP TYPE IF EXISTS organization_member_status CASCADE`);
+      await tx.execute(
+        sql`DROP TYPE IF EXISTS organization_member_status CASCADE`
+      );
       console.log('   ✅ Dropped\n');
 
       console.log('✨ Rollback completed successfully!\n');

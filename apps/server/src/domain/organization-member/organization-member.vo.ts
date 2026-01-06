@@ -127,7 +127,10 @@ export class OrganizationRoleVO {
   }
 
   canManageMembers(): boolean {
-    return this.value === OrganizationRole.OWNER || this.value === OrganizationRole.ADMIN;
+    return (
+      this.value === OrganizationRole.OWNER ||
+      this.value === OrganizationRole.ADMIN
+    );
   }
 
   toString(): string {

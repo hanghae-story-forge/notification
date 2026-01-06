@@ -27,7 +27,6 @@ import {
 } from '@/infrastructure/persistence/drizzle';
 
 import { MemberService } from '@/domain/member/member.service';
-import { GenerationService } from '@/domain/generation/generation.service';
 import { Member } from '@/domain/member/member.domain';
 import { Generation } from '@/domain/generation/generation.domain';
 import { Cycle } from '@/domain/cycle/cycle.domain';
@@ -44,7 +43,6 @@ const organizationRepo = new DrizzleOrganizationRepository();
 const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 
 const memberService = new MemberService(memberRepo);
-const generationService = new GenerationService(generationRepo);
 
 // ========================================
 // Query Instances
@@ -74,7 +72,11 @@ const createGenerationCommand = new CreateGenerationCommand(
   generationRepo,
   organizationRepo
 );
-const createCycleCommand = new CreateCycleCommand(cycleRepo, generationRepo, organizationRepo);
+const createCycleCommand = new CreateCycleCommand(
+  cycleRepo,
+  generationRepo,
+  organizationRepo
+);
 
 // ========================================
 // GraphQL Types & Services (Pylon Code-First)
@@ -277,7 +279,8 @@ export const graphql = {
 
     // 활성화된 사이클 조회
     activeCycle: async (): Promise<GqlCycle | null> => {
-      const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+      const currentCycle =
+        await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
       if (!currentCycle) return null;
 
       return createGqlCycle(currentCycle);
@@ -289,7 +292,10 @@ export const graphql = {
       cycleId: number,
       organizationSlug: string
     ): Promise<GqlCycleStatus> => {
-      const status = await getCycleStatusQuery.getCycleStatus(cycleId, organizationSlug);
+      const status = await getCycleStatusQuery.getCycleStatus(
+        cycleId,
+        organizationSlug
+      );
 
       const cycleStatus = new GqlCycleStatus();
       cycleStatus.cycle = createGqlCycle(status.cycle);

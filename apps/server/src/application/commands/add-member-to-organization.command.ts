@@ -1,8 +1,12 @@
 // AddMemberToOrganizationCommand - 조직에 멤버 추가 Command
 
 import { Organization } from '../../domain/organization/organization.domain';
-import { Member } from '../../domain/member/member.domain';
-import { OrganizationMember, OrganizationRole, OrganizationMemberStatus } from '../../domain/organization-member/organization-member.domain';
+import { Member, MemberId } from '../../domain/member/member.domain';
+import {
+  OrganizationMember,
+  OrganizationRole,
+  OrganizationMemberStatus,
+} from '../../domain/organization-member/organization-member.domain';
 import { OrganizationRepository } from '../../domain/organization/organization.repository';
 import { MemberRepository } from '../../domain/member/member.repository';
 import { OrganizationMemberRepository } from '../../domain/organization-member/organization-member.repository';
@@ -42,24 +46,29 @@ export class AddMemberToOrganizationCommand {
     private readonly organizationMemberRepo: OrganizationMemberRepository
   ) {}
 
-  async execute(request: AddMemberToOrganizationRequest): Promise<AddMemberToOrganizationResult> {
+  async execute(
+    request: AddMemberToOrganizationRequest
+  ): Promise<AddMemberToOrganizationResult> {
     // 1. 조직 존재 확인
-    const organization = await this.organizationRepo.findBySlug(request.organizationSlug);
+    const organization = await this.organizationRepo.findBySlug(
+      request.organizationSlug
+    );
     if (!organization) {
       throw new Error(`Organization "${request.organizationSlug}" not found`);
     }
 
     // 2. 멤버 존재 확인
-    const member = await this.memberRepo.findById({ value: request.memberId } as any);
+    const member = await this.memberRepo.findById(MemberId.create(request.memberId));
     if (!member) {
       throw new Error(`Member with ID ${request.memberId} not found`);
     }
 
     // 3. 이미 속해 있는지 확인
-    const existing = await this.organizationMemberRepo.findByOrganizationAndMember(
-      organization.id,
-      member.id
-    );
+    const existing =
+      await this.organizationMemberRepo.findByOrganizationAndMember(
+        organization.id,
+        member.id
+      );
     if (existing) {
       // 이미 속해 있으면 현재 상태 반환
       return {

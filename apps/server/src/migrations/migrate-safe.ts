@@ -40,7 +40,9 @@ async function runMigration(direction: 'up' | 'down') {
 
       console.log('✅ Migration completed successfully!');
       console.log('\n📝 Summary:');
-      console.log('   - Created ENUM types (organization_member_status, organization_role)');
+      console.log(
+        '   - Created ENUM types (organization_member_status, organization_role)'
+      );
       console.log('   - Created organizations table');
       console.log('   - Added organizationId to generations');
       console.log('   - Updated members table for Discord auth');

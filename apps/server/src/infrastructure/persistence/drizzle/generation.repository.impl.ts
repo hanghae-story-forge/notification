@@ -72,7 +72,9 @@ export class DrizzleGenerationRepository implements GenerationRepository {
     return this.mapToEntity(result[0]);
   }
 
-  async findActiveByOrganization(organizationId: number): Promise<Generation | null> {
+  async findActiveByOrganization(
+    organizationId: number
+  ): Promise<Generation | null> {
     const result = await db
       .select()
       .from(generations)

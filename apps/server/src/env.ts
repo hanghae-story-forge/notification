@@ -53,15 +53,9 @@ export const env = createEnv({
       .string()
       .min(32, { message: 'JWT_SECRET must be at least 32 characters' })
       .optional(),
-    JWT_EXPIRES_IN: z
-      .string()
-      .default('7d'),
-    JWT_ISSUER: z
-      .string()
-      .default('dongueldonguel'),
-    JWT_AUDIENCE: z
-      .string()
-      .default('dongueldonguel-api'),
+    JWT_EXPIRES_IN: z.string().default('7d'),
+    JWT_ISSUER: z.string().default('dongueldonguel'),
+    JWT_AUDIENCE: z.string().default('dongueldonguel-api'),
   },
 
   /**

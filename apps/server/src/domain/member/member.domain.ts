@@ -1,7 +1,12 @@
 // Member Domain - 회원 도메인
 
 import { EntityId, AggregateRoot } from '../common/types';
-import { MemberName, GithubUsername, DiscordId, DiscordUsername } from './member.vo';
+import {
+  MemberName,
+  GithubUsername,
+  DiscordId,
+  DiscordUsername,
+} from './member.vo';
 
 // Member ID
 export class MemberId extends EntityId {
@@ -138,16 +143,19 @@ export class Member extends AggregateRoot<MemberId> {
 
   // 비즈니스 로직: GitHub 사용자명 업데이트
   updateGithubUsername(username: string): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any)._githubUsername = GithubUsername.create(username);
   }
 
   // 비즈니스 로직: Discord username 업데이트 (사용자 변경 가능)
   updateDiscordUsername(username: string): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any)._discordUsername = DiscordUsername.create(username);
   }
 
   // 비즈니스 로직: Discord avatar 업데이트
   updateDiscordAvatar(avatar: string): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any)._discordAvatar = avatar;
   }
 

@@ -48,7 +48,9 @@ export class JoseJWTService implements JWTService {
         exp: payload.exp,
       };
     } catch (error) {
-      throw new Error(`Invalid JWT token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Invalid JWT token: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 

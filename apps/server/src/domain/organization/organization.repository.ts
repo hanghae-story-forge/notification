@@ -1,7 +1,6 @@
 // Organization Repository Interface
 
 import { Organization, OrganizationId } from './organization.domain';
-import { OrganizationSlug } from './organization.vo';
 
 export interface OrganizationRepository {
   // 조직 저장 (생성 또는 업데이트)

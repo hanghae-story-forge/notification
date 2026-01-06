@@ -98,7 +98,9 @@ export class OrganizationMember {
 
   // 팩토리 메서드: 새 조직원 생성 (기본 PENDING 상태)
   static create(data: CreateOrganizationMemberData): OrganizationMember {
-    const id = data.id ? OrganizationMemberId.create(data.id) : OrganizationMemberId.create(0);
+    const id = data.id
+      ? OrganizationMemberId.create(data.id)
+      : OrganizationMemberId.create(0);
     const organizationId = OrganizationId.create(data.organizationId);
     const memberId = MemberId.create(data.memberId);
     const role = OrganizationRoleVO.create(data.role);
@@ -106,7 +108,15 @@ export class OrganizationMember {
     const joinedAt = data.joinedAt ?? new Date();
     const updatedAt = data.updatedAt ?? new Date();
 
-    return new OrganizationMember(id, organizationId, memberId, role, status, joinedAt, updatedAt);
+    return new OrganizationMember(
+      id,
+      organizationId,
+      memberId,
+      role,
+      status,
+      joinedAt,
+      updatedAt
+    );
   }
 
   // 팩토리 메서드: DB에서 조회한 엔티티 복원
@@ -188,7 +198,8 @@ export class OrganizationMember {
 
   // 비즈니스 로직: 역할 변경
   changeRole(newRole: string): void {
-    this._status = OrganizationRoleVO.create(newRole) as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this._role = OrganizationRoleVO.create(newRole) as any;
     this._updatedAt = new Date();
   }
 

@@ -1,6 +1,6 @@
 // JWT Service - JWT 토큰 생성 및 검증
 
-import { JWTToken, JWTPayload, JWTClaims } from './jwt.vo';
+import { JWTToken, JWTPayload } from './jwt.vo';
 
 export interface JWTServiceConfig {
   secret: string; // JWT 서명 시크릿

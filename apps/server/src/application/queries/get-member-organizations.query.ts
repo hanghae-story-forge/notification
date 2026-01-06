@@ -1,8 +1,9 @@
 // GetMemberOrganizationsQuery - 멤버가 속한 조직 목록 조회 Query
 
-import { Organization } from '../../domain/organization/organization.domain';
-import { OrganizationMember } from '../../domain/organization-member/organization-member.domain';
 import { OrganizationMemberStatus } from '../../domain/organization-member/organization-member.vo';
+import { MemberRepository } from '../../domain/member/member.repository';
+import { OrganizationMemberRepository } from '../../domain/organization-member/organization-member.repository';
+import { OrganizationRepository } from '../../domain/organization/organization.repository';
 
 /**
  * 멤버의 조직 목록 조회 요청
@@ -41,20 +42,28 @@ export interface GetMemberOrganizationsResult {
  */
 export class GetMemberOrganizationsQuery {
   constructor(
-    private readonly memberRepo: any,
-    private readonly organizationMemberRepo: any,
-    private readonly organizationRepo: any
+    private readonly memberRepo: MemberRepository,
+    private readonly organizationMemberRepo: OrganizationMemberRepository,
+    private readonly organizationRepo: OrganizationRepository
   ) {}
 
-  async execute(request: GetMemberOrganizationsRequest): Promise<GetMemberOrganizationsResult> {
+  async execute(
+    request: GetMemberOrganizationsRequest
+  ): Promise<GetMemberOrganizationsResult> {
     // 1. 멤버 존재 확인
-    const member = await this.memberRepo.findByDiscordId(request.memberDiscordId);
+    const member = await this.memberRepo.findByDiscordId(
+      request.memberDiscordId
+    );
     if (!member) {
-      throw new Error(`Member with Discord ID ${request.memberDiscordId} not found`);
+      throw new Error(
+        `Member with Discord ID ${request.memberDiscordId} not found`
+      );
     }
 
     // 2. 멤버의 조직원 목록 조회
-    const organizationMembers = await this.organizationMemberRepo.findByMember(member.id);
+    const organizationMembers = await this.organizationMemberRepo.findByMember(
+      member.id
+    );
 
     // 3. 조직 정보 조인 및 필터링
     const organizationsDTO: MemberOrganizationDTO[] = [];
@@ -64,7 +73,9 @@ export class GetMemberOrganizationsQuery {
         continue;
       }
 
-      const organization = await this.organizationRepo.findById(orgMember.organizationId);
+      const organization = await this.organizationRepo.findById(
+        orgMember.organizationId
+      );
       if (organization) {
         organizationsDTO.push({
           id: organization.id.value,

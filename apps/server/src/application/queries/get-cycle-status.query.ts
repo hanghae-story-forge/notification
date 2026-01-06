@@ -84,9 +84,12 @@ export class GetCycleStatusQuery {
   /**
    * 특정 조직의 현재 진행 중인 사이클 조회
    */
-  async getCurrentCycle(organizationSlug: string): Promise<CurrentCycleResult | null> {
+  async getCurrentCycle(
+    organizationSlug: string
+  ): Promise<CurrentCycleResult | null> {
     // 조직 조회
-    const organization = await this.organizationRepo.findBySlug(organizationSlug);
+    const organization =
+      await this.organizationRepo.findBySlug(organizationSlug);
     if (!organization) {
       return null;
     }
@@ -133,7 +136,8 @@ export class GetCycleStatusQuery {
     organizationSlug: string
   ): Promise<CycleStatusResult> {
     // 조직 조회
-    const organization = await this.organizationRepo.findBySlug(organizationSlug);
+    const organization =
+      await this.organizationRepo.findBySlug(organizationSlug);
     if (!organization) {
       throw new NotFoundError(`Organization "${organizationSlug}" not found`);
     }
@@ -163,15 +167,18 @@ export class GetCycleStatusQuery {
     const submissions = await this.submissionRepo.findByCycleId(cycle.id);
 
     // 해당 조직의 활성 멤버 목록
-    const orgMembers = await this.organizationMemberRepo.findActiveByOrganization(
-      organization.id
-    );
+    const orgMembers =
+      await this.organizationMemberRepo.findActiveByOrganization(
+        organization.id
+      );
     const submittedIds = new Set(submissions.map((s) => s.memberId.value));
 
     const submitted = submissions
       .filter((s) => submittedIds.has(s.memberId.value))
       .map((s) => {
-        const member = orgMembers.find((m) => m.memberId.value === s.memberId.value);
+        const member = orgMembers.find(
+          (m) => m.memberId.value === s.memberId.value
+        );
         return {
           name: member ? 'Member' : 'Unknown', // 실제 멤버 정보 필요 시 조회
           github: 'github', // 임시값
@@ -182,7 +189,7 @@ export class GetCycleStatusQuery {
 
     const notSubmitted = orgMembers
       .filter((m) => !submittedIds.has(m.memberId.value))
-      .map((m) => ({
+      .map(() => ({
         name: 'Member', // 실제 멤버 정보 필요 시 조회
         github: 'github', // 임시값
       }));
@@ -219,7 +226,8 @@ export class GetCycleStatusQuery {
     endDate: Date;
   } | null> {
     // 조직 조회
-    const organization = await this.organizationRepo.findBySlug(organizationSlug);
+    const organization =
+      await this.organizationRepo.findBySlug(organizationSlug);
     if (!organization) {
       return null;
     }
@@ -247,9 +255,10 @@ export class GetCycleStatusQuery {
     const submissions = await this.submissionRepo.findByCycleId(cycle.id);
 
     // 해당 조직의 활성 멤버 목록
-    const orgMembers = await this.organizationMemberRepo.findActiveByOrganization(
-      organization.id
-    );
+    const orgMembers =
+      await this.organizationMemberRepo.findActiveByOrganization(
+        organization.id
+      );
     const submittedIds = new Set(submissions.map((s) => s.memberId.value));
 
     const submittedNames: string[] = [];

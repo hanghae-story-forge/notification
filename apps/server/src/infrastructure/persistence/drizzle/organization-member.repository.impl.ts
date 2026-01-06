@@ -1,13 +1,19 @@
 // OrganizationMember Repository Implementation - Drizzle ORM
 
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { organizationMembers } from '../drizzle-db/schema';
-import { OrganizationMember, OrganizationMemberId } from '../../../domain/organization-member/organization-member.domain';
+import {
+  OrganizationMember,
+  OrganizationMemberId,
+} from '../../../domain/organization-member/organization-member.domain';
 import { OrganizationId } from '../../../domain/organization/organization.domain';
 import { MemberId } from '../../../domain/member/member.domain';
 import { OrganizationMemberRepository } from '../../../domain/organization-member/organization-member.repository';
-import { OrganizationMemberStatus, OrganizationRole } from '../../../domain/organization-member/organization-member.vo';
+import {
+  OrganizationMemberStatus,
+  OrganizationRole,
+} from '../../../domain/organization-member/organization-member.vo';
 
 export class DrizzleOrganizationMemberRepository implements OrganizationMemberRepository {
   async save(organizationMember: OrganizationMember): Promise<void> {
@@ -75,7 +81,9 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     return this.mapToEntity(result[0]);
   }
 
-  async findByOrganization(organizationId: OrganizationId): Promise<OrganizationMember[]> {
+  async findByOrganization(
+    organizationId: OrganizationId
+  ): Promise<OrganizationMember[]> {
     const result = await db
       .select()
       .from(organizationMembers)
@@ -84,7 +92,9 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     return result.map((row) => this.mapToEntity(row));
   }
 
-  async findActiveByOrganization(organizationId: OrganizationId): Promise<OrganizationMember[]> {
+  async findActiveByOrganization(
+    organizationId: OrganizationId
+  ): Promise<OrganizationMember[]> {
     const result = await db
       .select()
       .from(organizationMembers)
@@ -98,7 +108,9 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     return result.map((row) => this.mapToEntity(row));
   }
 
-  async findPendingByOrganization(organizationId: OrganizationId): Promise<OrganizationMember[]> {
+  async findPendingByOrganization(
+    organizationId: OrganizationId
+  ): Promise<OrganizationMember[]> {
     const result = await db
       .select()
       .from(organizationMembers)
@@ -138,7 +150,10 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     return result.map((row) => this.mapToEntity(row));
   }
 
-  async isActiveMember(organizationId: OrganizationId, memberId: MemberId): Promise<boolean> {
+  async isActiveMember(
+    organizationId: OrganizationId,
+    memberId: MemberId
+  ): Promise<boolean> {
     const result = await db
       .select({ id: organizationMembers.id })
       .from(organizationMembers)
@@ -154,7 +169,10 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     return result.length > 0;
   }
 
-  async remove(organizationId: OrganizationId, memberId: MemberId): Promise<void> {
+  async remove(
+    organizationId: OrganizationId,
+    memberId: MemberId
+  ): Promise<void> {
     // Soft delete - status를 INACTIVE로 변경
     await db
       .update(organizationMembers)
@@ -179,7 +197,9 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
     return result[0]?.count ?? 0;
   }
 
-  async countActiveByOrganization(organizationId: OrganizationId): Promise<number> {
+  async countActiveByOrganization(
+    organizationId: OrganizationId
+  ): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(organizationMembers)

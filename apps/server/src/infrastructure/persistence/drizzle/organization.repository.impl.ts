@@ -1,13 +1,12 @@
 // Organization Repository Implementation - Drizzle ORM
 
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { organizations } from '../drizzle-db/schema';
 import {
   Organization,
   OrganizationId,
 } from '../../../domain/organization/organization.domain';
-import { OrganizationSlug } from '../../../domain/organization/organization.vo';
 import { OrganizationRepository } from '../../../domain/organization/organization.repository';
 
 export class DrizzleOrganizationRepository implements OrganizationRepository {

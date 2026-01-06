@@ -30,7 +30,9 @@ export interface CreateOrganizationResult {
 export class CreateOrganizationCommand {
   constructor(private readonly organizationRepo: OrganizationRepository) {}
 
-  async execute(request: CreateOrganizationRequest): Promise<CreateOrganizationResult> {
+  async execute(
+    request: CreateOrganizationRequest
+  ): Promise<CreateOrganizationResult> {
     // 1. Slug 중복 검사
     const slug = request.slug ?? request.name;
     const existingOrg = await this.organizationRepo.findBySlug(slug);

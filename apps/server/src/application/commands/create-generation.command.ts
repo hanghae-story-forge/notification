@@ -41,9 +41,13 @@ export class CreateGenerationCommand {
     request: CreateGenerationRequest
   ): Promise<CreateGenerationResult> {
     // 1. 조직 존재 확인
-    const organization = await this.organizationRepo.findBySlug(request.organizationSlug);
+    const organization = await this.organizationRepo.findBySlug(
+      request.organizationSlug
+    );
     if (!organization) {
-      throw new ValidationError(`Organization "${request.organizationSlug}" not found`);
+      throw new ValidationError(
+        `Organization "${request.organizationSlug}" not found`
+      );
     }
 
     // 2. 기수 이름 검증
@@ -58,9 +62,10 @@ export class CreateGenerationCommand {
     // 3. 활성화된 기수가 있는지 확인 (같은 조직 내)
     const isActive = request.isActive ?? false;
     if (isActive) {
-      const activeGeneration = await this.generationRepo.findActiveByOrganization(
-        organization.id.value
-      );
+      const activeGeneration =
+        await this.generationRepo.findActiveByOrganization(
+          organization.id.value
+        );
       if (activeGeneration) {
         throw new ValidationError(
           `Organization "${request.organizationSlug}" already has an active generation`

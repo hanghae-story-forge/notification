@@ -112,7 +112,9 @@ export class DiscordUsername {
     return new DiscordUsername(value);
   }
 
-  static createOrNull(value: string | null | undefined): DiscordUsername | null {
+  static createOrNull(
+    value: string | null | undefined
+  ): DiscordUsername | null {
     if (!value) return null;
     try {
       return DiscordUsername.create(value);

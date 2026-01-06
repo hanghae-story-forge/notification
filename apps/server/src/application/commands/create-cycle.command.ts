@@ -43,9 +43,13 @@ export class CreateCycleCommand {
 
   async execute(request: CreateCycleRequest): Promise<CreateCycleResult> {
     // 1. 조직 존재 확인
-    const organization = await this.organizationRepo.findBySlug(request.organizationSlug);
+    const organization = await this.organizationRepo.findBySlug(
+      request.organizationSlug
+    );
     if (!organization) {
-      throw new ConflictError(`Organization "${request.organizationSlug}" not found`);
+      throw new ConflictError(
+        `Organization "${request.organizationSlug}" not found`
+      );
     }
 
     // 2. 해당 조직의 활성화된 기수 찾기

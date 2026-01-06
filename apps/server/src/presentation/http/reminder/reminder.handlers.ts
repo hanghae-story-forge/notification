@@ -50,11 +50,10 @@ export const getReminderCycles = async (c: AppContext) => {
   }
 
   try {
-    const cycles =
-      await getReminderTargetsQuery.getCyclesWithDeadlineIn(
-        organizationSlug,
-        hoursBefore
-      );
+    const cycles = await getReminderTargetsQuery.getCyclesWithDeadlineIn(
+      organizationSlug,
+      hoursBefore
+    );
     return c.json({ cycles }, HttpStatusCodes.OK);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -81,11 +80,10 @@ export const getNotSubmittedMembers = async (c: AppContext) => {
   }
 
   try {
-    const result =
-      await getReminderTargetsQuery.getNotSubmittedMembers(
-        cycleId,
-        organizationSlug
-      );
+    const result = await getReminderTargetsQuery.getNotSubmittedMembers(
+      cycleId,
+      organizationSlug
+    );
     return c.json(result, HttpStatusCodes.OK);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -122,11 +120,10 @@ export const sendReminderNotifications = async (c: AppContext) => {
   }
 
   try {
-    const cycles =
-      await getReminderTargetsQuery.getCyclesWithDeadlineIn(
-        organizationSlug,
-        hoursBefore
-      );
+    const cycles = await getReminderTargetsQuery.getCyclesWithDeadlineIn(
+      organizationSlug,
+      hoursBefore
+    );
 
     const sentCycles: Array<{ cycleId: number; cycleName: string }> = [];
 

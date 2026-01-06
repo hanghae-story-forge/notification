@@ -8,7 +8,11 @@ export class JWTToken {
     // Basic JWT format: header.payload.signature
     const jwtRegex = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/;
     if (!jwtRegex.test(value)) {
-      throw new InvalidValueError('JWT Token', value, 'Invalid JWT token format');
+      throw new InvalidValueError(
+        'JWT Token',
+        value,
+        'Invalid JWT token format'
+      );
     }
   }
 

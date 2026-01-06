@@ -6,7 +6,11 @@ import { InvalidValueError } from '../common/errors';
 export class OrganizationName {
   private constructor(public readonly value: string) {
     if (value.trim().length === 0) {
-      throw new InvalidValueError('Organization name', value, 'Name cannot be empty');
+      throw new InvalidValueError(
+        'Organization name',
+        value,
+        'Name cannot be empty'
+      );
     }
     if (value.length > 100) {
       throw new InvalidValueError(

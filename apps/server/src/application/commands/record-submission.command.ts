@@ -64,7 +64,9 @@ export class RecordSubmissionCommand {
     }
 
     // 2. Generation 찾기 (Cycle의 organizationId 확인용)
-    const generation = await this.generationRepo.findById(GenerationId.create(cycle.generationId));
+    const generation = await this.generationRepo.findById(
+      GenerationId.create(cycle.generationId)
+    );
     if (!generation) {
       throw new NotFoundError('Generation', `id=${cycle.generationId}`);
     }
@@ -74,7 +76,9 @@ export class RecordSubmissionCommand {
     const organizationIdObj = OrganizationId.create(organizationId);
 
     // 4. Member 찾기 (GitHub username으로)
-    const member = await this.memberRepo.findByGithubUsername(request.githubUsername);
+    const member = await this.memberRepo.findByGithubUsername(
+      request.githubUsername
+    );
     if (!member) {
       throw new NotFoundError('Member', `github=${request.githubUsername}`);
     }

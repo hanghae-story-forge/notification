@@ -1,6 +1,9 @@
 // UpdateMemberStatusCommand - 멤버 상태 업데이트 Command
 
-import { OrganizationMember, OrganizationMemberStatus } from '../../domain/organization-member/organization-member.domain';
+import {
+  OrganizationMember,
+  OrganizationMemberStatus,
+} from '../../domain/organization-member/organization-member.domain';
 import { OrganizationId } from '../../domain/organization/organization.domain';
 import { MemberId } from '../../domain/member/member.domain';
 import { OrganizationRepository } from '../../domain/organization/organization.repository';
@@ -36,12 +39,15 @@ export class UpdateMemberStatusCommand {
     private readonly organizationMemberRepo: OrganizationMemberRepository
   ) {}
 
-  async execute(request: UpdateMemberStatusRequest): Promise<UpdateMemberStatusResult> {
+  async execute(
+    request: UpdateMemberStatusRequest
+  ): Promise<UpdateMemberStatusResult> {
     // 1. 조직원 존재 확인
-    const organizationMember = await this.organizationMemberRepo.findByOrganizationAndMember(
-      { value: request.organizationId } as any,
-      { value: request.memberId } as any
-    );
+    const organizationMember =
+      await this.organizationMemberRepo.findByOrganizationAndMember(
+        OrganizationId.create(request.organizationId),
+        MemberId.create(request.memberId)
+      );
 
     if (!organizationMember) {
       throw new Error(

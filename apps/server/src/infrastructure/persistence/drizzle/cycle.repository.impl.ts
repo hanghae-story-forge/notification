@@ -123,7 +123,9 @@ export class DrizzleCycleRepository implements CycleRepository {
     return result.map((row) => this.mapToEntity(row));
   }
 
-  async findActiveCyclesByOrganization(organizationId: number): Promise<Cycle[]> {
+  async findActiveCyclesByOrganization(
+    organizationId: number
+  ): Promise<Cycle[]> {
     const now = new Date();
 
     const result = await db

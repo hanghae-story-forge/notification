@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable no-undef */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 const postgres = require('postgres');
 const fs = require('fs');
 const path = require('path');
