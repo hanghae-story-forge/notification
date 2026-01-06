@@ -21,7 +21,7 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const WEBHOOK_DIR = join(__dirname, '../test-webhook');
+const WEBHOOK_DIR = join(__dirname, 'fixtures');
 
 // Available test payloads
 const PAYLOADS = {

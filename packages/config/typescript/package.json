@@ -1,0 +1,6 @@
+{
+  "name": "@dongueldonguel/config-typescript",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared TypeScript configuration"
+}

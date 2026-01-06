@@ -14,6 +14,9 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@dongueldonguel/config-eslint": "workspace:*",
+    "@dongueldonguel/config-prettier": "workspace:*",
+    "@dongueldonguel/config-typescript": "workspace:*",
     "typescript": "^5.8.3"
   }
 }
