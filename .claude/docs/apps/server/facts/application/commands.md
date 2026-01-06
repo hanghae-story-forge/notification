@@ -1,245 +1,218 @@
-# Application Layer - Commands (상태 변경 유스케이스)
+# CQRS Command Handlers
 
----
-metadata:
-  layer: Application
-  pattern: CQRS (Command)
-  last_verified: "2026-01-05T10:00:00Z"
-  git_commit: "ac29965"
----
+- **Scope**: apps/server
+- **Layer**: application
+- **Source of Truth**: apps/server/src/application/commands/
+- **Last Verified**: 2025-01-07
+- **Repo Ref**: 82509c3
 
-## 개요
+## CreateOrganizationCommand
 
-Command는 시스템의 상태를 변경하는 유스케이스를 구현합니다. CQRS 패턴의 Command 부분으로, 비즈니스 로직을 조율하고 트랜잭션을 관리합니다.
+- **Location**: `apps/server/src/application/commands/create-organization.command.ts` (L30-L59)
+- **Purpose**: 조직(스터디 그룹) 생성
+- **Input**: `CreateOrganizationRequest`
+  - `name: string` - 조직 이름
+  - `slug?: string` - URL 식별자 (선택, 없으면 name에서 자동 생성)
+  - `discordWebhookUrl?: string` - Discord 웹훅 URL
+- **Output**: `CreateOrganizationResult`
+  - `organization: Organization` - 생성된 조직 엔티티
+- **Business Logic**:
+  1. Slug 중복 검사
+  2. 조직 생성 (자동으로 slug 생성됨)
+  3. 조직 저장
+- **Dependencies**:
+  - `OrganizationRepository` - 조직 저장 및 조회
+- **Evidence**:
+  ```typescript
+  // L36-L42: Slug 중복 검사
+  const slug = request.slug ?? request.name;
+  const existingOrg = await this.organizationRepo.findBySlug(slug);
+  if (existingOrg) {
+    throw new Error(`Organization with slug "${slug}" already exists`);
+  }
+  ```
 
-## Command 목록
+## JoinOrganizationCommand
 
-| Command | 목적 | Location |
-|---------|------|----------|
-| `RecordSubmissionCommand` | 제출 기록 | `application/commands/record-submission.command.ts` |
-| `CreateMemberCommand` | 회원 생성 | `application/commands/create-member.command.ts` |
-| `CreateCycleCommand` | 사이클 생성 | `application/commands/create-cycle.command.ts` |
-| `CreateGenerationCommand` | 기수 생성 | `application/commands/create-generation.command.ts` |
+- **Location**: `apps/server/src/application/commands/join-organization.command.ts` (L42-L106)
+- **Purpose**: 조직 가입 요청 (PENDING 상태로 생성)
+- **Input**: `JoinOrganizationRequest`
+  - `organizationSlug: string` - 조직 식별자
+  - `memberDiscordId: string` - 회원 Discord ID
+- **Output**: `JoinOrganizationResult`
+  - `organizationMember: OrganizationMember` - 생성된 조직원 관계
+  - `organization: Organization` - 조직 정보
+  - `member: Member` - 회원 정보
+  - `isNew: boolean` - 새로 생성된 조직원인지
+- **Business Logic**:
+  1. 조직 존재 확인
+  2. 멤버 존재 확인 (없으면 에러)
+  3. 이미 속해 있는지 확인
+  4. PENDING 상태로 조직원 생성
+  5. 저장
+- **Dependencies**:
+  - `OrganizationRepository` - 조직 조회
+  - `MemberRepository` - 회원 조회
+  - `OrganizationMemberRepository` - 조직원 저장
+- **Evidence**:
+  ```typescript
+  // L87-L93: 조직원 생성 (PENDING 상태)
+  const organizationMember = OrganizationMember.create({
+    organizationId: organization.id.value,
+    memberId: member.id.value,
+    role: OrganizationRole.MEMBER,
+    status: OrganizationMemberStatus.PENDING,
+  });
+  ```
 
-## RecordSubmissionCommand
+## AddMemberToOrganizationCommand
 
-- **Location**: `src/application/commands/record-submission.command.ts` (L39-L90)
-- **Purpose**: GitHub Issue 댓글을 통해 제출 기록
-- **Use Case**: 회원이 GitHub Issue에 댓글로 블로그 URL을 남기면 제출로 기록
-
-### Request
-
-```typescript
-interface RecordSubmissionRequest {
-  githubUsername: string;      // GitHub 사용자명
-  blogUrl: string;             // 블로그 URL
-  githubCommentId: string;     // GitHub 댓글 ID (중복 방지)
-  githubIssueUrl: string;      // GitHub Issue URL
-}
-```
-
-### Result
-
-```typescript
-interface RecordSubmissionResult {
-  submission: Submission;       // 생성된 제출 엔티티
-  memberName: string;          // 회원 이름 (Discord 알림용)
-  cycleName: string;           // 사이클 이름 (Discord 알림용)
-}
-```
-
-### 실행 흐름
-
-1. GitHub Issue URL로 Cycle 조회
-2. GitHub Username으로 Member 조회
-3. 제출 가능 여부 검증 (SubmissionService)
-4. Submission 엔티티 생성
-5. 저장 (Repository)
-6. 도메인 이벤트 발행 (Discord 알림)
-
-### 의존성
-
-- `CycleRepository` - 사이클 조회
-- `MemberRepository` - 회원 조회
-- `SubmissionRepository` - 제출 저장
-- `SubmissionService` - 제출 가능 여부 검증
-
-### 에러 처리
-
-- `NotFoundError` - 사이클 또는 회원을 찾을 수 없음
-- `ConflictError` - 이미 제출됨 또는 GitHub 댓글 ID 중복
+- **Location**: `apps/server/src/application/commands/add-member-to-organization.command.ts` (L42-L101)
+- **Purpose**: 관리자가 조직에 멤버 추가 (PENDING 상태)
+- **Input**: `AddMemberToOrganizationRequest`
+  - `organizationSlug: string` - 조직 식별자
+  - `memberId: number` - 회원 ID
+  - `role?: OrganizationRole` - 역할 (기본값: MEMBER)
+- **Output**: `AddMemberToOrganizationResult`
+  - `organizationMember: OrganizationMember` - 생성된 조직원 관계
+  - `organization: Organization` - 조직 정보
+  - `member: Member` - 회원 정보
+- **Business Logic**:
+  1. 조직 존재 확인
+  2. 멤버 존재 확인
+  3. 이미 속해 있는지 확인
+  4. 조직원 생성 (PENDING 상태)
+  5. 저장
+- **Dependencies**:
+  - `OrganizationRepository`
+  - `MemberRepository`
+  - `OrganizationMemberRepository`
 
 ## CreateMemberCommand
 
-- **Location**: `src/application/commands/create-member.command.ts` (L31-L55)
-- **Purpose**: 새 회원 생성
-
-### Request
-
-```typescript
-interface CreateMemberRequest {
-  githubUsername: string;
-  name: string;
-  discordId?: string;
-}
-```
-
-### Result
-
-```typescript
-interface CreateMemberResult {
-  member: Member;
-}
-```
-
-### 실행 흐름
-
-1. 중복 회원 검사 (MemberService)
-2. Member 엔티티 생성
-3. 저장 (Repository)
-
-### 의존성
-
-- `MemberRepository` - 회원 저장
-- `MemberService` - 중복 검사
-
-### 에러 처리
-
-- `ValidationError` - 회원 이미 존재
-
-## CreateCycleCommand
-
-- **Location**: `src/application/commands/create-cycle.command.ts` (L34-L81)
-- **Purpose**: 새 사이클(주차) 생성
-- **Use Case**: GitHub Issue 생성 시 자동으로 사이클 생성
-
-### Request
-
-```typescript
-interface CreateCycleRequest {
-  week: number;                // 주차 (1-52)
-  startDate?: Date;            // 시작일 (기본값: 현재)
-  endDate?: Date;              // 종료일 (기본값: 시작일 + 7일)
-  githubIssueUrl: string;      // GitHub Issue URL
-}
-```
-
-### Result
-
-```typescript
-interface CreateCycleResult {
-  cycle: Cycle;
-  generationName: string;       // 기수 이름
-}
-```
-
-### 실행 흐름
-
-1. 활성화된 기수 찾기
-2. 동일 주차 중복 확인
-3. 날짜 계산 (기본값: 7일)
-4. Cycle 엔티티 생성
-5. 저장 (Repository)
-
-### 의존성
-
-- `CycleRepository` - 사이클 저장, 중복 확인
-- `GenerationRepository` - 활성화된 기수 조회
-
-### 에러 처리
-
-- `ConflictError` - 활성화된 기수 없음 또는 주차 중복
+- **Location**: `apps/server/src/application/commands/create-member.command.ts` (L31-L56)
+- **Purpose**: 회원 생성 (GitHub username 기반)
+- **Input**: `CreateMemberRequest`
+  - `githubUsername: string` - GitHub 사용자명
+  - `name: string` - 회원 실명
+  - `discordId?: string` - Discord ID (선택, 없으면 자동 생성)
+- **Output**: `CreateMemberResult`
+  - `member: Member` - 생성된 회원
+- **Business Logic**:
+  1. 중복 회원 검사
+  2. 회원 생성 (discordId는 필수이므로 기본값 제공)
+  3. 회원 저장
+- **Dependencies**:
+  - `MemberRepository` - 회원 저장 및 조회
+  - `MemberService` - 중복 검증
+- **Evidence**:
+  ```typescript
+  // L42-L46: 회원 생성 (discordId 기본값)
+  const member = Member.create({
+    githubUsername: request.githubUsername,
+    name: request.name,
+    discordId: request.discordId ?? `gh_${request.githubUsername}`,
+  });
+  ```
 
 ## CreateGenerationCommand
 
-- **Location**: `src/application/commands/create-generation.command.ts` (L32-L68)
-- **Purpose**: 새 기수 생성
+- **Location**: `apps/server/src/application/commands/create-generation.command.ts` (L34-L92)
+- **Purpose**: 기수 생성 (조직에 속함)
+- **Input**: `CreateGenerationRequest`
+  - `organizationSlug: string` - 조직 식별자
+  - `name: string` - 기수명 (예: "똥글똥글 1기")
+  - `startedAt: Date` - 시작일
+  - `isActive?: boolean` - 활성화 여부 (기본값: false)
+- **Output**: `CreateGenerationResult`
+  - `generation: Generation` - 생성된 기수
+- **Business Logic**:
+  1. 조직 존재 확인
+  2. 기수 이름 검증 (비어있지 않고 50자 이하)
+  3. 활성화된 기수가 있는지 확인 (같은 조직 내)
+  4. 기수 생성 및 저장
+- **Dependencies**:
+  - `GenerationRepository` - 기수 저장 및 조회
+  - `OrganizationRepository` - 조직 조회
+- **Evidence**:
+  ```typescript
+  // L64-L74: 활성화된 기수 중복 검사
+  if (isActive) {
+    const activeGeneration = await this.generationRepo.findActiveByOrganization(
+      organization.id.value
+    );
+    if (activeGeneration) {
+      throw new ValidationError(
+        `Organization "${request.organizationSlug}" already has an active generation`
+      );
+    }
+  }
+  ```
 
-### Request
+## CreateCycleCommand
 
-```typescript
-interface CreateGenerationRequest {
-  name: string;
-  startedAt: Date;
-  isActive?: boolean;          // 기본값: false
-}
-```
+- **Location**: `apps/server/src/application/commands/create-cycle.command.ts` (L37-L100)
+- **Purpose**: 사이클(주차) 생성 (기수에 속함)
+- **Input**: `CreateCycleRequest`
+  - `organizationSlug: string` - 조직 식별자
+  - `week: number` - 주차 번호 (1, 2, 3...)
+  - `startDate?: Date` - 시작일 (기본값: 현재)
+  - `endDate?: Date` - 종료일 (기본값: 7일 후)
+  - `githubIssueUrl: string` - GitHub Issue URL
+- **Output**: `CreateCycleResult`
+  - `cycle: Cycle` - 생성된 사이클
+  - `generationName: string` - 기수명
+- **Business Logic**:
+  1. 조직 존재 확인
+  2. 해당 조직의 활성화된 기수 찾기
+  3. 이미 동일한 주차의 사이클이 있는지 확인
+  4. 날짜 계산 (기본값: 현재부터 7일간)
+  5. 사이클 생성 및 저장
+- **Dependencies**:
+  - `CycleRepository` - 사이클 저장 및 조회
+  - `GenerationRepository` - 기수 조회
+  - `OrganizationRepository` - 조직 조회
 
-### Result
+## RecordSubmissionCommand
 
-```typescript
-interface CreateGenerationResult {
-  generation: Generation;
-}
-```
-
-### 실행 흐름
-
-1. 기수 이름 검증
-2. 활성화된 기수가 있는지 확인 (isActive가 true인 경우)
-3. Generation 엔티티 생성
-4. 저장 (Repository)
-
-### 의존성
-
-- `GenerationRepository` - 기수 저장
-- `GenerationService` - 활성화된 기수 확인
-
-### 에러 처리
-
-- `ValidationError` - 이름 형식 오류
-- `ConflictError` - 활성화된 기수 이미 존재
-
-## 사용 예시
-
-### 제출 기록 (GitHub Webhook)
-
-```typescript
-const result = await recordSubmissionCommand.execute({
-  githubUsername: 'john-doe',
-  blogUrl: 'https://blog.example.com/post',
-  githubCommentId: '1234567890',
-  githubIssueUrl: 'https://github.com/org/repo/issues/1'
-});
-
-// Discord 알림 전송
-await discordClient.sendSubmissionNotification(
-  webhookUrl,
-  result.memberName,
-  result.cycleName,
-  result.blogUrl
-);
-```
-
-### 회원 생성
-
-```typescript
-const result = await createMemberCommand.execute({
-  githubUsername: 'john-doe',
-  name: 'John Doe',
-  discordId: '123456789012345678'
-});
-
-console.log(`회원 생성됨: ${result.member.id.value}`);
-```
-
-### 사이클 생성 (GitHub Webhook)
-
-```typescript
-const result = await createCycleCommand.execute({
-  week: 1,
-  startDate: new Date('2026-01-01'),
-  endDate: new Date('2026-01-08'),
-  githubIssueUrl: 'https://github.com/org/repo/issues/1'
-});
-
-console.log(`사이클 생성됨: ${result.generationName} - ${result.cycle.week.toNumber()}주차`);
-```
-
-## Command 패턴 특징
-
-1. **단일 책임**: 각 Command는 하나의 유스케이스만 처리
-2. **명시적 의존성**: 필요한 Repository와 Service만 주입
-3. **불변 요청**: Request 인터페이스로 입력 명시
-4. **명확한 결과**: Result 인터페이스로 출력 명시
-5. **에러 처리**: 도메인 에러를 그대로 전파
+- **Location**: `apps/server/src/application/commands/record-submission.command.ts` (L47-L125)
+- **Purpose**: 제출 기록 (GitHub Webhook에서 호출)
+- **Input**: `RecordSubmissionRequest`
+  - `githubUsername: string` - GitHub 사용자명
+  - `blogUrl: string` - 블로그 글 URL
+  - `githubCommentId: string` - GitHub 댓글 ID
+  - `githubIssueUrl: string` - GitHub Issue URL
+- **Output**: `RecordSubmissionResult`
+  - `submission: Submission` - 생성된 제출
+  - `memberName: string` - 회원 이름 (Discord 알림용)
+  - `cycleName: string` - 사이클 이름 (Discord 알림용)
+  - `organizationSlug: string` - 조직 식별자
+- **Business Logic**:
+  1. GitHub Issue URL에 해당하는 Cycle 찾기
+  2. Cycle이 속한 Generation 찾기
+  3. Generation이 속한 Organization 찾기
+  4. GitHub Username으로 Member 찾기
+  5. Member가 해당 Organization의 활성 멤버인지 확인
+  6. 제출 가능 여부 검증 (중복 확인)
+  7. Submission 생성 및 저장
+  8. 도메인 이벤트 발행 (Discord 알림 등)
+- **Dependencies**:
+  - `CycleRepository`
+  - `MemberRepository`
+  - `SubmissionRepository`
+  - `OrganizationMemberRepository`
+  - `GenerationRepository`
+  - `SubmissionService` - 제출 검증
+- **Evidence**:
+  ```typescript
+  // L86-L95: 활성 멤버 확인
+  const isActiveMember = await this.organizationMemberRepo.isActiveMember(
+    organizationIdObj,
+    member.id
+  );
+  if (!isActiveMember) {
+    throw new ForbiddenError(
+      `Member is not an active member of the organization`
+    );
+  }
+  ```
