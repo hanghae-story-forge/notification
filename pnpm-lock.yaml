@@ -17,6 +17,15 @@ importers:
 
   apps/client:
     devDependencies:
+      '@dongueldonguel/config-eslint':
+        specifier: workspace:*
+        version: link:../../packages/config/eslint
+      '@dongueldonguel/config-prettier':
+        specifier: workspace:*
+        version: link:../../packages/config/prettier
+      '@dongueldonguel/config-typescript':
+        specifier: workspace:*
+        version: link:../../packages/config/typescript
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -66,9 +75,15 @@ importers:
         specifier: ^4.3.5
         version: 4.3.5
     devDependencies:
-      '@eslint/js':
-        specifier: ^9.39.2
-        version: 9.39.2
+      '@dongueldonguel/config-eslint':
+        specifier: workspace:*
+        version: link:../../packages/config/eslint
+      '@dongueldonguel/config-prettier':
+        specifier: workspace:*
+        version: link:../../packages/config/prettier
+      '@dongueldonguel/config-typescript':
+        specifier: workspace:*
+        version: link:../../packages/config/typescript
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -84,9 +99,6 @@ importers:
       eslint:
         specifier: ^9.22.0
         version: 9.39.2
-      eslint-config-prettier:
-        specifier: ^10.1.1
-        version: 10.1.8(eslint@9.39.2)
       prettier:
         specifier: ^3.5.3
         version: 3.7.4
@@ -102,12 +114,25 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.51.0
-        version: 8.51.0(eslint@9.39.2)(typescript@5.9.3)
       typescript-transform-paths:
         specifier: ^3.5.6
         version: 3.5.6(typescript@5.9.3)
+
+  packages/config/eslint:
+    dependencies:
+      '@eslint/js':
+        specifier: ^9.39.2
+        version: 9.39.2
+      eslint-config-prettier:
+        specifier: ^10.1.1
+        version: 10.1.8(eslint@9.39.2)
+      typescript-eslint:
+        specifier: ^8.51.0
+        version: 8.51.0(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/config/prettier: {}
+
+  packages/config/typescript: {}
 
 packages:
 
