@@ -42,12 +42,17 @@ export const getReminderCycles = createRoute({
   request: {
     query: z.object({
       hoursBefore: z.string().default('24').optional(),
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
     }),
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       ReminderListResponseSchema,
       'Reminder cycles retrieved'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,
@@ -68,11 +73,18 @@ export const getNotSubmittedMembers = createRoute({
     params: z.object({
       cycleId: z.string().regex(/^\d+$/, 'Cycle ID must be a number'),
     }),
+    query: z.object({
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
+    }),
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       NotSubmittedResponseSchema,
       'Not submitted members retrieved'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,
@@ -92,6 +104,7 @@ export const sendReminderNotifications = createRoute({
   request: {
     query: z.object({
       hoursBefore: z.string().default('24').optional(),
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
     }),
   },
   responses: {
@@ -103,6 +116,10 @@ export const sendReminderNotifications = createRoute({
         ),
       }),
       'Reminder notifications sent'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,

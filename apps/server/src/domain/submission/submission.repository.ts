@@ -47,6 +47,19 @@ export interface SubmissionRepository {
   findByMember(memberId: MemberId): Promise<Submission[]>;
 
   /**
+   * 조직의 모든 제출 조회 (through cycle -> generation -> organization)
+   */
+  findByOrganization(organizationId: number): Promise<Submission[]>;
+
+  /**
+   * 조직의 특정 사이클 제출 조회
+   */
+  findByOrganizationAndCycle(
+    organizationId: number,
+    cycleId: number
+  ): Promise<Submission[]>;
+
+  /**
    * 제출 삭제
    */
   delete(id: SubmissionId): Promise<void>;

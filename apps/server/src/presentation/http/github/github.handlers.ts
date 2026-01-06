@@ -15,6 +15,8 @@ import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzl
 import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
+import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
+import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
 import { SubmissionService } from '@/domain/submission/submission.service';
 import { DiscordWebhookClient } from '@/infrastructure/external/discord';
 import {
@@ -31,6 +33,8 @@ const submissionRepo = new DrizzleSubmissionRepository();
 const cycleRepo = new DrizzleCycleRepository();
 const memberRepo = new DrizzleMemberRepository();
 const generationRepo = new DrizzleGenerationRepository();
+const organizationRepo = new DrizzleOrganizationRepository();
+const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 const submissionService = new SubmissionService(submissionRepo);
 const discordClient = new DiscordWebhookClient();
 
@@ -38,10 +42,16 @@ const recordSubmissionCommand = new RecordSubmissionCommand(
   cycleRepo,
   memberRepo,
   submissionRepo,
+  organizationMemberRepo,
+  generationRepo,
   submissionService
 );
 
-const createCycleCommand = new CreateCycleCommand(cycleRepo, generationRepo);
+const createCycleCommand = new CreateCycleCommand(
+  cycleRepo,
+  generationRepo,
+  organizationRepo
+);
 
 // ========================================
 // Utilities
@@ -175,7 +185,7 @@ export const handleIssues = async (c: AppContext) => {
   const payload = (await c.req.json()) as z.infer<
     typeof IssuesWebhookPayloadSchema
   >;
-  const { issue } = payload;
+  const { issue, repository } = payload;
 
   // 이슈 제목에서 회차 번호 추출
   const week = parseWeekFromTitle(issue.title);
@@ -194,9 +204,17 @@ export const handleIssues = async (c: AppContext) => {
   const startDate = dates?.start ?? now;
   const endDate = dates?.end ?? new Date(now.getTime() + weekInMs);
 
+  // 조직 식별: repository.name에서 조직 slug를 추출
+  // 예: "dongueldonguel" -> "dongueldonguel", "saechbalclub" -> "saechbalclub"
+  // 또는 별도의 맵핑이 필요할 수 있음
+  const organizationSlug =
+    c.req.query('organizationSlug') ||
+    repository.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
   try {
     // Command 실행 (DDD Use Case)
     const result = await createCycleCommand.execute({
+      organizationSlug,
       week,
       startDate,
       endDate,

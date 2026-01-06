@@ -7,6 +7,8 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
+import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
 import { DiscordWebhookClient } from '@/infrastructure/external/discord';
 import { NotFoundError } from '@/domain/common/errors';
 
@@ -18,12 +20,16 @@ const cycleRepo = new DrizzleCycleRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const submissionRepo = new DrizzleSubmissionRepository();
 const memberRepo = new DrizzleMemberRepository();
+const organizationRepo = new DrizzleOrganizationRepository();
+const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 const discordClient = new DiscordWebhookClient();
 
 const getReminderTargetsQuery = new GetReminderTargetsQuery(
   cycleRepo,
   generationRepo,
+  organizationRepo,
   submissionRepo,
+  organizationMemberRepo,
   memberRepo
 );
 
@@ -34,10 +40,20 @@ const getReminderTargetsQuery = new GetReminderTargetsQuery(
 // n8n용 리마인더 대상 목록 조회
 export const getReminderCycles = async (c: AppContext) => {
   const hoursBefore = parseInt(c.req.query('hoursBefore') ?? '24');
+  const organizationSlug = c.req.query('organizationSlug');
+
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
 
   try {
-    const cycles =
-      await getReminderTargetsQuery.getCyclesWithDeadlineIn(hoursBefore);
+    const cycles = await getReminderTargetsQuery.getCyclesWithDeadlineIn(
+      organizationSlug,
+      hoursBefore
+    );
     return c.json({ cycles }, HttpStatusCodes.OK);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -54,10 +70,20 @@ export const getReminderCycles = async (c: AppContext) => {
 // 특정 사이클의 미제출자 목록 조회
 export const getNotSubmittedMembers = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
+  const organizationSlug = c.req.query('organizationSlug');
+
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
 
   try {
-    const result =
-      await getReminderTargetsQuery.getNotSubmittedMembers(cycleId);
+    const result = await getReminderTargetsQuery.getNotSubmittedMembers(
+      cycleId,
+      organizationSlug
+    );
     return c.json(result, HttpStatusCodes.OK);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -74,6 +100,14 @@ export const getNotSubmittedMembers = async (c: AppContext) => {
 // 리마인더 알림 발송 (GitHub Actions용)
 export const sendReminderNotifications = async (c: AppContext) => {
   const hoursBefore = parseInt(c.req.query('hoursBefore') ?? '24');
+  const organizationSlug = c.req.query('organizationSlug');
+
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
 
   const discordWebhookUrl =
     c.env.DISCORD_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
@@ -86,15 +120,18 @@ export const sendReminderNotifications = async (c: AppContext) => {
   }
 
   try {
-    const cycles =
-      await getReminderTargetsQuery.getCyclesWithDeadlineIn(hoursBefore);
+    const cycles = await getReminderTargetsQuery.getCyclesWithDeadlineIn(
+      organizationSlug,
+      hoursBefore
+    );
 
     const sentCycles: Array<{ cycleId: number; cycleName: string }> = [];
 
     for (const cycleInfo of cycles) {
       // 미제출자 목록 조회
       const result = await getReminderTargetsQuery.getNotSubmittedMembers(
-        cycleInfo.cycleId
+        cycleInfo.cycleId,
+        organizationSlug
       );
 
       if (result.notSubmitted.length === 0) {

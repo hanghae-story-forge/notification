@@ -21,3 +21,7 @@ export { GetAllGenerationsQuery } from './get-all-generations.query';
 export { GetGenerationByIdQuery } from './get-generation-by-id.query';
 export { GetCyclesByGenerationQuery } from './get-cycles-by-generation.query';
 export { GetCycleByIdQuery } from './get-cycle-by-id.query';
+
+export { GetOrganizationQuery } from './get-organization.query';
+export { GetOrganizationMembersQuery } from './get-organization-members.query';
+export { GetMemberOrganizationsQuery } from './get-member-organizations.query';

@@ -84,6 +84,14 @@ export class UnauthorizedError extends ApplicationError {
   }
 }
 
+export class ForbiddenError extends ApplicationError {
+  readonly code = 'FORBIDDEN' as const;
+
+  constructor(message = 'Forbidden') {
+    super(message);
+  }
+}
+
 export class ConflictError extends ApplicationError {
   readonly code = 'CONFLICT' as const;
 

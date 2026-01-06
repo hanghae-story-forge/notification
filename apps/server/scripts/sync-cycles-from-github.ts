@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { Octokit } from 'octokit';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { generations, cycles } from '../src/infrastructure/persistence/drizzle-db/schema';
+import { generations, cycles, organizations } from '../src/infrastructure/persistence/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { env } from '../src/env';
 import { getGitHubClient } from '../src/infrastructure/lib/github';
@@ -172,11 +172,19 @@ async function getOrCreateGeneration(name: string) {
     return existing[0];
   }
 
+  // 똥글똥글 조직 조회
+  const [org] = await db.select().from(organizations).where(eq(organizations.slug, 'dongueldonguel')).limit(1);
+
+  if (!org) {
+    throw new Error('똥글똥글 조직을 찾을 수 없습니다. 먼저 조직을 생성해주세요.');
+  }
+
   // 새 기수 생성 (시작일은 첫 회차 시작일로 설정, 나중에 업데이트됨)
   const newGeneration = await db
     .insert(generations)
     .values({
       name,
+      organizationId: org.id,
       startedAt: new Date(),
       isActive: true,
     })

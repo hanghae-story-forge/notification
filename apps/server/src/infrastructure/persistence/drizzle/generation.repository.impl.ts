@@ -1,6 +1,6 @@
 // Generation Repository Implementation - Drizzle ORM
 
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { generations } from '../drizzle-db/schema';
 import {
@@ -18,6 +18,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
       const result = await db
         .insert(generations)
         .values({
+          organizationId: dto.organizationId,
           name: dto.name,
           startedAt: new Date(dto.startedAt),
           isActive: dto.isActive,
@@ -31,6 +32,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
       await db
         .update(generations)
         .set({
+          organizationId: dto.organizationId,
           name: dto.name,
           startedAt: new Date(dto.startedAt),
           isActive: dto.isActive,
@@ -70,6 +72,38 @@ export class DrizzleGenerationRepository implements GenerationRepository {
     return this.mapToEntity(result[0]);
   }
 
+  async findActiveByOrganization(
+    organizationId: number
+  ): Promise<Generation | null> {
+    const result = await db
+      .select()
+      .from(generations)
+      .where(
+        and(
+          eq(generations.organizationId, organizationId),
+          eq(generations.isActive, true)
+        )
+      )
+      .orderBy(generations.createdAt)
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return this.mapToEntity(result[0]);
+  }
+
+  async findByOrganization(organizationId: number): Promise<Generation[]> {
+    const result = await db
+      .select()
+      .from(generations)
+      .where(eq(generations.organizationId, organizationId))
+      .orderBy(generations.createdAt);
+
+    return result.map((row) => this.mapToEntity(row));
+  }
+
   async findAll(): Promise<Generation[]> {
     const result = await db.select().from(generations);
     return result.map((row) => this.mapToEntity(row));
@@ -77,6 +111,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
 
   private mapToEntity(row: {
     id: number;
+    organizationId: number;
     name: string;
     startedAt: Date;
     isActive: boolean;
@@ -84,6 +119,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
   }): Generation {
     return Generation.reconstitute({
       id: row.id,
+      organizationId: row.organizationId,
       name: row.name,
       startedAt: row.startedAt,
       isActive: row.isActive,

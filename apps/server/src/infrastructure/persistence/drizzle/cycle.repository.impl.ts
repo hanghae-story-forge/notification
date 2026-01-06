@@ -2,7 +2,7 @@
 
 import { eq, and, lt, gt } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { cycles } from '../drizzle-db/schema';
+import { cycles, generations } from '../drizzle-db/schema';
 import { Cycle, CycleId } from '../../../domain/cycle/cycle.domain';
 import { CycleRepository } from '../../../domain/cycle/cycle.repository';
 
@@ -115,6 +115,64 @@ export class DrizzleCycleRepository implements CycleRepository {
       .where(
         and(
           eq(cycles.generationId, generationId),
+          lt(cycles.endDate, endTime),
+          gt(cycles.endDate, startTime)
+        )
+      );
+
+    return result.map((row) => this.mapToEntity(row));
+  }
+
+  async findActiveCyclesByOrganization(
+    organizationId: number
+  ): Promise<Cycle[]> {
+    const now = new Date();
+
+    const result = await db
+      .select({
+        id: cycles.id,
+        generationId: cycles.generationId,
+        week: cycles.week,
+        startDate: cycles.startDate,
+        endDate: cycles.endDate,
+        githubIssueUrl: cycles.githubIssueUrl,
+        createdAt: cycles.createdAt,
+      })
+      .from(cycles)
+      .innerJoin(generations, eq(cycles.generationId, generations.id))
+      .where(
+        and(
+          eq(generations.organizationId, organizationId),
+          eq(generations.isActive, true),
+          lt(cycles.startDate, now),
+          gt(cycles.endDate, now)
+        )
+      );
+
+    return result.map((row) => this.mapToEntity(row));
+  }
+
+  async findCyclesWithDeadlineInRangeByOrganization(
+    organizationId: number,
+    startTime: Date,
+    endTime: Date
+  ): Promise<Cycle[]> {
+    const result = await db
+      .select({
+        id: cycles.id,
+        generationId: cycles.generationId,
+        week: cycles.week,
+        startDate: cycles.startDate,
+        endDate: cycles.endDate,
+        githubIssueUrl: cycles.githubIssueUrl,
+        createdAt: cycles.createdAt,
+      })
+      .from(cycles)
+      .innerJoin(generations, eq(cycles.generationId, generations.id))
+      .where(
+        and(
+          eq(generations.organizationId, organizationId),
+          eq(generations.isActive, true),
           lt(cycles.endDate, endTime),
           gt(cycles.endDate, startTime)
         )

@@ -38,11 +38,11 @@ export class CreateMemberCommand {
     // 1. 중복 회원 검사
     await this.memberService.validateNewMember(request.githubUsername);
 
-    // 2. 회원 생성
+    // 2. 회원 생성 (discordId는 필수이므로 기본값 제공)
     const member = Member.create({
       githubUsername: request.githubUsername,
       name: request.name,
-      discordId: request.discordId,
+      discordId: request.discordId ?? `gh_${request.githubUsername}`,
     });
 
     // 3. 저장
