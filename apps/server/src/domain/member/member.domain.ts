@@ -1,7 +1,7 @@
 // Member Domain - 회원 도메인
 
 import { EntityId, AggregateRoot } from '../common/types';
-import { MemberName, GithubUsername, DiscordId } from './member.vo';
+import { MemberName, GithubUsername, DiscordId, DiscordUsername } from './member.vo';
 
 // Member ID
 export class MemberId extends EntityId {
@@ -17,7 +17,7 @@ export class MemberRegisteredEvent {
 
   constructor(
     public readonly memberId: MemberId,
-    public readonly githubUsername: GithubUsername
+    public readonly discordId: DiscordId
   ) {
     this.occurredAt = new Date();
   }
@@ -26,9 +26,11 @@ export class MemberRegisteredEvent {
 // 회원 생성 데이터
 export interface CreateMemberData {
   id?: number;
-  githubUsername: string;
+  discordId: string; // Discord ID (필수)
+  discordUsername?: string; // Discord username (선택)
+  discordAvatar?: string; // Discord avatar hash (선택)
+  githubUsername?: string; // GitHub username (선택, 더 이상 unique 아님)
   name: string;
-  discordId?: string;
   createdAt?: Date;
 }
 
@@ -36,27 +38,43 @@ export interface CreateMemberData {
 export class Member extends AggregateRoot<MemberId> {
   private constructor(
     id: MemberId,
-    private readonly _githubUsername: GithubUsername,
+    private readonly _discordId: DiscordId,
+    private readonly _discordUsername: DiscordUsername | null,
+    private readonly _discordAvatar: string | null,
+    private readonly _githubUsername: GithubUsername | null,
     private readonly _name: MemberName,
-    private readonly _discordId: DiscordId | null,
     private readonly _createdAt: Date
   ) {
     super(id);
   }
 
-  // 팩토리 메서드: 새 회원 생성
+  // 팩토리 메서드: 새 회원 생성 (Discord OAuth로 가입)
   static create(data: CreateMemberData): Member {
-    const githubUsername = GithubUsername.create(data.githubUsername);
+    const discordId = DiscordId.create(data.discordId);
+    const discordUsername = data.discordUsername
+      ? DiscordUsername.create(data.discordUsername)
+      : null;
+    const discordAvatar = data.discordAvatar ?? null;
+    const githubUsername = data.githubUsername
+      ? GithubUsername.create(data.githubUsername)
+      : null;
     const name = MemberName.create(data.name);
-    const discordId = DiscordId.createOrNull(data.discordId);
 
     const id = data.id ? MemberId.create(data.id) : MemberId.create(0);
     const createdAt = data.createdAt ?? new Date();
-    const member = new Member(id, githubUsername, name, discordId, createdAt);
+    const member = new Member(
+      id,
+      discordId,
+      discordUsername,
+      discordAvatar,
+      githubUsername,
+      name,
+      createdAt
+    );
 
     // 도메인 이벤트 발행 (새 생성 시에만)
     if (data.id === 0) {
-      member.addDomainEvent(new MemberRegisteredEvent(id, githubUsername));
+      member.addDomainEvent(new MemberRegisteredEvent(id, discordId));
     }
 
     return member;
@@ -65,22 +83,38 @@ export class Member extends AggregateRoot<MemberId> {
   // 팩토리 메서드: DB에서 조회한 엔티티 복원
   static reconstitute(data: {
     id: number;
-    github: string;
+    discordId: string;
+    discordUsername?: string;
+    discordAvatar?: string;
+    github?: string;
     name: string;
-    discordId?: string;
     createdAt: Date;
   }): Member {
     return Member.create({
       id: data.id,
+      discordId: data.discordId,
+      discordUsername: data.discordUsername,
+      discordAvatar: data.discordAvatar,
       githubUsername: data.github,
       name: data.name,
-      discordId: data.discordId,
       createdAt: data.createdAt,
     });
   }
 
   // Getters
-  get githubUsername(): GithubUsername {
+  get discordId(): DiscordId {
+    return this._discordId;
+  }
+
+  get discordUsername(): DiscordUsername | null {
+    return this._discordUsername;
+  }
+
+  get discordAvatar(): string | null {
+    return this._discordAvatar;
+  }
+
+  get githubUsername(): GithubUsername | null {
     return this._githubUsername;
   }
 
@@ -88,38 +122,53 @@ export class Member extends AggregateRoot<MemberId> {
     return this._name;
   }
 
-  get discordId(): DiscordId | null {
-    return this._discordId;
-  }
-
   get createdAt(): Date {
     return new Date(this._createdAt);
   }
 
-  // 비즈니스 로직: GitHub 사용자명으로 회원 식별
-  matchesGithubUsername(username: string): boolean {
-    return this._githubUsername.value === username;
+  // 비즈니스 로직: Discord ID로 회원 식별
+  matchesDiscordId(discordId: string): boolean {
+    return this._discordId.value === discordId;
   }
 
-  // 비즈니스 로직: Discord 연동되어 있는지 확인
-  hasDiscordLinked(): boolean {
-    return this._discordId !== null;
+  // 비즈니스 로직: GitHub 사용자명이 있는지 확인
+  hasGithubLinked(): boolean {
+    return this._githubUsername !== null;
+  }
+
+  // 비즈니스 로직: GitHub 사용자명 업데이트
+  updateGithubUsername(username: string): void {
+    (this as any)._githubUsername = GithubUsername.create(username);
+  }
+
+  // 비즈니스 로직: Discord username 업데이트 (사용자 변경 가능)
+  updateDiscordUsername(username: string): void {
+    (this as any)._discordUsername = DiscordUsername.create(username);
+  }
+
+  // 비즈니스 로직: Discord avatar 업데이트
+  updateDiscordAvatar(avatar: string): void {
+    (this as any)._discordAvatar = avatar;
   }
 
   // DTO로 변환
   toDTO(): MemberDTO {
     return {
       id: this.id.value,
-      githubUsername: this._githubUsername.value,
+      discordId: this._discordId.value,
+      discordUsername: this._discordUsername?.value,
+      discordAvatar: this._discordAvatar,
+      githubUsername: this._githubUsername?.value,
       name: this._name.value,
-      discordId: this._discordId?.value,
     };
   }
 }
 
 export interface MemberDTO {
   id: number;
-  githubUsername: string;
+  discordId: string;
+  discordUsername?: string;
+  discordAvatar?: string;
+  githubUsername?: string;
   name: string;
-  discordId?: string;
 }

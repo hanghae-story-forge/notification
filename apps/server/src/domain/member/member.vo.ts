@@ -93,3 +93,40 @@ export class DiscordId {
     return this.value;
   }
 }
+
+// Discord Username Value Object
+export class DiscordUsername {
+  private constructor(public readonly value: string) {
+    // Discord username: 2-32 characters, alphanumeric and underscore
+    const discordUsernameRegex = /^[a-zA-Z0-9_]{2,32}$/;
+    if (!discordUsernameRegex.test(value)) {
+      throw new InvalidValueError(
+        'Discord username',
+        value,
+        'Invalid Discord username format (must be 2-32 characters, alphanumeric and underscore only)'
+      );
+    }
+  }
+
+  static create(value: string): DiscordUsername {
+    return new DiscordUsername(value);
+  }
+
+  static createOrNull(value: string | null | undefined): DiscordUsername | null {
+    if (!value) return null;
+    try {
+      return DiscordUsername.create(value);
+    } catch {
+      return null;
+    }
+  }
+
+  equals(other: DiscordUsername | null): boolean {
+    if (!other) return false;
+    return this.value === other.value;
+  }
+
+  toString(): string {
+    return this.value;
+  }
+}

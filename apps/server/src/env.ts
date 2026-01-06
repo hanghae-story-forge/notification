@@ -35,6 +35,33 @@ export const env = createEnv({
       .string()
       .min(1, { message: 'APP_INSTALLATION_ID is required' })
       .optional(),
+    // Discord OAuth2
+    DISCORD_OAUTH_CLIENT_ID: z
+      .string()
+      .min(1, { message: 'DISCORD_OAUTH_CLIENT_ID is required' })
+      .optional(),
+    DISCORD_OAUTH_CLIENT_SECRET: z
+      .string()
+      .min(1, { message: 'DISCORD_OAUTH_CLIENT_SECRET is required' })
+      .optional(),
+    DISCORD_OAUTH_REDIRECT_URI: z
+      .string()
+      .url({ message: 'Invalid DISCORD_OAUTH_REDIRECT_URI format' })
+      .optional(),
+    // JWT
+    JWT_SECRET: z
+      .string()
+      .min(32, { message: 'JWT_SECRET must be at least 32 characters' })
+      .optional(),
+    JWT_EXPIRES_IN: z
+      .string()
+      .default('7d'),
+    JWT_ISSUER: z
+      .string()
+      .default('dongueldonguel'),
+    JWT_AUDIENCE: z
+      .string()
+      .default('dongueldonguel-api'),
   },
 
   /**
@@ -63,6 +90,15 @@ export const env = createEnv({
     APP_ID: process.env.APP_ID,
     APP_PRIVATE_KEY: process.env.APP_PRIVATE_KEY,
     APP_INSTALLATION_ID: process.env.APP_INSTALLATION_ID,
+    // Discord OAuth2
+    DISCORD_OAUTH_CLIENT_ID: process.env.DISCORD_OAUTH_CLIENT_ID,
+    DISCORD_OAUTH_CLIENT_SECRET: process.env.DISCORD_OAUTH_CLIENT_SECRET,
+    DISCORD_OAUTH_REDIRECT_URI: process.env.DISCORD_OAUTH_REDIRECT_URI,
+    // JWT
+    JWT_SECRET: process.env.JWT_SECRET,
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+    JWT_ISSUER: process.env.JWT_ISSUER,
+    JWT_AUDIENCE: process.env.JWT_AUDIENCE,
   },
 
   /**

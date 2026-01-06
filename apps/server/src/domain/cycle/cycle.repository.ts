@@ -44,4 +44,18 @@ export interface CycleRepository {
     startTime: Date,
     endTime: Date
   ): Promise<Cycle[]>;
+
+  /**
+   * 조직의 진행 중인 사이클 조회 (organization context through generation)
+   */
+  findActiveCyclesByOrganization(organizationId: number): Promise<Cycle[]>;
+
+  /**
+   * 조직의 특정 시간 범위 내에 마감되는 사이클 조회
+   */
+  findCyclesWithDeadlineInRangeByOrganization(
+    organizationId: number,
+    startTime: Date,
+    endTime: Date
+  ): Promise<Cycle[]>;
 }

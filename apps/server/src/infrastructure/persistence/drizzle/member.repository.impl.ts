@@ -13,18 +13,22 @@ export class DrizzleMemberRepository implements MemberRepository {
     // ID가 0이면 새로운 회원 (생성)
     if (dto.id === 0) {
       await db.insert(members).values({
+        discordId: dto.discordId,
+        discordUsername: dto.discordUsername,
+        discordAvatar: dto.discordAvatar,
         github: dto.githubUsername,
         name: dto.name,
-        discordId: dto.discordId,
       });
     } else {
       // 기존 회원 업데이트
       await db
         .update(members)
         .set({
+          discordId: dto.discordId,
+          discordUsername: dto.discordUsername,
+          discordAvatar: dto.discordAvatar,
           github: dto.githubUsername,
           name: dto.name,
-          discordId: dto.discordId,
         })
         .where(eq(members.id, dto.id));
     }
@@ -35,6 +39,20 @@ export class DrizzleMemberRepository implements MemberRepository {
       .select()
       .from(members)
       .where(eq(members.id, id.value))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return this.mapToEntity(result[0]);
+  }
+
+  async findByDiscordId(discordId: string): Promise<Member | null> {
+    const result = await db
+      .select()
+      .from(members)
+      .where(eq(members.discordId, discordId))
       .limit(1);
 
     if (result.length === 0) {
@@ -63,32 +81,22 @@ export class DrizzleMemberRepository implements MemberRepository {
     return result.map((row) => this.mapToEntity(row));
   }
 
-  async findByDiscordId(discordId: string): Promise<Member | null> {
-    const result = await db
-      .select()
-      .from(members)
-      .where(eq(members.discordId, discordId))
-      .limit(1);
-
-    if (result.length === 0) {
-      return null;
-    }
-
-    return this.mapToEntity(result[0]);
-  }
-
   private mapToEntity(row: {
     id: number;
-    github: string;
+    discordId: string;
+    discordUsername: string | null;
+    discordAvatar: string | null;
+    github: string | null;
     name: string;
-    discordId: string | null;
     createdAt: Date;
   }): Member {
     return Member.reconstitute({
       id: row.id,
-      github: row.github,
+      discordId: row.discordId,
+      discordUsername: row.discordUsername ?? undefined,
+      discordAvatar: row.discordAvatar ?? undefined,
+      github: row.github ?? undefined,
       name: row.name,
-      discordId: row.discordId ?? undefined,
       createdAt: row.createdAt,
     });
   }

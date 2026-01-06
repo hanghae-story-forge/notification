@@ -8,6 +8,8 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
+import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
 import { NotFoundError } from '@/domain/common/errors';
 
 // ========================================
@@ -18,11 +20,15 @@ const cycleRepo = new DrizzleCycleRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const submissionRepo = new DrizzleSubmissionRepository();
 const memberRepo = new DrizzleMemberRepository();
+const organizationRepo = new DrizzleOrganizationRepository();
+const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 
 const getCycleStatusQuery = new GetCycleStatusQuery(
   cycleRepo,
   generationRepo,
+  organizationRepo,
   submissionRepo,
+  organizationMemberRepo,
   memberRepo
 );
 
@@ -32,8 +38,17 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
 
 // 현재 진행중인 사이클 조회
 export const getCurrentCycle = async (c: AppContext) => {
+  const organizationSlug = c.req.query('organizationSlug');
+
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
+
   try {
-    const result = await getCycleStatusQuery.getCurrentCycle();
+    const result = await getCycleStatusQuery.getCurrentCycle(organizationSlug);
 
     if (!result) {
       return c.json(
@@ -54,31 +69,28 @@ export const getCurrentCycle = async (c: AppContext) => {
 
 // 현재 진행중인 사이클을 Discord 메시지 포맷으로 반환
 export const getCurrentCycleDiscord = async (c: AppContext) => {
-  try {
-    // 현재 진행 중인 사이클 찾기
-    const generation = await generationRepo.findActive();
+  const organizationSlug = c.req.query('organizationSlug');
 
-    if (!generation) {
-      return c.json(
-        { error: 'No active cycle found' },
-        HttpStatusCodes.NOT_FOUND
-      );
-    }
-
-    const cycles = await cycleRepo.findActiveCyclesByGeneration(
-      generation.id.value
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
     );
+  }
 
-    if (cycles.length === 0) {
+  try {
+    const result = await getCycleStatusQuery.getCurrentCycle(organizationSlug);
+
+    if (!result) {
       return c.json(
         { error: 'No active cycle found' },
         HttpStatusCodes.NOT_FOUND
       );
     }
 
-    const cycle = cycles[0];
     const names = await getCycleStatusQuery.getCycleParticipantNames(
-      cycle.id.value
+      result.id,
+      organizationSlug
     );
 
     if (!names) {
@@ -111,9 +123,20 @@ export const getCurrentCycleDiscord = async (c: AppContext) => {
 // 제출 현황 조회
 export const getStatus = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
+  const organizationSlug = c.req.query('organizationSlug');
+
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
 
   try {
-    const result = await getCycleStatusQuery.getCycleStatus(cycleId);
+    const result = await getCycleStatusQuery.getCycleStatus(
+      cycleId,
+      organizationSlug
+    );
     return c.json(result, HttpStatusCodes.OK);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -130,9 +153,20 @@ export const getStatus = async (c: AppContext) => {
 // 제출 현황을 Discord 메시지 포맷으로 반환
 export const getStatusDiscord = async (c: AppContext) => {
   const cycleId = parseInt(c.req.param('cycleId'));
+  const organizationSlug = c.req.query('organizationSlug');
+
+  if (!organizationSlug) {
+    return c.json(
+      { error: 'organizationSlug query parameter is required' },
+      HttpStatusCodes.BAD_REQUEST
+    );
+  }
 
   try {
-    const names = await getCycleStatusQuery.getCycleParticipantNames(cycleId);
+    const names = await getCycleStatusQuery.getCycleParticipantNames(
+      cycleId,
+      organizationSlug
+    );
 
     if (!names) {
       return c.json({ error: 'Cycle not found' }, HttpStatusCodes.NOT_FOUND);

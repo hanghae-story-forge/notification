@@ -84,11 +84,15 @@ async function getOrCreateMember(github: string, name: string) {
     return existing[0];
   }
 
+  // Discord ID가 필수이므로 placeholder 사용 (GitHub username 기반)
+  const discordId = `gh_${github}`;
+
   const newMember = await db
     .insert(members)
     .values({
       github,
       name,
+      discordId,
     })
     .returning();
 

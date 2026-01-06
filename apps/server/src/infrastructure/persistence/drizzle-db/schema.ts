@@ -6,25 +6,67 @@ import {
   integer,
   boolean,
   index,
+  pgEnum,
 } from 'drizzle-orm/pg-core';
 
-// 멤버 테이블
+// Enums
+export const organizationMemberStatusEnum = pgEnum('organization_member_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'INACTIVE',
+]);
+
+export const organizationRoleEnum = pgEnum('organization_role', [
+  'OWNER',
+  'ADMIN',
+  'MEMBER',
+]);
+
+// Organizations (스터디 그룹)
+export const organizations = pgTable(
+  'organizations',
+  {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    slug: text('slug').notNull().unique(), // URL-friendly identifier
+    discordWebhookUrl: text('discord_webhook_url'),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    slugIdx: index('organizations_slug_idx').on(table.slug),
+  })
+);
+
+// Members (디스코드 기반, 조직에 속하지 않아도 됨)
 export const members = pgTable('members', {
   id: serial('id').primaryKey(),
-  github: text('github').notNull().unique(),
-  discordId: text('discord_id').unique(),
+  discordId: text('discord_id').notNull().unique(), // Discord User ID (고유)
+  discordUsername: text('discord_username'), // Discord username (변경 가능)
+  discordAvatar: text('discord_avatar'), // Discord avatar hash
+  github: text('github'), // GitHub username (optional, 더 이상 unique 아님)
   name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // 기수 테이블
-export const generations = pgTable('generations', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(), // 예: "똥글똥글 1기"
-  startedAt: timestamp('started_at').notNull(),
-  isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const generations = pgTable(
+  'generations',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    name: text('name').notNull(), // 예: "똥글똥글 1기"
+    startedAt: timestamp('started_at').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    orgIdx: index('generations_org_idx').on(table.organizationId),
+  })
+);
 
 // 사이클(주차) 테이블
 export const cycles = pgTable(
@@ -45,7 +87,32 @@ export const cycles = pgTable(
   })
 );
 
-// 기수-멤버 조인 테이블
+// Organization-Members 조인 테이블 (기수-멤버 조인 테이블 대체)
+export const organizationMembers = pgTable(
+  'organization_members',
+  {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id')
+      .notNull()
+      .references(() => organizations.id),
+    memberId: integer('member_id')
+      .notNull()
+      .references(() => members.id),
+    role: organizationRoleEnum('role').notNull(),
+    status: organizationMemberStatusEnum('status').notNull(),
+    joinedAt: timestamp('joined_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    orgMemberIdx: index('org_members_org_member_idx').on(
+      table.organizationId,
+      table.memberId
+    ),
+    statusIdx: index('org_members_status_idx').on(table.status),
+  })
+);
+
+// 기수-멤버 조인 테이블 (deprecated, organizationMembers로 대체)
 export const generationMembers = pgTable(
   'generation_members',
   {
@@ -92,6 +159,10 @@ export const submissions = pgTable(
 // 타입 내보내기
 export type Member = typeof members.$inferSelect;
 export type NewMember = typeof members.$inferInsert;
+export type Organization = typeof organizations.$inferSelect;
+export type NewOrganization = typeof organizations.$inferInsert;
+export type OrganizationMember = typeof organizationMembers.$inferSelect;
+export type NewOrganizationMember = typeof organizationMembers.$inferInsert;
 export type Generation = typeof generations.$inferSelect;
 export type NewGeneration = typeof generations.$inferInsert;
 export type Cycle = typeof cycles.$inferSelect;
@@ -100,3 +171,7 @@ export type GenerationMember = typeof generationMembers.$inferSelect;
 export type NewGenerationMember = typeof generationMembers.$inferInsert;
 export type Submission = typeof submissions.$inferSelect;
 export type NewSubmission = typeof submissions.$inferInsert;
+
+// Enum 타입 - Drizzle pgEnum은 직접 enum values를 export
+export type OrganizationMemberStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'INACTIVE';
+export type OrganizationRole = 'OWNER' | 'ADMIN' | 'MEMBER';

@@ -83,8 +83,17 @@ export const getCurrentCycle = createRoute({
   path: '/api/status/current',
   method: 'get',
   tags,
+  request: {
+    query: z.object({
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
+    }),
+  },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(CurrentCycleSchema, 'Current cycle info'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,
       'No active cycle found'
@@ -100,10 +109,19 @@ export const getCurrentCycleDiscord = createRoute({
   path: '/api/status/current/discord',
   method: 'get',
   tags,
+  request: {
+    query: z.object({
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
+    }),
+  },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       DiscordWebhookResponseSchema,
       'Discord webhook payload for current cycle'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,
@@ -124,11 +142,18 @@ export const getStatus = createRoute({
     params: z.object({
       cycleId: z.string().regex(/^\d+$/, 'Cycle ID must be a number'),
     }),
+    query: z.object({
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
+    }),
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       StatusResponseSchema,
       'Status retrieved successfully'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,
@@ -149,11 +174,18 @@ export const getStatusDiscord = createRoute({
     params: z.object({
       cycleId: z.string().regex(/^\d+$/, 'Cycle ID must be a number'),
     }),
+    query: z.object({
+      organizationSlug: z.string().min(1, 'organizationSlug is required'),
+    }),
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       DiscordWebhookResponseSchema,
       'Discord webhook payload'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Bad request - missing organizationSlug'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       NotFoundErrorSchema,

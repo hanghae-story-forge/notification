@@ -16,6 +16,7 @@ export class GenerationActivatedEvent {
 
   constructor(
     public readonly generationId: GenerationId,
+    public readonly organizationId: number,
     public readonly name: string
   ) {
     this.occurredAt = new Date();
@@ -28,6 +29,7 @@ export class GenerationDeactivatedEvent {
 
   constructor(
     public readonly generationId: GenerationId,
+    public readonly organizationId: number,
     public readonly name: string
   ) {
     this.occurredAt = new Date();
@@ -37,6 +39,7 @@ export class GenerationDeactivatedEvent {
 // 기수 생성 데이터
 export interface CreateGenerationData {
   id?: number;
+  organizationId: number; // 조직 ID 추가
   name: string;
   startedAt: Date;
   isActive: boolean;
@@ -47,6 +50,7 @@ export interface CreateGenerationData {
 export class Generation extends AggregateRoot<GenerationId> {
   private constructor(
     id: GenerationId,
+    private readonly _organizationId: number,
     private readonly _name: string,
     private readonly _startedAt: Date,
     private readonly _isActive: boolean,
@@ -70,6 +74,7 @@ export class Generation extends AggregateRoot<GenerationId> {
     const createdAt = data.createdAt ?? new Date();
     const generation = new Generation(
       id,
+      data.organizationId,
       trimmedName,
       data.startedAt,
       data.isActive,
@@ -80,7 +85,7 @@ export class Generation extends AggregateRoot<GenerationId> {
     if (data.id === 0) {
       if (data.isActive) {
         generation.addDomainEvent(
-          new GenerationActivatedEvent(id, trimmedName)
+          new GenerationActivatedEvent(id, data.organizationId, trimmedName)
         );
       }
     }
@@ -91,6 +96,7 @@ export class Generation extends AggregateRoot<GenerationId> {
   // 팩토리 메서드: DB에서 조회한 엔티티 복원
   static reconstitute(data: {
     id: number;
+    organizationId: number;
     name: string;
     startedAt: Date;
     isActive: boolean;
@@ -98,6 +104,7 @@ export class Generation extends AggregateRoot<GenerationId> {
   }): Generation {
     return Generation.create({
       id: data.id,
+      organizationId: data.organizationId,
       name: data.name,
       startedAt: data.startedAt,
       isActive: data.isActive,
@@ -106,6 +113,10 @@ export class Generation extends AggregateRoot<GenerationId> {
   }
 
   // Getters
+  get organizationId(): number {
+    return this._organizationId;
+  }
+
   get name(): string {
     return this._name;
   }
@@ -139,6 +150,7 @@ export class Generation extends AggregateRoot<GenerationId> {
   toDTO(): GenerationDTO {
     return {
       id: this.id.value,
+      organizationId: this._organizationId,
       name: this._name,
       startedAt: this._startedAt.toISOString(),
       isActive: this._isActive,
@@ -148,6 +160,7 @@ export class Generation extends AggregateRoot<GenerationId> {
 
 export interface GenerationDTO {
   id: number;
+  organizationId: number;
   name: string;
   startedAt: string;
   isActive: boolean;

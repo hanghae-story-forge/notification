@@ -2,7 +2,7 @@
 
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { submissions } from '../drizzle-db/schema';
+import { submissions, cycles, generations } from '../drizzle-db/schema';
 import {
   Submission,
   SubmissionId,
@@ -106,6 +106,50 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
       .select()
       .from(submissions)
       .where(eq(submissions.memberId, memberId.value));
+
+    return result.map((row) => this.mapToEntity(row));
+  }
+
+  async findByOrganization(organizationId: number): Promise<Submission[]> {
+    const result = await db
+      .select({
+        id: submissions.id,
+        cycleId: submissions.cycleId,
+        memberId: submissions.memberId,
+        url: submissions.url,
+        submittedAt: submissions.submittedAt,
+        githubCommentId: submissions.githubCommentId,
+      })
+      .from(submissions)
+      .innerJoin(cycles, eq(submissions.cycleId, cycles.id))
+      .innerJoin(generations, eq(cycles.generationId, generations.id))
+      .where(eq(generations.organizationId, organizationId));
+
+    return result.map((row) => this.mapToEntity(row));
+  }
+
+  async findByOrganizationAndCycle(
+    organizationId: number,
+    cycleId: number
+  ): Promise<Submission[]> {
+    const result = await db
+      .select({
+        id: submissions.id,
+        cycleId: submissions.cycleId,
+        memberId: submissions.memberId,
+        url: submissions.url,
+        submittedAt: submissions.submittedAt,
+        githubCommentId: submissions.githubCommentId,
+      })
+      .from(submissions)
+      .innerJoin(cycles, eq(submissions.cycleId, cycles.id))
+      .innerJoin(generations, eq(cycles.generationId, generations.id))
+      .where(
+        and(
+          eq(generations.organizationId, organizationId),
+          eq(submissions.cycleId, cycleId)
+        )
+      );
 
     return result.map((row) => this.mapToEntity(row));
   }

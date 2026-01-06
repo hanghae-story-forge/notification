@@ -14,7 +14,12 @@ export interface MemberRepository {
   findById(id: MemberId): Promise<Member | null>;
 
   /**
-   * GitHub 사용자명으로 회원 조회
+   * Discord ID로 회원 조회 (주요 조회 방식)
+   */
+  findByDiscordId(discordId: string): Promise<Member | null>;
+
+  /**
+   * GitHub 사용자명으로 회원 조회 (선택사항)
    */
   findByGithubUsername(githubUsername: string): Promise<Member | null>;
 
@@ -22,9 +27,4 @@ export interface MemberRepository {
    * 전체 회원 조회
    */
   findAll(): Promise<Member[]>;
-
-  /**
-   * Discord ID로 회원 조회
-   */
-  findByDiscordId(discordId: string): Promise<Member | null>;
 }
