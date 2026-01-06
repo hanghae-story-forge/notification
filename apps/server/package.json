@@ -23,8 +23,8 @@
     "github:poll-projects": "tsx scripts/poll-github-projects.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "format": "prettier --write \"src/**/*.ts\" --config @dongueldonguel/config-prettier",
-    "format:check": "prettier --check \"src/**/*.ts\" --config @dongueldonguel/config-prettier",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
     "test:server": "tsx test/integration/test-server.ts",
     "test:webhook": "tsx test/integration/test-webhook.ts"
   },
