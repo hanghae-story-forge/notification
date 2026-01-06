@@ -199,7 +199,7 @@ export class OrganizationMember {
   // 비즈니스 로직: 역할 변경
   changeRole(newRole: string): void {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this._role = OrganizationRoleVO.create(newRole) as any;
+    (this as any)._role = OrganizationRoleVO.create(newRole);
     this._updatedAt = new Date();
   }
 

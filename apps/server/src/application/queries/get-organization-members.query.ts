@@ -1,5 +1,6 @@
 // GetOrganizationMembersQuery - 조직 멤버 조회 Query
 
+import { OrganizationMember } from '../../domain/organization-member/organization-member.domain';
 import { OrganizationMemberStatus } from '../../domain/organization-member/organization-member.vo';
 import { OrganizationRepository } from '../../domain/organization/organization.repository';
 import { OrganizationMemberRepository } from '../../domain/organization-member/organization-member.repository';
