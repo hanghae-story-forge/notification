@@ -24,8 +24,8 @@ export class JoseJWTService implements JWTService {
 
     const token = await new SignJWT({ ...claims })
       .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt(claims.iat)
-      .setExpirationTime(claims.exp)
+      .setIssuedAt(claims.iat ?? now)
+      .setExpirationTime(claims.exp ?? this.getExpirationTime(now))
       .setIssuer(claims.iss)
       .setAudience(claims.aud)
       .setSubject(claims.sub)
@@ -42,8 +42,8 @@ export class JoseJWTService implements JWTService {
       });
 
       return {
-        sub: payload.sub,
-        discordId: payload.discordId as string,
+        sub: payload.sub ?? '',
+        discordId: (payload.discordId as string) ?? '',
         iat: payload.iat,
         exp: payload.exp,
       };

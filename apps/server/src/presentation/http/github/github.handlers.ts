@@ -16,6 +16,7 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
+import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
 import { SubmissionService } from '@/domain/submission/submission.service';
 import { DiscordWebhookClient } from '@/infrastructure/external/discord';
 import {
@@ -33,6 +34,7 @@ const cycleRepo = new DrizzleCycleRepository();
 const memberRepo = new DrizzleMemberRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const organizationRepo = new DrizzleOrganizationRepository();
+const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 const submissionService = new SubmissionService(submissionRepo);
 const discordClient = new DiscordWebhookClient();
 
@@ -40,6 +42,8 @@ const recordSubmissionCommand = new RecordSubmissionCommand(
   cycleRepo,
   memberRepo,
   submissionRepo,
+  organizationMemberRepo,
+  generationRepo,
   submissionService
 );
 

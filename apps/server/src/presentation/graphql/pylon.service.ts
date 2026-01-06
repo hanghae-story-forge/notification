@@ -22,6 +22,8 @@ import {
   DrizzleGenerationRepository,
   DrizzleCycleRepository,
   DrizzleSubmissionRepository,
+  DrizzleOrganizationRepository,
+  DrizzleOrganizationMemberRepository,
 } from '@/infrastructure/persistence/drizzle';
 
 import { MemberService } from '@/domain/member/member.service';
@@ -38,6 +40,8 @@ const memberRepo = new DrizzleMemberRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const cycleRepo = new DrizzleCycleRepository();
 const submissionRepo = new DrizzleSubmissionRepository();
+const organizationRepo = new DrizzleOrganizationRepository();
+const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 
 const memberService = new MemberService(memberRepo);
 const generationService = new GenerationService(generationRepo);
@@ -55,7 +59,9 @@ const getCycleByIdQuery = new GetCycleByIdQuery(cycleRepo);
 const getCycleStatusQuery = new GetCycleStatusQuery(
   cycleRepo,
   generationRepo,
+  organizationRepo,
   submissionRepo,
+  organizationMemberRepo,
   memberRepo
 );
 
@@ -66,9 +72,9 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
 const createMemberCommand = new CreateMemberCommand(memberRepo, memberService);
 const createGenerationCommand = new CreateGenerationCommand(
   generationRepo,
-  generationService
+  organizationRepo
 );
-const createCycleCommand = new CreateCycleCommand(cycleRepo, generationRepo);
+const createCycleCommand = new CreateCycleCommand(cycleRepo, generationRepo, organizationRepo);
 
 // ========================================
 // GraphQL Types & Services (Pylon Code-First)
@@ -84,7 +90,7 @@ class GqlMember {
 
   constructor(member: Member) {
     this.id = member.id.value;
-    this.github = member.githubUsername.value;
+    this.github = member.githubUsername?.value ?? '';
     this.discordId = member.discordId?.value ?? null;
     this.name = member.name.value;
     this.createdAt = member.createdAt.toISOString();
@@ -271,7 +277,7 @@ export const graphql = {
 
     // 활성화된 사이클 조회
     activeCycle: async (): Promise<GqlCycle | null> => {
-      const currentCycle = await getCycleStatusQuery.getCurrentCycle();
+      const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
       if (!currentCycle) return null;
 
       return createGqlCycle(currentCycle);
@@ -280,9 +286,10 @@ export const graphql = {
     // 사이클별 제출 현황 조회
     cycleStatus: async (
       _: unknown,
-      cycleId: number
+      cycleId: number,
+      organizationSlug: string
     ): Promise<GqlCycleStatus> => {
-      const status = await getCycleStatusQuery.getCycleStatus(cycleId);
+      const status = await getCycleStatusQuery.getCycleStatus(cycleId, organizationSlug);
 
       const cycleStatus = new GqlCycleStatus();
       cycleStatus.cycle = createGqlCycle(status.cycle);
@@ -322,11 +329,13 @@ export const graphql = {
     addGeneration: async (
       _: unknown,
       name: string,
-      startedAt: string
+      startedAt: string,
+      organizationSlug: string
     ): Promise<GqlGeneration> => {
       const result = await createGenerationCommand.execute({
         name,
         startedAt: new Date(startedAt),
+        organizationSlug,
       });
       return domainToGraphqlGeneration(result.generation);
     },
@@ -338,13 +347,15 @@ export const graphql = {
       week: number,
       startDate: string,
       endDate: string,
-      githubIssueUrl: string
+      githubIssueUrl: string,
+      organizationSlug: string
     ): Promise<GqlCycle> => {
       const result = await createCycleCommand.execute({
         week,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         githubIssueUrl,
+        organizationSlug,
       });
       return domainToGraphqlCycle(result.cycle);
     },

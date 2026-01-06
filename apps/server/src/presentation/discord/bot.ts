@@ -15,6 +15,8 @@ import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cyc
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
+import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
+import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
 
 // ========================================
 // Repository & Query Instances
@@ -24,11 +26,15 @@ const cycleRepo = new DrizzleCycleRepository();
 const generationRepo = new DrizzleGenerationRepository();
 const submissionRepo = new DrizzleSubmissionRepository();
 const memberRepo = new DrizzleMemberRepository();
+const organizationRepo = new DrizzleOrganizationRepository();
+const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 
 const getCycleStatusQuery = new GetCycleStatusQuery(
   cycleRepo,
   generationRepo,
+  organizationRepo,
   submissionRepo,
+  organizationMemberRepo,
   memberRepo
 );
 
@@ -119,7 +125,7 @@ const handleCurrentCycle = async (
   await interaction.deferReply();
 
   try {
-    const currentCycle = await getCycleStatusQuery.getCurrentCycle();
+    const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
 
     if (!currentCycle) {
       await interaction.editReply({
@@ -152,7 +158,7 @@ const handleCheckSubmission = async (
 
   try {
     // 현재 진행 중인 사이클 찾기
-    const currentCycle = await getCycleStatusQuery.getCurrentCycle();
+    const currentCycle = await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
 
     if (!currentCycle) {
       await interaction.editReply({
@@ -163,7 +169,8 @@ const handleCheckSubmission = async (
 
     // 제출 현황 조회
     const participantNames = await getCycleStatusQuery.getCycleParticipantNames(
-      currentCycle.id
+      currentCycle.id,
+      'dongueldonguel'
     );
 
     if (!participantNames) {

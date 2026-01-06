@@ -157,7 +157,7 @@ export class Member extends AggregateRoot<MemberId> {
       id: this.id.value,
       discordId: this._discordId.value,
       discordUsername: this._discordUsername?.value,
-      discordAvatar: this._discordAvatar,
+      discordAvatar: this._discordAvatar ?? undefined,
       githubUsername: this._githubUsername?.value,
       name: this._name.value,
     };

@@ -74,6 +74,7 @@ export class GenerationService {
     const activatedGeneration = Generation.create({
       id: generation.id.value,
       name: generation.name,
+      organizationId: generation.organizationId,
       startedAt: generation.startedAt,
       isActive: true,
     });
@@ -95,6 +96,7 @@ export class GenerationService {
     const deactivatedGeneration = Generation.create({
       id: generation.id.value,
       name: generation.name,
+      organizationId: generation.organizationId,
       startedAt: generation.startedAt,
       isActive: false,
     });

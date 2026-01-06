@@ -6,6 +6,8 @@ import { MemberRepository } from '../../domain/member/member.repository';
 import { SubmissionRepository } from '../../domain/submission/submission.repository';
 import { OrganizationMemberRepository } from '../../domain/organization-member/organization-member.repository';
 import { GenerationRepository } from '../../domain/generation/generation.repository';
+import { GenerationId } from '../../domain/generation/generation.domain';
+import { OrganizationId } from '../../domain/organization/organization.domain';
 import { SubmissionService } from '../../domain/submission/submission.service';
 import { NotFoundError, ForbiddenError } from '../../domain/common/errors';
 
@@ -62,13 +64,14 @@ export class RecordSubmissionCommand {
     }
 
     // 2. Generation 찾기 (Cycle의 organizationId 확인용)
-    const generation = await this.generationRepo.findById({ value: cycle.generationId.value } as any);
+    const generation = await this.generationRepo.findById(GenerationId.create(cycle.generationId));
     if (!generation) {
-      throw new NotFoundError('Generation', `id=${cycle.generationId.value}`);
+      throw new NotFoundError('Generation', `id=${cycle.generationId}`);
     }
 
     // 3. Organization 찾기 (Discord webhook 등에서 사용)
     const organizationId = generation.organizationId;
+    const organizationIdObj = OrganizationId.create(organizationId);
 
     // 4. Member 찾기 (GitHub username으로)
     const member = await this.memberRepo.findByGithubUsername(request.githubUsername);
@@ -78,7 +81,7 @@ export class RecordSubmissionCommand {
 
     // 5. Member가 해당 Organization의 활성 멤버인지 확인
     const isActiveMember = await this.organizationMemberRepo.isActiveMember(
-      { value: organizationId } as any,
+      organizationIdObj,
       member.id
     );
     if (!isActiveMember) {
