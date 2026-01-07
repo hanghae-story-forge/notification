@@ -7,13 +7,22 @@ export class CreateOrganizationCommand implements DiscordCommand {
     .setName('create-organization')
     .setDescription('새로운 조직을 생성합니다')
     .addStringOption((option) =>
-      option.setName('name').setDescription('조직 이름 (예: 똥글똥글)').setRequired(true)
+      option
+        .setName('name')
+        .setDescription('조직 이름 (예: 똥글똥글)')
+        .setRequired(true)
     )
     .addStringOption((option) =>
-      option.setName('slug').setDescription('URL 친화적 식별자 (선택사항)').setRequired(false)
+      option
+        .setName('slug')
+        .setDescription('URL 친화적 식별자 (선택사항)')
+        .setRequired(false)
     )
     .addStringOption((option) =>
-      option.setName('webhook').setDescription('Discord 웹훅 URL (선택사항)').setRequired(false)
+      option
+        .setName('webhook')
+        .setDescription('Discord 웹훅 URL (선택사항)')
+        .setRequired(false)
     );
 
   constructor(
@@ -41,7 +50,8 @@ export class CreateOrganizationCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling create-organization command:', error);
-      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      const errorMessage =
+        error instanceof Error ? error.message : '알 수 없는 오류';
 
       if (errorMessage.includes('already exists')) {
         await interaction.editReply({

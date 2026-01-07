@@ -1,7 +1,4 @@
-import {
-  Client,
-  GatewayIntentBits,
-} from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import { createCommands } from './commands';
 import { registerSlashCommands } from './commands/index';
 import { DiscordCommand } from './commands/types';

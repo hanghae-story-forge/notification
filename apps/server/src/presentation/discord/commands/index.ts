@@ -1,4 +1,4 @@
-import { REST, Routes, SlashCommandBuilder } from 'discord.js';
+import { REST, Routes } from 'discord.js';
 import { env } from '@/env';
 import { DiscordCommand } from './types';
 import { CheckSubmissionCommand } from './CheckSubmissionCommand';
@@ -7,7 +7,10 @@ import { CreateMemberCommand } from './CreateMemberCommand';
 import { CreateOrganizationCommand } from './CreateOrganizationCommand';
 import { ListOrganizationsCommand } from './ListOrganizationsCommand';
 import { GetCycleStatusQuery } from '@/application/queries';
-import { CreateMemberCommand as AppCreateMemberCommand, CreateOrganizationCommand as AppCreateOrganizationCommand } from '@/application/commands';
+import {
+  CreateMemberCommand as AppCreateMemberCommand,
+  CreateOrganizationCommand as AppCreateOrganizationCommand,
+} from '@/application/commands';
 import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
@@ -26,8 +29,13 @@ const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 
 // Application layer instances
 const memberService = new MemberService(memberRepo);
-const createMemberCommand = new AppCreateMemberCommand(memberRepo, memberService);
-const createOrganizationCommand = new AppCreateOrganizationCommand(organizationRepo);
+const createMemberCommand = new AppCreateMemberCommand(
+  memberRepo,
+  memberService
+);
+const createOrganizationCommand = new AppCreateOrganizationCommand(
+  organizationRepo
+);
 
 const getCycleStatusQuery = new GetCycleStatusQuery(
   cycleRepo,
@@ -49,7 +57,9 @@ export const createCommands = (): DiscordCommand[] => {
   ];
 };
 
-export const registerSlashCommands = async (commands: DiscordCommand[]): Promise<void> => {
+export const registerSlashCommands = async (
+  commands: DiscordCommand[]
+): Promise<void> => {
   const commandDefinitions = commands.map((cmd) => cmd.definition.toJSON());
 
   const botToken = env.DISCORD_BOT_TOKEN;
@@ -77,7 +87,9 @@ export const registerSlashCommands = async (commands: DiscordCommand[]): Promise
         `✅ Successfully registered guild commands for server: ${guildId}`
       );
     } else {
-      await rest.put(Routes.applicationCommands(clientId), { body: commandDefinitions });
+      await rest.put(Routes.applicationCommands(clientId), {
+        body: commandDefinitions,
+      });
       console.log(
         '✅ Successfully registered global commands (may take up to 1 hour to propagate)'
       );

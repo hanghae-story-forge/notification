@@ -8,10 +8,16 @@ export class CreateMemberCommand implements DiscordCommand {
     .setName('create-member')
     .setDescription('새로운 회원을 생성합니다 (어떤 조직에도 속하지 않은 회원)')
     .addStringOption((option) =>
-      option.setName('name').setDescription('회원의 실제 이름').setRequired(true)
+      option
+        .setName('name')
+        .setDescription('회원의 실제 이름')
+        .setRequired(true)
     )
     .addStringOption((option) =>
-      option.setName('github').setDescription('GitHub 사용자명 (선택사항)').setRequired(false)
+      option
+        .setName('github')
+        .setDescription('GitHub 사용자명 (선택사항)')
+        .setRequired(false)
     );
 
   constructor(

@@ -24,10 +24,11 @@ export class CheckSubmissionCommand implements DiscordCommand {
         return;
       }
 
-      const participantNames = await this.getCycleStatusQuery.getCycleParticipantNames(
-        currentCycle.id,
-        'dongueldonguel'
-      );
+      const participantNames =
+        await this.getCycleStatusQuery.getCycleParticipantNames(
+          currentCycle.id,
+          'dongueldonguel'
+        );
 
       if (!participantNames) {
         await interaction.editReply({
