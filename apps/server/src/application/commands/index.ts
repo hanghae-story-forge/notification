@@ -9,3 +9,4 @@ export * from './add-member-to-organization.command';
 export * from './update-member-status.command';
 export * from './join-organization.command';
 export * from './join-generation.command';
+export * from './change-member-role.command';
