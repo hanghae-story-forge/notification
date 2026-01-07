@@ -7,6 +7,10 @@ import {
   organizationQueries,
   organizationMutations,
 } from './organization.resolver';
+import {
+  organizationMemberQueries,
+  organizationMemberMutations,
+} from './organization-member.resolver';
 
 // ========================================
 // Query Resolvers 합치기
@@ -17,6 +21,7 @@ export const queryResolvers = {
   ...generationQueries,
   ...cycleQueries,
   ...organizationQueries,
+  ...organizationMemberQueries,
 };
 
 // ========================================
@@ -28,4 +33,5 @@ export const mutationResolvers = {
   ...generationMutations,
   ...cycleMutations,
   ...organizationMutations,
+  ...organizationMemberMutations,
 };
