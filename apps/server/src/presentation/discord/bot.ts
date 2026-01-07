@@ -16,17 +16,22 @@ import type { GenerationAutocomplete } from './autocompletions/GenerationAutocom
 const commands = createCommands();
 const commandMap = new Map<string, DiscordCommand>();
 
-// Autocomplete handlers from DI container
-const organizationAutocomplete = container.resolve<OrganizationAutocomplete>(
-  ORGANIZATION_AUTOCOMPLETE_TOKEN
-);
-const generationAutocomplete = container.resolve<GenerationAutocomplete>(
-  GENERATION_AUTOCOMPLETE_TOKEN
-);
-
 commands.forEach((cmd) => {
   commandMap.set(cmd.definition.toJSON().name, cmd);
 });
+
+// Lazy getters for autocomplete handlers to ensure DI is registered first
+const getOrganizationAutocomplete = (): OrganizationAutocomplete => {
+  return container.resolve<OrganizationAutocomplete>(
+    ORGANIZATION_AUTOCOMPLETE_TOKEN
+  );
+};
+
+const getGenerationAutocomplete = (): GenerationAutocomplete => {
+  return container.resolve<GenerationAutocomplete>(
+    GENERATION_AUTOCOMPLETE_TOKEN
+  );
+};
 
 export const createDiscordBot = (): Client => {
   const client = new Client({
@@ -54,7 +59,7 @@ export const createDiscordBot = (): Client => {
 
       if (options.getFocused(true).name === 'organization') {
         try {
-          await organizationAutocomplete.execute(interaction);
+          await getOrganizationAutocomplete().execute(interaction);
         } catch (error) {
           console.error('Error handling autocomplete:', error);
         }
@@ -63,7 +68,7 @@ export const createDiscordBot = (): Client => {
 
       if (options.getFocused(true).name === 'generation') {
         try {
-          await generationAutocomplete.execute(interaction);
+          await getGenerationAutocomplete().execute(interaction);
         } catch (error) {
           console.error('Error handling autocomplete:', error);
         }

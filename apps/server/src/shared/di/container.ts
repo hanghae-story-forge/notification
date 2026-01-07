@@ -28,7 +28,7 @@ type Token = string | symbol;
 // Container
 // ========================================
 
-class DIContainer {
+export class DIContainer {
   private readonly registrations = new Map<Token, Registration<unknown>>();
 
   /**
