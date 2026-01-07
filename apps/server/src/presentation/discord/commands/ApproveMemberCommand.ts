@@ -12,8 +12,9 @@ export class ApproveMemberCommand implements DiscordCommand {
     .addStringOption((option) =>
       option
         .setName('organization')
-        .setDescription('조직 슬러그')
+        .setDescription('조직')
         .setRequired(true)
+        .setAutocomplete(true)
     )
     .addUserOption((option) =>
       option.setName('user').setDescription('승인할 사용자').setRequired(true)
