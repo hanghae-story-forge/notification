@@ -76,7 +76,9 @@ const { env } = await import('./env');
 if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
   try {
     // 슬래시 명령어 등록
-    await registerSlashCommands();
+    const { createCommands } = await import('./presentation/discord/commands');
+    const commands = createCommands();
+    await registerSlashCommands(commands);
 
     // Discord Bot 로그인
     const discordBot = createDiscordBot();
