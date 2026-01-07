@@ -22,7 +22,7 @@ interface Registration<T> {
   instance?: T;
 }
 
-type Token<T = unknown> = string | symbol;
+type Token = string | symbol;
 
 // ========================================
 // Container
@@ -104,10 +104,11 @@ export const container = new DIContainer();
 // Helper Types
 // ========================================
 
-export type InjectableToken<T> = Token;
+export type InjectableToken = Token;
 
 // Helper to create typed tokens
-export function createToken<T>(description: string): InjectableToken<T> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function createToken<T>(description: string): Token {
   return Symbol(description);
 }
 
