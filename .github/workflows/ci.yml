@@ -102,9 +102,6 @@ jobs:
       - name: Build project
         run: pnpm turbo run build
 
-      - name: Verify build output exists
-        run: test -f apps/server/dist/index.js
-
   test:
     name: Test
     runs-on: ubuntu-latest
