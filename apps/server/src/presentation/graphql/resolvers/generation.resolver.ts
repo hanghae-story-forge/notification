@@ -61,7 +61,7 @@ const getQueries = () => {
 // ========================================
 
 async function loadGenerationWithOrganization(
-  generation: Awaited<ReturnType<(typeof getGenerationByIdQuery)['execute']>>
+  generation: Awaited<ReturnType<GetGenerationByIdQuery['execute']>>
 ): Promise<GqlGeneration | null> {
   if (!generation) return null;
 

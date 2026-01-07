@@ -124,7 +124,7 @@ async function loadGenerationWithOrganization(
 }
 
 async function loadCycleWithGeneration(
-  cycle: Awaited<ReturnType<(typeof getCycleByIdQuery)['execute']>>
+  cycle: Awaited<ReturnType<GetCycleByIdQuery['execute']>>
 ): Promise<GqlCycle | null> {
   if (!cycle) return null;
 
