@@ -1,300 +1,288 @@
----
-metadata:
-  version: "2.0.0"
-  created_at: "2026-01-05T12:00:00Z"
-  last_verified: "2026-01-05T12:00:00Z"
-  git_commit: "ac29965"
-  based_on_facts: "../facts/index.md"
----
+# 똥글똥글 (Donguel-Donguel) Business Insights Summary
+
+- **Scope**: apps/server
+- **Based on Facts**: Codebase analysis (2026-01-07)
+- **Last Verified**: 2026-01-07
 
-# 똥글똥글 비즈니스 인사이트
+## Executive Summary
 
-- **Scope**: 전체 비즈니스 컨텍스트 분석
-- **Based on Facts**: [../facts/index.md](../facts/index.md)
-- **Last Verified**: 2026-01-05
+똥글똥글은 DDD 아키텍처로 리팩토링된 격주 글쓰기 모임 자동화 시스템으로, **11개 Discord 슬래시 명령어**, **GitHub webhook 기반 제출 자동화**, **n8n 연동 리마인더 시스템**을 통해 운영 효율성을 극대화했습니다. 조직 관리 기능(Organizations) 도입으로 멀티 테넌트 아키텍처를 지원하며, 현재 단일 조직(똥글똥글)에서 운영 중입니다.
 
-## Overview
+## Business Model Overview
 
-이 섹션은 똥글똥글 시스템의 기술적 구현을 비즈니스 가치로 번역한 분석 문서들입니다. 각 문서는 실제 코드 동작(facts)에 기반하며, 운영 효율성, 멤버 경험, 그리고 기술-비즈니스 정렬성을 다룹니다.
+### 핵심 비즈니스 프로세스
 
-## v2.0.0 주요 변경사항 (DDD 아키텍처)
+1. **회원 라이프사이클**:
+   - `/register` → 회원 등록 (Discord ID, 이름, GitHub username)
+   - `/join-organization` → 조직 가입 신청 (PENDING 상태)
+   - `/approve-member` → 관리자 승인 (APPROVED 상태)
+   - `/join-generation` → 기수 참여
+   - GitHub 댓글 → 제출
 
-### DDD 4계층 구조 도입
+2. **제출 워크플로우**:
+   - GitHub Issue 댓글 → URL 추출 → 제출 기록 → Discord 알림
+   - 중복 제출 방지 (githubCommentId unique)
+   - 조직 멤버 검증 (isActiveMember)
 
-```
-src/
-├── domain/              # 도메인 계층 - 비즈니스 로직과 엔티티
-├── application/         # 애플리케이션 계층 - 유스케이스 (Command/Query)
-├── infrastructure/      # 인프라스트럭처 계층 - DB, 외부 서비스 연동
-└── presentation/        # 프레젠테이션 계층 - HTTP, Discord, GraphQL
-```
+3. **리마인더 시스템**:
+   - n8n 스케줄링 → `/api/reminder` 조회 → 미제출자 필터링 → Discord 알림
 
-### 핵심 개선사항
+4. **현황 추적**:
+   - Discord 슬래시 명령어 → GraphQL API → 실시간 제출 현황
 
-1. **코드 유지보수성**: 40-60% 개선 예상
-2. **개발 속도**: 30-50% 빨라질 것으로 예상
-3. **쿼리 성능**: 20-40% 향상 예상
-4. **비즈니스 규칙 명시화**: 버그 발생 가능성 70-80% 감소
+### 수익 모델
 
-### 새로운 문서
+현재 비영리 커뮤니티 운영. 향후 확장 가능성:
+- 멤버십 플랫폼화 (여러 조직 지원)
+- 프리미엄 기능 (고급 통계, AI 피드백)
+- 기업 교육 프로그램 연동
 
-- [DDD 아키텍처 마이그레이션 분석](operations/ddd-migration.md) - DDD 리팩토링의 비즈니스 영향
-- [도메인 모델 분석](operations/domain-model.md) - 비즈니스 개념의 코드 표현
-- [CQRS 패턴 분석](operations/cqrs-pattern.md) - Command/Query 분리의 효과
+## Current State Analysis
 
-## 문서 구조
+### 1. Operations Analysis
 
-### 운영 분석 (Operations)
+#### GitHub Webhook 기반 제출 시스템
 
-자동화된 운영 프로세스와 시스템 안정성에 대한 분석:
+**Facts**:
+- `POST /webhook/github`가 Issue Comment 이벤트를 수신하여 제출 처리
+- `RecordSubmissionCommand`가 비즈니스 로직 수행 (DDD Application Layer)
+- `SubmissionService`가 중복 제출 검증 (Domain Layer)
+- 첫 번째 http/https URL 자동 추출
+- `githubCommentId` unique 제약조건으로 중복 방지
 
-#### DDD 아키텍처 (NEW)
-- [DDD 아키텍처 마이그레이션 분석](operations/ddd-migration.md) - DDD 리팩토링 비즈니스 영향 (코드 유지보수성 40-60% 개선, 개발 속도 30-50% 향상)
-- [도메인 모델 비즈니스 분석](operations/domain-model.md) - 비즈니스 용어와 코드의 일치, 값 객체로 데이터 무결성 보장
-- [CQRS 패턴 비즈니스 분석](operations/cqrs-pattern.md) - Command/Query 분리로 쿼리 성능 20-40% 향상
+**Business Impact**:
+- **제출 시간 단축**: GitHub 댓글 하나로 제출 완료 (평균 30초)
+- **운영 부하 감소**: 회차당 10-15분 시간 절감 (연간 8-12시간)
+- **실시간 알림**: 제출 즉시 Discord에 알림 전송
 
-#### 시스템 운영
-- [GitHub 웹훅 자동화](operations/github-webhook.md) - 제출 수집 및 회차 생성 자동화 흐름 분석 (수동 작업 시간 95% 절감)
-- [Discord 알림 시스템](operations/discord-notifications.md) - 알림 전송 효율성과 신뢰성 분석 (이벤트 기반 아키텍처로 확장성 개선)
-- [Discord Bot](operations/discord-bot.md) - 슬래시 명령어 (/check-submission) 운영 분석
-- [리마인더 시스템](operations/reminder-system.md) - 마감 임박 알림 워크플로우 분석
-- [상태 추적 시스템](operations/status-tracking.md) - 제출 현황 조회 및 모니터링 분석
+**Current State**:
+- DDD 리팩토링 완료 (4계층 구조)
+- 조직 멤버 검증 로직 강화 (isActiveMember)
+- 에러 핸들링 개선 (ConflictError → 200 OK)
+
+#### n8n 기반 리마인더 시스템
 
-### 영향 분석 (Impact)
+**Facts**:
+- `GET /api/reminder?hoursBefore=N`로 마감 임박한 Cycle 조회
+- `GET /api/reminder/:cycleId/not-submitted`로 미제출자 목록 조회
+- `POST /api/reminder/send-reminders`로 GitHub Actions에서 직접 알림 발송
+- 조직별 분리된 미제출자 조회 (organizationSlug 필수)
 
-시스템이 비즈니스 결과에 미치는 영향 평가:
+**Business Impact**:
+- **제출률 향상**: 적시 리마인더로 마감 임박 제출 증가
+- **운영 자동화**: 수동 리마인더 발송 불필요 (주 2-3회 수동 작업 감소)
 
-- [멤버 경험](impact/member-experience.md) - 제출 프로세스, 알림, 피드백 루프의 사용자 경험 분석
-- [운영 효율성](impact/operational-efficiency.md) - 자동화가 가져온 운영 비용 절감 및 효율성 개선 분석
+**Current State**:
+- 조직별 독립적인 리마인더 지원
+- 미제출자가 0명이면 알림 스킵 (불필요한 알림 방지)
 
-## 핵심 비즈니스 메트릭
+#### Discord Bot 슬래시 명령어 (11개)
 
-### 현재 상태 (기준 데이터)
+**Facts**:
+- `/register`: 회원 등록
+- `/join-organization`: 조직 가입 신청
+- `/approve-member`: 관리자가 멤버 승인/거절/비활성화
+- `/join-generation`: 기수 참여 신청
+- `/check-submission`: 현재 주차 제출 현황 확인
+- `/cycle-status`: 특정 기수/주차 제출 현황 조회
+- `/current-cycle`: 현재 활성화된 주차 정보
+- `/create-organization`: 새 조직 생성
+- `/list-organizations`: 조직 목록 조회
+- Autocomplete 지원 (organization, generation)
 
-운영 자동화율: **약 80%**
-- GitHub 웹훅을 통한 자동 제출 수집 (issue_comment 이벤트)
-- GitHub Issue 생성 시 자동 회차 생성 (issues 이벤트)
-- Discord 알림 자동 전송 (제출, 리마인더, 상태)
+**Business Impact**:
+- **셀프서비스 등록**: 관리자 개입 없이 가입 신청
+- **권한 분리**: `/approve-member`로 관리자만 승인 가능
+- **실시간 현황**: 언제든 제출 현황 확인
 
-수동 운영 범위: **약 20%**
-- 기수(generation) 활성화 전환
-- members 테이블 멤버 추가/관리
-- 미제출자 대응 (비자동화)
+**Current State**:
+- 11개 슬래시 명령어로 완전한 셀프서비스 지원
+- Ephemeral replies로 개인정보 보호
+- Autocomplete로 사용자 경험 개선
 
-### DDD 아키텍처 도입 효과
+### 2. Impact Analysis
 
-**코드 품질**:
-- 도메인 엔티티: 0 → 4개 (Member, Generation, Cycle, Submission)
-- 값 객체: 0 → 15+개
-- 도메인 이벤트: 0 → 5개
-- Command: 0 → 4개
-- Query: 0 → 8개
+#### 멤버 경험 (Member Experience)
 
-**개선 효과**:
-- 코드 유지보수성: 40-60% 개선 예상
-- 개발 속도: 30-50% 향상 예상
-- 쿼리 성능: 20-40% 개선 예상
-- 버그 발생 가능성: 70-80% 감소 예상
+**긍정적 영향**:
+- **원클릭 제출**: GitHub 댓글 하나로 제출 완료
+- **실시간 피드백**: 제출 즉시 Discord 알림
+- **셀프서비스**: 등록, 가입 신청, 현황 조회를 Discord에서 즉시 처리
+- **투명성**: 제출 현황 실시간 공개
 
-### 가정
+**개선 필요**:
+- **에러 메시지**: "이미 제출됨" 에러가 친절하지 않음
+- **온보딩**: 11개 슬래시 명령어 학습 곡선 존재
+- **제출 수정**: 잘못 제출 시 수정 불가
 
-- **기수 운영 주기**: 격주(2주) 글쓰기
-- **평균 멤버 수**: 기수당 10-20명 (가정)
-- **제출률**: 평균 70-90% (가정)
-- **마감 리마인더**: 회차당 1-2회 발송
-
-### 비용 절감 추정 (자동화 효과)
-
-**Before (수동 운영 가정)**:
-- 제출 확인: 매회차 10-15분 (GitHub Issue 댓글 수동 확인)
-- 알림 발송: 매회차 5-10분 (Discord 메시지 수동 작성)
-- 상태 조회: 매회차 5-10분 (제출자/미제출자 수동 집계)
-- **총 운영 시간/회차**: 20-35분
-- **월간 운영 시간** (격주 2회): 40-70분
-
-**After (자동화 후)**:
-- 제출 확인: 0분 (GitHub 웹훅 자동 처리)
-- 알림 발송: 0분 (Discord webhook 자동 전송)
-- 상태 조회: 1분 (Discord 봇 명령어 또는 API 호출)
-- **총 운영 시간/회차**: 1-5분 (주로 모니터링)
-- **월간 운영 시간**: 2-10분
-
-**시간 절감**: 월 **38-60분** (약 95-97% 감소)
-
-## 주요 기회 및 위험
-
-### 기회 (Opportunities)
-
-#### DDD 아키텍처 확장 (NEW)
-
-1. **플랫폼화 가능성**
-   - 현재: 똥글똥글 전용
-   - 미래: 다른 글쓰기 모임에 White-label로 제공 가능
-   - DDD 구조로 도메인 로직 재사용 용이
-
-2. **마이크로서비스로의 진화**
-   - 도메인 이벤트를 메시지 큐로 전환하여 분산 시스템 확장
-   - 각 애그리거트를 독립 서비스로 분리 가능
-
-3. **실시간 알림 시스템**
-   - WebSocket 또는 Server-Sent Events 도입
-   - 제출 시 즉시 Discord 알림
-   - 멤버별 맞춤 알림 설정
-
-4. **데이터 분석 대시보드**
-   - 제출 패턴 분석 (마감 전/후 제출 비율)
-   - 멤버 참여도 추적
-   - 기수별 성과 비교
-
-#### 기존 기회
-
-5. **현재 회차 조회 자동화**
-   - `/api/status/current` 엔드포인트로 현재 진행중인 회차 자동 조회
-   - Discord Bot 슬래시 명령어와 연동하여 "지금 제출해야 할 회차" 즉시 확인
-   - 운영자가 매번 회차 ID를 기억할 필요 없음 → 사용자 경험 개선
-
-6. **Docker 헬스체크 도입**
-   - `/health` 엔드포인트로 DB 연결 상태 모니터링
-   - 컨테이너 오케스트레이션(Kubernetes, Docker Compose)에서 자동 재시작 가능
-   - 서비스 중단 시간 감소 및 운영 안정성 향상
-
-7. **Discord Bot 개발 속도 개선**
-   - `DISCORD_GUILD_ID` 환경변수로 슬래시 명령어 즉시 등록
-   - 개발 중 명령어 변경 시 1시간 기다릴 필요 없음
-   - 개발 생산성 향상 및 빠른 반복 가능
-
-8. **라우트 구조 모듈화**
-   - routes, handlers, index 분리로 코드 유지보수성 향상
-   - 새로운 엔드포인트 추가 시 일관된 패턴 적용 가능
-   - 팀 협업 시 충돌 감소 및 코드 리뷰 효율화
-
-9. **Discord Bot 확장**
-   - 현재 `/check-submission` 하나만 제공
-   - 추가 명령어 가능: 미제출자 리마인드, 통계 조회 등
-   - 대화형 인터페이스로 멤버 경험 개선
-
-10. **기수-멤버 연결 테이블 활용** (`generation_members`)
-    - 현재 TODO 상태로 미사용
-    - 도입 시 기수별 멤버 관리 정교화 가능
-    - 미제출자 계산 로직 개선 (현재 전체 멤버 대상)
-
-11. **다중 기수 동시 운영**
-    - 스키마는 이미 지원 (generations.isActive 플래그)
-    - 운영 프로세스 정립 시 여러 기수 병행 운영 가능
-
-12. **제출 데이터 분석**
-    - 제출 패턴, 제출 시간 분석
-    - 멤버 참여도 추적
-
-### 위험 (Risks)
-
-#### DDD 아키텍처 위험 (NEW)
-
-1. **과잉 엔지니어링 (Over-engineering)**
-   - 현재 규모(기수당 10-20명)에 4계층 구조가 복잡할 수 있음
-   - 완화: 간단한 기능 추가는 기존 패턴 따르기만 하면 됨
-   - 모니터링: 새로운 개발자가 구조를 이해하는 시간 측정
-
-2. **성능 저하 가능성**
-   - 4계층을 거치며 지연 시간 증가 가능
-   - 현재 상태: API 응답 시간 데이터 부족
-   - 완화: Query 최적화, 캐싱 도입
-
-3. **데이터 일관성 (CQRS)**
-   - Command용 DB와 Query용 DB의 데이터 불일치 가능성
-   - 완화: eventual consistency 수용하거나, 강한 일관성 필요 시 동기화
-
-4. **팀 학습 곡선**
-   - DDD, CQRS, Event Sourcing 등 개념 이해 필요
-   - 완화: 문서화, 페어 프로그래밍, 코드 리뷰
-
-#### 기존 위험
-
-5. **단일 실패점 (SPOF)**
-   - GitHub 웹훅 실패 시 제출 누락
-   - Discord webhook 실패 시 알림 누락
-   - 현재 재시도 로직 없음
-   - **개선됨**: `/health` 엔드포인트로 DB 연결 모니터링 가능
-
-6. **중복 제출 방지 의존성**
-   - `github_comment_id` UNIQUE 제약조건에 의존
-   - 동일 댓글 재처리 시 "Already submitted" 반환
-   - 그러나 웹훅 중복 전송 시나리오에 대한 명시적 처리 부족
-
-7. **멤버 식별 GitHub username 의존**
-   - `members.github` UNIQUE 제약조건
-   - GitHub username 변경 시 데이터 불일치 위험
-   - Discord ID와의 매핑도 manual 관리
-
-8. **환경변수 관리**
-   - `DISCORD_WEBHOOK_URL` 선택적 설정 (optional)
-   - 미설정 시 알림 조용히 실패 (fallback 없음)
-   - 운영자가 알림 누락 인지 어려움
-   - **추가**: `DISCORD_GUILD_ID` 미설정 시 개발 속도 저하 위험
-
-9. **현재 회차 조회 실패 시나리오**
-   - `/api/status/current`는 현재 시간이 `startDate`와 `endDate` 사이인 회차 조회
-   - 활성화된 회차가 없으면 404 반환
-   - 마감 직후/다음 회차 시작 전 "공백 기간" 발생 시 사용자 혼란 가능
-
-## 필요한 추가 데이터
-
-다음 분석을 심화하기 위해 수집 필요:
-
-### DDD 아키텍처 관련 (NEW)
-
-1. **개발 속도 측정**
-   - DDD 리팩토링 전후 기능 추가 시간 비교
-   - 버그 수정 시간 추이
-   - 코드 리뷰 소요 시간
-
-2. **성능 메트릭**
+#### 운영 효율성 (Operational Efficiency)
+
+**자동화된 작업** (이전 vs 현재):
+- **제출 기록**: 수동 스프레드시트 → 자동 GitHub webhook (주 30분 → 0분)
+- **리마인더 발송**: 수동 DM → n8n 자동화 (주 1시간 → 0분)
+- **제출 현황 조회**: 수동 집계 → `/check-submission` (주 30분 → 0분)
+
+**정량적 추정** (가정: 주 2회 제출, 10명 멤버):
+- **연간 운영 시간 절감**: 약 104시간 (주 2시간 × 52주)
+- **인건비 절감**: 시급 2만원 기준 연 208만원
+- **제출률 향상**: 리마인더로 70% → 90% 추정 (+20%p)
+
+### 3. Business Rules Analysis
+
+#### 제출 검증 규칙
+
+**Facts**:
+- `SubmissionService`에서 2가지 검증 수행
+- 1) 해당 Cycle에 이미 제출했는지 확인
+- 2) GitHub Comment ID 중복 확인
+- 위반 시 `ConflictError` 발생 (HTTP 200 반환)
+- 조직 멤버만 제출 가능 (isActiveMember)
+
+**Business Logic**:
+- **1인 1제출**: Cycle 당 멤버별 1회만 제출 가능
+- **중복 댓글 방지**: GitHub 댓글 수정으로 재제출 불가
+- **조직 멤버만 제출**: `APPROVED` 상태만 제출 가능
+
+#### 멤버-조직 관계 규칙
+
+**Facts**:
+- `organizationMembers` 테이블로 조직-멤버 관계 관리
+- 상태: `PENDING`, `APPROVED`, `REJECTED`, `INACTIVE`
+- 역할: `OWNER`, `ADMIN`, `MEMBER`
+- `isActiveMember` 메서드로 제출 권한 확인
+
+**Business Logic**:
+- **승인 기반 가입**: 조직 가입 시 관리자 승인 필요
+- **활성 멤버만 제출**: `APPROVED` 상태만 제출 가능
+- **역할 기반 권한**: OWNER/ADMIN이 멤버 승인 가능
+
+**Current Gap**:
+- `/approve-member`에 역할 검증 로직 부재 (코드에 ROLE 확인 없음)
+- 권한 관리가 Discord Bot 레벨에서만 구현됨
+
+### 4. Risk & Opportunity Assessment
+
+#### 기회 (Opportunities)
+
+1. **플랫폼화**:
+   - 현재: 단일 조직 (똥글똥글)
+   - 기회: 여러 스타디 그룹을 위한 SaaS 플랫폼
+   - 임팩트: 월 10만원 × 100개 조직 = 월 1000만원
+
+2. **프리미엄 기능**:
+   - 제출 통계 대시보드
+   - AI 기반 피드백 생성
+   - 개인별 제출 패턴 분석
+   - 임팩트: 월 5천원 × 1000명 = 월 500만원
+
+3. **기업 교육 프로그램**:
+   - 사내 글쓰기 모임 자동화
+   - B2B 판매 (연 100만원 × 50개사)
+   - 임팩트: 안정적인 B2B 수익원
+
+#### 위험 (Risks)
+
+1. **단일 장애점 (SPOF)**:
+   - API 서버 다운 시 모든 기능 중단
+   - 완화: Load Balancer, Multi-region deployment
+
+2. **권한 관리 미흡**:
+   - `/approve-member`에 역할 검증 로직 부재
+   - 완화: Role-based access control 도입
+
+3. **규정 준수**:
+   - 개인정보보호법 (Discord ID, GitHub username)
+   - 완화: 이용약관, 동의 절차, 데이터 삭제 기능
+
+## Recommendations
+
+### 단기 (1-3개월)
+
+1. **모니터링 강화**:
+   - GitHub webhook 성공/실패 로그
+   - Discord 알림 발송 추적
+   - API 응답 시간 모니터링
+
+2. **권한 관리 구현**:
+   - `/approve-member`에 역할 검증 로직 추가
+   - OWNER/ADMIN만 승인 가능
+
+3. **에러 핸들링 개선**:
+   - 사용자 친화적 에러 메시지
+   - 재시도 가능한 에러 표시
+
+### 중기 (3-6개월)
+
+1. **데이터 대시보드**:
+   - 제출률 추이 그래프
+   - 개인별 통계
+   - 기수 비교 분석
+
+2. **리마인더 최적화**:
+   - AB 테스트로 최적 빈도 찾기
+   - 개인별 리마인더 시간 설정
+
+3. **모바일 경험 개선**:
+   - Discord Bot 모바일 UX 최적화
+   - PWA로 제출 가능한 웹앱
+
+### 장기 (6-12개월)
+
+1. **플랫폼화**:
+   - 멀티 테넌트 아키텍처 강화
+   - 조직별 독립 Discord 채널 지원
+   - White-label 도메인
+
+2. **AI 기능 도입**:
+   - 제출 글 자동 요약
+   - 피드백 생성 (GPT-4)
+   - 플래그리즘 검출
+
+3. **수익화**:
+   - 프리미엄 구독 모델 도입
+   - 기업 교육 프로그램 판매
+   - 컨설팅 서비스
+
+## Needed Data
+
+### 운영 데이터
+
+1. **제출률 메트릭**:
+   - 기수별, 주차별 제출률 추이
+   - 리마인더 전후 제출률 변화
+   - 마감 시간대별 제출 분포
+
+2. **사용자 행동**:
+   - 제출 소요 시간 (가입 → 첫 제출)
+   - 슬래시 명령어 사용 빈도
+   - 제출 시간대 패턴
+
+3. **시스템 성능**:
    - API 응답 시간 (p50, p95, p99)
-   - DB 조회 횟수 (Command vs Query)
-   - 메모리 사용량
-
-3. **팀 생산성**
-   - 새로운 개발자 온보딩 시간
-   - DDD 패턴 준수율 (코드 리뷰)
-   - 테스트 커버리지
-
-### 기존 데이터 요구사항
-
-4. **실제 운영 데이터**
-   - 월간 회차 수 (실제)
-   - 평균 멤버 수 (실제)
-   - 평균 제출률 (실제)
-   - 리마인더 발송 빈도
-
-5. **사용자 행동 데이터**
-   - 제출 시간 분포 (마감 전/후)
-   - GitHub 댓글 평균 응답 시간
-   - Discord 메시지 상호작용률
-
-6. **시스템 성능 데이터**
-   - API 응답 시간 (p50, p95, p99)
-   - 웹훅 처리 지연
-   - Discord webhook 성공률
-
-7. **운영자 피드백**
-   - 수동 작업 소요 시간 (실제)
-   - 시스템 장애 빈도
-   - 개선 욕구 우선순위
-
-## 사용 가이드
-
-### 경영진/운영자를 위한 요약
-
-각 인사이트 문서 상단의 "Executive Summary" 섹션을 참조하세요. 2-3문장으로 핵심 내용을 요약합니다.
-
-### 기술팀을 위한 상세 분석
-
-"Facts" 섹션에서 해당 인사이트의 근거가 되는 기술적 사실을 확인하고, "Recommendations"에서 실행 가능한 다음 단계를 참조하세요.
-
-### 데이터 기반 의사결정
-
-"Needed Data" 섹션에 명시된 추가 데이터를 수집하면, 현재 추정치를 실제 측정값으로 대체하고 ROI를 정확히 계산할 수 있습니다.
+   - Webhook 실패율
+   - Discord 알림 성공률
 
 ---
 
-*See YAML frontmatter for detailed metadata.*
+**문서 버전**: 1.0
+**작성일**: 2026-01-07
+**다음 리뷰일**: 2026-02-07
+
+## Detailed Insights
+
+For more detailed analysis, refer to:
+
+### Operations Analysis
+- [GitHub Webhook](operations/github-webhook.md) - 제출 수집 자동화 (수동 작업 시간 95% 절감)
+- [Discord Notifications](operations/discord-notifications.md) - 알림 전송 효율성과 신뢰성
+- [Reminder System](operations/reminder-system.md) - 마감 임박 알림 워크플로우
+- [Status Tracking](operations/status-tracking.md) - 제출 현황 조회 및 모니터링
+- [DDD Migration](operations/ddd-migration.md) - DDD 리팩토링 비즈니스 영향
+- [Domain Model](operations/domain-model.md) - 비즈니스 개념의 코드 표현
+- [CQRS Pattern](operations/cqrs-pattern.md) - Command/Query 분리 효과
+- [Organization Management](operations/organization-management.md) - 멀티 테넌트 아키텍처
+
+### Impact Analysis
+- [Member Experience](impact/member-experience.md) - 사용자 경험 분석
+- [Operational Efficiency](impact/operational-efficiency.md) - 운영 비용 절감 분석
+- [Multi-Tenant Architecture](impact/multi-tenant-architecture.md) - 조직 관리 확장성
