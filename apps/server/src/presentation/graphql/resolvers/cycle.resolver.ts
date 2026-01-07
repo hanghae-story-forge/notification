@@ -35,44 +35,69 @@ import { GenerationId } from '@/domain/generation/generation.domain';
 import { OrganizationId } from '@/domain/organization/organization.domain';
 
 // ========================================
-// Resolve Dependencies from Container
+// Lazy Dependency Resolution
 // ========================================
+// Using lazy getters to ensure DI is registered before resolution
+// This is needed because modules may be evaluated before registerDependencies() is called
 
-const cycleRepo = container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
-const generationRepo = container.resolve<GenerationRepository>(
-  GENERATION_REPO_TOKEN
-);
-const organizationRepo = container.resolve<OrganizationRepository>(
-  ORGANIZATION_REPO_TOKEN
-);
-const submissionRepo = container.resolve<SubmissionRepository>(
-  SUBMISSION_REPO_TOKEN
-);
-const organizationMemberRepo = container.resolve<OrganizationMemberRepository>(
-  ORGANIZATION_MEMBER_REPO_TOKEN
-);
-const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
+let getCyclesByGenerationQuery: GetCyclesByGenerationQuery | null = null;
+let getCycleByIdQuery: GetCycleByIdQuery | null = null;
+let getCycleStatusQuery: GetCycleStatusQuery | null = null;
+let createCycleCommand: CreateCycleCommand | null = null;
+let cycleRepo: CycleRepository | null = null;
+let generationRepo: GenerationRepository | null = null;
+let organizationRepo: OrganizationRepository | null = null;
 
-// ========================================
-// Query & Command Instances
-// ========================================
+const getQueries = () => {
+  if (
+    !getCyclesByGenerationQuery ||
+    !getCycleByIdQuery ||
+    !getCycleStatusQuery ||
+    !createCycleCommand
+  ) {
+    cycleRepo = container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
+    generationRepo = container.resolve<GenerationRepository>(
+      GENERATION_REPO_TOKEN
+    );
+    organizationRepo = container.resolve<OrganizationRepository>(
+      ORGANIZATION_REPO_TOKEN
+    );
+    const submissionRepo = container.resolve<SubmissionRepository>(
+      SUBMISSION_REPO_TOKEN
+    );
+    const organizationMemberRepo =
+      container.resolve<OrganizationMemberRepository>(
+        ORGANIZATION_MEMBER_REPO_TOKEN
+      );
+    const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
 
-const getCyclesByGenerationQuery = new GetCyclesByGenerationQuery(cycleRepo);
-const getCycleByIdQuery = new GetCycleByIdQuery(cycleRepo);
-const getCycleStatusQuery = new GetCycleStatusQuery(
-  cycleRepo,
-  generationRepo,
-  organizationRepo,
-  submissionRepo,
-  organizationMemberRepo,
-  memberRepo
-);
+    getCyclesByGenerationQuery = new GetCyclesByGenerationQuery(cycleRepo);
+    getCycleByIdQuery = new GetCycleByIdQuery(cycleRepo);
+    getCycleStatusQuery = new GetCycleStatusQuery(
+      cycleRepo,
+      generationRepo,
+      organizationRepo,
+      submissionRepo,
+      organizationMemberRepo,
+      memberRepo
+    );
 
-const createCycleCommand = new CreateCycleCommand(
-  cycleRepo,
-  generationRepo,
-  organizationRepo
-);
+    createCycleCommand = new CreateCycleCommand(
+      cycleRepo,
+      generationRepo,
+      organizationRepo
+    );
+  }
+  return {
+    getCyclesByGenerationQuery,
+    getCycleByIdQuery,
+    getCycleStatusQuery,
+    createCycleCommand,
+    cycleRepo,
+    generationRepo,
+    organizationRepo,
+  };
+};
 
 // ========================================
 // Helper Functions
@@ -81,13 +106,14 @@ const createCycleCommand = new CreateCycleCommand(
 async function loadGenerationWithOrganization(
   generationId: number
 ): Promise<GqlGeneration | undefined> {
-  const generation = await generationRepo.findById(
+  const { generationRepo, organizationRepo } = getQueries();
+  const generation = await generationRepo!.findById(
     GenerationId.create(generationId)
   );
 
   if (!generation) return undefined;
 
-  const organization = await organizationRepo.findById(
+  const organization = await organizationRepo!.findById(
     OrganizationId.create(generation.organizationId)
   );
 
@@ -98,7 +124,7 @@ async function loadGenerationWithOrganization(
 }
 
 async function loadCycleWithGeneration(
-  cycle: Awaited<ReturnType<typeof getCycleByIdQuery.execute>>
+  cycle: Awaited<ReturnType<GetCycleByIdQuery['execute']>>
 ): Promise<GqlCycle | null> {
   if (!cycle) return null;
 
@@ -114,6 +140,7 @@ async function loadCycleWithGeneration(
 export const cycleQueries = {
   // 사이클 목록 조회 (generationId로 필터링 가능)
   cycles: async (generationId?: number): Promise<GqlCycle[]> => {
+    const { getCyclesByGenerationQuery } = getQueries();
     const cycles = await getCyclesByGenerationQuery.execute(generationId);
     const results = await Promise.all(
       cycles.map(async (cycle) => {
@@ -128,12 +155,14 @@ export const cycleQueries = {
 
   // 사이클 단건 조회
   cycle: async (id: number): Promise<GqlCycle | null> => {
+    const { getCycleByIdQuery } = getQueries();
     const cycle = await getCycleByIdQuery.execute(id);
     return loadCycleWithGeneration(cycle);
   },
 
   // 활성화된 사이클 조회
   activeCycle: async (): Promise<GqlCycle | null> => {
+    const { getCycleStatusQuery } = getQueries();
     const currentCycle =
       await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
     if (!currentCycle) return null;
@@ -146,6 +175,7 @@ export const cycleQueries = {
     cycleId: number,
     organizationSlug: string
   ): Promise<GqlCycleStatus> => {
+    const { getCycleStatusQuery } = getQueries();
     const status = await getCycleStatusQuery.getCycleStatus(
       cycleId,
       organizationSlug
@@ -165,6 +195,7 @@ export const cycleMutations = {
     githubIssueUrl: string,
     organizationSlug: string
   ): Promise<GqlCycle> => {
+    const { createCycleCommand } = getQueries();
     const result = await createCycleCommand.execute({
       week,
       startDate: new Date(startDate),
