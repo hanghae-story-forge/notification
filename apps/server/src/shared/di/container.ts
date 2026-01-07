@@ -22,7 +22,7 @@ interface Registration<T> {
   instance?: T;
 }
 
-type Token = string | symbol;
+type Token<T = unknown> = string | symbol;
 
 // ========================================
 // Container
@@ -35,7 +35,7 @@ class DIContainer {
    * Register a dependency with a factory
    */
   register<T>(
-    token: Token<T>,
+    token: Token,
     factory: Factory<T>,
     lifecycle: Lifecycle = 'singleton'
   ): void {
@@ -45,7 +45,7 @@ class DIContainer {
   /**
    * Register a singleton instance directly
    */
-  registerInstance<T>(token: Token<T>, instance: T): void {
+  registerInstance<T>(token: Token, instance: T): void {
     this.registrations.set(token, {
       factory: () => instance,
       lifecycle: 'singleton',
@@ -56,7 +56,7 @@ class DIContainer {
   /**
    * Resolve a dependency by token
    */
-  resolve<T>(token: Token<T>): T {
+  resolve<T>(token: Token): T {
     const registration = this.registrations.get(token);
 
     if (!registration) {
@@ -104,7 +104,7 @@ export const container = new DIContainer();
 // Helper Types
 // ========================================
 
-export type InjectableToken<T> = Token<T>;
+export type InjectableToken<T> = Token;
 
 // Helper to create typed tokens
 export function createToken<T>(description: string): InjectableToken<T> {
