@@ -2,34 +2,19 @@ import { createStatusMessage } from '@/infrastructure/external/discord';
 import type { AppContext } from '@/presentation/shared';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
+// DI Container imports
+import { container, GET_CYCLE_STATUS_QUERY_TOKEN } from '@/shared/di';
+
 // DDD Layer imports
-import { GetCycleStatusQuery } from '@/application/queries';
-import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
-import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
-import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
-import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
-import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
-import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
 import { NotFoundError } from '@/domain/common/errors';
+import type { GetCycleStatusQuery } from '@/application/queries/get-cycle-status.query';
 
 // ========================================
-// Repository & Query Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const cycleRepo = new DrizzleCycleRepository();
-const generationRepo = new DrizzleGenerationRepository();
-const submissionRepo = new DrizzleSubmissionRepository();
-const memberRepo = new DrizzleMemberRepository();
-const organizationRepo = new DrizzleOrganizationRepository();
-const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
-
-const getCycleStatusQuery = new GetCycleStatusQuery(
-  cycleRepo,
-  generationRepo,
-  organizationRepo,
-  submissionRepo,
-  organizationMemberRepo,
-  memberRepo
+const getCycleStatusQuery = container.resolve<GetCycleStatusQuery>(
+  GET_CYCLE_STATUS_QUERY_TOKEN
 );
 
 // ========================================

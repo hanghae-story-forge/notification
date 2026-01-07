@@ -1,24 +1,30 @@
 // Generation Domain Resolvers
 
 import {
+  container,
+  GENERATION_REPO_TOKEN,
+  ORGANIZATION_REPO_TOKEN,
+} from '@/shared/di';
+import type { GenerationRepository, OrganizationRepository } from '@/domain';
+import {
   CreateGenerationCommand,
   GetAllGenerationsQuery,
   GetGenerationByIdQuery,
 } from '@/application';
 import { OrganizationId } from '@/domain/organization/organization.domain';
-import {
-  DrizzleGenerationRepository,
-  DrizzleOrganizationRepository,
-} from '@/infrastructure/persistence/drizzle';
 import { domainToGraphqlOrganization } from '../mappers';
 import { GqlGeneration } from '../types';
 
 // ========================================
-// Repository Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const generationRepo = new DrizzleGenerationRepository();
-const organizationRepo = new DrizzleOrganizationRepository();
+const generationRepo = container.resolve<GenerationRepository>(
+  GENERATION_REPO_TOKEN
+);
+const organizationRepo = container.resolve<OrganizationRepository>(
+  ORGANIZATION_REPO_TOKEN
+);
 
 // ========================================
 // Query & Command Instances

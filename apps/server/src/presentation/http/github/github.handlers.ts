@@ -6,51 +6,36 @@ import type {
   IssuesWebhookPayloadSchema,
 } from './github.routes';
 
-// DDD Layer imports
+// DI Container imports
 import {
-  RecordSubmissionCommand,
-  CreateCycleCommand,
-} from '@/application/commands';
-import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
-import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
-import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
-import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
-import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
-import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
-import { SubmissionService } from '@/domain/submission/submission.service';
-import { DiscordWebhookClient } from '@/infrastructure/external/discord';
+  container,
+  RECORD_SUBMISSION_COMMAND_TOKEN,
+  CREATE_CYCLE_COMMAND_TOKEN,
+  DISCORD_WEBHOOK_CLIENT_TOKEN,
+} from '@/shared/di';
+
+// DDD Layer imports
 import {
   ValidationError,
   NotFoundError,
   ConflictError,
 } from '@/domain/common/errors';
+import type { RecordSubmissionCommand } from '@/application/commands/record-submission.command';
+import type { CreateCycleCommand } from '@/application/commands/create-cycle.command';
+import type { IDiscordWebhookClient } from '@/infrastructure/external/discord';
 
 // ========================================
-// Repository & Service Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const submissionRepo = new DrizzleSubmissionRepository();
-const cycleRepo = new DrizzleCycleRepository();
-const memberRepo = new DrizzleMemberRepository();
-const generationRepo = new DrizzleGenerationRepository();
-const organizationRepo = new DrizzleOrganizationRepository();
-const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
-const submissionService = new SubmissionService(submissionRepo);
-const discordClient = new DiscordWebhookClient();
-
-const recordSubmissionCommand = new RecordSubmissionCommand(
-  cycleRepo,
-  memberRepo,
-  submissionRepo,
-  organizationMemberRepo,
-  generationRepo,
-  submissionService
+const recordSubmissionCommand = container.resolve<RecordSubmissionCommand>(
+  RECORD_SUBMISSION_COMMAND_TOKEN
 );
-
-const createCycleCommand = new CreateCycleCommand(
-  cycleRepo,
-  generationRepo,
-  organizationRepo
+const createCycleCommand = container.resolve<CreateCycleCommand>(
+  CREATE_CYCLE_COMMAND_TOKEN
+);
+const discordClient = container.resolve<IDiscordWebhookClient>(
+  DISCORD_WEBHOOK_CLIENT_TOKEN
 );
 
 // ========================================
