@@ -2,6 +2,7 @@
 
 import { Cycle } from '@/domain/cycle/cycle.domain';
 import { GqlMember } from './member.type';
+import { GqlGeneration } from './generation.type';
 
 export class GqlCycle {
   id: number;
@@ -11,8 +12,9 @@ export class GqlCycle {
   endDate: string;
   githubIssueUrl: string | null;
   createdAt: string;
+  generation?: GqlGeneration;
 
-  constructor(cycle: Cycle) {
+  constructor(cycle: Cycle, generation?: GqlGeneration) {
     this.id = cycle.id.value;
     this.generationId = cycle.generationId;
     this.week = cycle.week.value;
@@ -20,6 +22,7 @@ export class GqlCycle {
     this.endDate = cycle.endDate.toISOString();
     this.githubIssueUrl = cycle.githubIssueUrl?.value ?? null;
     this.createdAt = cycle.createdAt.toISOString();
+    this.generation = generation;
   }
 }
 
