@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { container, createToken } from './container';
+import { createToken } from './container';
 import { DIContainer } from './container';
 
 describe('DIContainer', () => {

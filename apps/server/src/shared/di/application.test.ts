@@ -279,9 +279,7 @@ describe('Application DI Integration', () => {
      * Verify that services have their repository dependencies properly injected
      */
     it('should inject repositories into SubmissionService', () => {
-      const submissionRepo = container.resolve<SubmissionRepository>(
-        SUBMISSION_REPO_TOKEN
-      );
+      container.resolve<SubmissionRepository>(SUBMISSION_REPO_TOKEN);
 
       // SubmissionService should have the same submission repository instance
       const service = container.resolve<SubmissionService>(
@@ -292,13 +290,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should inject repositories into commands', () => {
-      const cycleRepo = container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
-      const generationRepo = container.resolve<GenerationRepository>(
-        GENERATION_REPO_TOKEN
-      );
-      const orgRepo = container.resolve<OrganizationRepository>(
-        ORGANIZATION_REPO_TOKEN
-      );
+      container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
+      container.resolve<GenerationRepository>(GENERATION_REPO_TOKEN);
+      container.resolve<OrganizationRepository>(ORGANIZATION_REPO_TOKEN);
 
       const command = container.resolve<CreateCycleCommand>(
         CREATE_CYCLE_COMMAND_TOKEN
@@ -308,13 +302,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should inject repositories into queries', () => {
-      const cycleRepo = container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
-      const generationRepo = container.resolve<GenerationRepository>(
-        GENERATION_REPO_TOKEN
-      );
-      const orgRepo = container.resolve<OrganizationRepository>(
-        ORGANIZATION_REPO_TOKEN
-      );
+      container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
+      container.resolve<GenerationRepository>(GENERATION_REPO_TOKEN);
+      container.resolve<OrganizationRepository>(ORGANIZATION_REPO_TOKEN);
 
       const query = container.resolve<GetCycleStatusQuery>(
         GET_CYCLE_STATUS_QUERY_TOKEN
