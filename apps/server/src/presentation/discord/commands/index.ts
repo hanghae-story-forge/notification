@@ -1,16 +1,11 @@
 import { REST, Routes } from 'discord.js';
 import { env } from '@/env';
 import { DiscordCommand } from './types';
-import { CheckSubmissionCommand } from './CheckSubmissionCommand';
-import { CycleStatusCommand } from './CycleStatusCommand';
-import { CurrentCycleCommand } from './CurrentCycleCommand';
-import { CreateMemberCommand } from './CreateMemberCommand';
-import { CreateOrganizationCommand } from './CreateOrganizationCommand';
-import { ListOrganizationsCommand } from './ListOrganizationsCommand';
-import { RegisterCommand } from './RegisterCommand';
-import { JoinOrganizationDiscordCommand } from './JoinOrganizationCommand';
-import { ApproveMemberCommand } from './ApproveMemberCommand';
-import { JoinGenerationDiscordCommand } from './JoinGenerationCommand';
+import { CycleCommand } from './CycleCommand';
+import { MemberCommand } from './MemberCommand';
+import { OrganizationCommand } from './OrganizationCommand';
+import { GenerationCommand } from './GenerationCommand';
+import { MeCommand } from './MeCommand';
 import { GetCycleStatusQuery } from '@/application/queries';
 import {
   CreateMemberCommand as AppCreateMemberCommand,
@@ -75,24 +70,33 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
 // Command instances
 export const createCommands = (): DiscordCommand[] => {
   return [
-    new RegisterCommand(createMemberCommand, memberRepo),
-    new JoinOrganizationDiscordCommand(joinOrganizationCommand),
-    new ApproveMemberCommand(
+    new MeCommand(
+      memberRepo,
+      organizationRepo,
+      organizationMemberRepo,
+      generationRepo,
+      generationMemberRepo
+    ),
+    new MemberCommand(
+      createMemberCommand,
       updateMemberStatusCommand,
       memberRepo,
       organizationRepo
     ),
-    new JoinGenerationDiscordCommand(
+    new OrganizationCommand(
+      createOrganizationCommand,
+      joinOrganizationCommand,
+      organizationRepo
+    ),
+    new GenerationCommand(
       joinGenerationCommand,
       memberRepo,
-      generationRepo
+      generationRepo,
+      organizationRepo,
+      generationMemberRepo,
+      cycleRepo
     ),
-    new CheckSubmissionCommand(getCycleStatusQuery),
-    new CycleStatusCommand(getCycleStatusQuery),
-    new CurrentCycleCommand(getCycleStatusQuery),
-    new CreateMemberCommand(createMemberCommand, memberRepo),
-    new CreateOrganizationCommand(createOrganizationCommand),
-    new ListOrganizationsCommand(organizationRepo),
+    new CycleCommand(getCycleStatusQuery),
   ];
 };
 
