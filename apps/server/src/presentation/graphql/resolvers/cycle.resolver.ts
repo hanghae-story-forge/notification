@@ -14,12 +14,16 @@ import {
   DrizzleOrganizationMemberRepository,
   DrizzleMemberRepository,
 } from '@/infrastructure/persistence/drizzle';
-import { GqlCycle, GqlCycleStatus } from '../types';
+import { GqlCycle, GqlCycleStatus, GqlGeneration } from '../types';
 import {
   domainToGraphqlCycle,
   createGqlCycle,
   toGqlCycleStatus,
+  domainToGraphqlGeneration,
+  domainToGraphqlOrganization,
 } from '../mappers';
+import { GenerationId } from '@/domain/generation/generation.domain';
+import { OrganizationId } from '@/domain/organization/organization.domain';
 
 // ========================================
 // Repository Instances
@@ -54,6 +58,39 @@ const createCycleCommand = new CreateCycleCommand(
 );
 
 // ========================================
+// Helper Functions
+// ========================================
+
+async function loadGenerationWithOrganization(
+  generationId: number
+): Promise<GqlGeneration | undefined> {
+  const generation = await generationRepo.findById(
+    GenerationId.create(generationId)
+  );
+
+  if (!generation) return undefined;
+
+  const organization = await organizationRepo.findById(
+    OrganizationId.create(generation.organizationId)
+  );
+
+  return domainToGraphqlGeneration(
+    generation,
+    organization ? domainToGraphqlOrganization(organization) : undefined
+  );
+}
+
+async function loadCycleWithGeneration(
+  cycle: Awaited<ReturnType<typeof getCycleByIdQuery.execute>>
+): Promise<GqlCycle | null> {
+  if (!cycle) return null;
+
+  const generation = await loadGenerationWithOrganization(cycle.generationId);
+
+  return domainToGraphqlCycle(cycle, generation);
+}
+
+// ========================================
 // Resolvers
 // ========================================
 
@@ -61,13 +98,21 @@ export const cycleQueries = {
   // 사이클 목록 조회 (generationId로 필터링 가능)
   cycles: async (generationId?: number): Promise<GqlCycle[]> => {
     const cycles = await getCyclesByGenerationQuery.execute(generationId);
-    return cycles.map(domainToGraphqlCycle);
+    const results = await Promise.all(
+      cycles.map(async (cycle) => {
+        const generation = await loadGenerationWithOrganization(
+          cycle.generationId
+        );
+        return domainToGraphqlCycle(cycle, generation);
+      })
+    );
+    return results;
   },
 
   // 사이클 단건 조회
   cycle: async (id: number): Promise<GqlCycle | null> => {
     const cycle = await getCycleByIdQuery.execute(id);
-    return cycle ? domainToGraphqlCycle(cycle) : null;
+    return loadCycleWithGeneration(cycle);
   },
 
   // 활성화된 사이클 조회
@@ -110,7 +155,10 @@ export const cycleMutations = {
       githubIssueUrl,
       organizationSlug,
     });
-    return domainToGraphqlCycle(result.cycle);
+    const generation = await loadGenerationWithOrganization(
+      result.cycle.generationId
+    );
+    return domainToGraphqlCycle(result.cycle, generation);
   },
 
   // 제출 추가 (현재는 GitHub webhook을 통해 처리)

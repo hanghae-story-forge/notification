@@ -11,8 +11,11 @@ import {
 import type { SubmittedMember, NotSubmittedMember } from '@/application';
 import { createGqlMember } from './member.mapper';
 
-export const domainToGraphqlCycle = (cycle: Cycle): GqlCycle => {
-  return new GqlCycle(cycle);
+export const domainToGraphqlCycle = (
+  cycle: Cycle,
+  generation?: GqlCycle['generation']
+): GqlCycle => {
+  return new GqlCycle(cycle, generation);
 };
 
 export const createGqlCycle = (data: {

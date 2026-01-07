@@ -25,13 +25,13 @@ export const organizationQueries = {
   // 조직 전체 조회
   organizations: async (): Promise<GqlOrganization[]> => {
     const orgs = await organizationRepo.findAll();
-    return orgs.map(domainToGraphqlOrganization);
+    return orgs.map((org) => domainToGraphqlOrganization(org));
   },
 
   // 활성화된 조직 조회
   activeOrganizations: async (): Promise<GqlOrganization[]> => {
     const orgs = await organizationRepo.findActive();
-    return orgs.map(domainToGraphqlOrganization);
+    return orgs.map((org) => domainToGraphqlOrganization(org));
   },
 
   // 조직 단건 조회 (slug로)
