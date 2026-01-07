@@ -12,7 +12,7 @@ import type {
   OrganizationRepository,
 } from '@/domain';
 import { GetOrganizationQuery } from '@/application';
-import { GqlOrganization, GqlOrganizationMember } from '../types';
+import { GqlMember, GqlOrganization, GqlOrganizationMember } from '../types';
 import { domainToGraphqlOrganization } from '../mappers';
 import { OrganizationMember } from '@/domain/organization-member/organization-member.domain';
 
@@ -60,19 +60,15 @@ async function mapToGqlOrganizationMember(
     throw new Error(`Member ${organizationMember.memberId.value} not found`);
   }
 
-  return new GqlOrganizationMember(organizationMember, {
-    id: member.id.value,
-    github: member.githubUsername?.value ?? '',
-    discordId: member.discordId.value,
-    name: member.name.value,
-    createdAt: member.createdAt.toISOString(),
-  });
+  return new GqlOrganizationMember(organizationMember, new GqlMember(member));
 }
 
 async function loadOrganizationMembers(
   organizationMemberRepo: OrganizationMemberRepository,
   memberRepo: MemberRepository,
-  organizationId: Parameters<OrganizationMemberRepository['findByOrganization']>[0]
+  organizationId: Parameters<
+    OrganizationMemberRepository['findByOrganization']
+  >[0]
 ): Promise<GqlOrganizationMember[]> {
   const organizationMembers =
     await organizationMemberRepo.findByOrganization(organizationId);

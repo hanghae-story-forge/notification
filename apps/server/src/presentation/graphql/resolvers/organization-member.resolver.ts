@@ -5,7 +5,7 @@ import { ChangeMemberRoleCommand } from '@/application';
 import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle';
 import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle';
-import { GqlOrganizationMember } from '../types';
+import { GqlMember, GqlOrganizationMember } from '../types';
 import {
   OrganizationMemberStatus,
   OrganizationRole,
@@ -65,13 +65,7 @@ function mapToGqlOrganizationMember(
     createdAt: new Date(),
   });
 
-  return new GqlOrganizationMember(organizationMember, {
-    id: member.id.value,
-    github: member.githubUsername?.value ?? '',
-    discordId: member.discordId.value,
-    name: member.name.value,
-    createdAt: member.createdAt.toISOString(),
-  });
+  return new GqlOrganizationMember(organizationMember, new GqlMember(member));
 }
 
 // ========================================
@@ -126,12 +120,9 @@ export const organizationMemberMutations = {
       createdAt: result.member.createdAt,
     });
 
-    return new GqlOrganizationMember(result.organizationMember, {
-      id: member.id.value,
-      github: member.githubUsername?.value ?? '',
-      discordId: member.discordId.value,
-      name: member.name.value,
-      createdAt: member.createdAt.toISOString(),
-    });
+    return new GqlOrganizationMember(
+      result.organizationMember,
+      new GqlMember(member)
+    );
   },
 };
