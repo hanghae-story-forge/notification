@@ -95,15 +95,27 @@ export class Member extends AggregateRoot<MemberId> {
     name: string;
     createdAt: Date;
   }): Member {
-    return Member.create({
-      id: data.id,
-      discordId: data.discordId,
-      discordUsername: data.discordUsername,
-      discordAvatar: data.discordAvatar,
-      githubUsername: data.githubUsername,
-      name: data.name,
-      createdAt: data.createdAt,
-    });
+    const id = MemberId.create(data.id);
+    const discordId = DiscordId.reconstitute(data.discordId);
+    const discordUsername = data.discordUsername
+      ? DiscordUsername.reconstitute(data.discordUsername)
+      : null;
+    const discordAvatar = data.discordAvatar ?? null;
+    const githubUsername = data.githubUsername
+      ? GithubUsername.reconstitute(data.githubUsername)
+      : null;
+    const name = MemberName.reconstitute(data.name);
+    const createdAt = data.createdAt;
+
+    return new Member(
+      id,
+      discordId,
+      discordUsername,
+      discordAvatar,
+      githubUsername,
+      name,
+      createdAt
+    );
   }
 
   // Getters
