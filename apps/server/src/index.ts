@@ -1,28 +1,48 @@
 import 'dotenv/config';
-import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { sql } from 'drizzle-orm';
-import githubRouter from './presentation/http/github/github.index';
-import reminderRouter from './presentation/http/reminder/reminder.index';
-import statusRouter from './presentation/http/status/status.index';
-import pylonApp from './presentation/graphql';
+
+import { app } from '@getcronit/pylon';
+import { serve } from '@hono/node-server';
+
 import {
   createDiscordBot,
   registerSlashCommands,
 } from './presentation/discord/bot';
 
-import './env';
+import { env } from './env';
 
-const app = new Hono();
+// Import GraphQL configuration
+import { graphql } from './presentation/graphql/pylon.service';
 
-// CORS 허용
-app.use('/*', cors());
+// GitHub Webhook Handlers
+import {
+  handleIssueComment,
+  handleIssues,
+  handleUnknownEvent,
+} from './presentation/http/github/github.handlers';
+
+// Reminder Handlers
+import {
+  getReminderCycles,
+  getNotSubmittedMembers,
+  sendReminderNotifications,
+} from './presentation/http/reminder/reminder.handlers';
+
+// Status Handlers
+import {
+  getCurrentCycle,
+  getCurrentCycleDiscord,
+  getStatus,
+  getStatusDiscord,
+} from './presentation/http/status/status.handlers';
+
+// ========================================
+// REST Endpoints
+// ========================================
 
 // Health check for Docker
 app.get('/health', async (c) => {
   try {
-    // DB 연결 확인
     const { db } = await import('./infrastructure/lib/db');
     await db.execute(sql`SELECT 1`);
 
@@ -47,47 +67,62 @@ app.get('/health', async (c) => {
 // Root endpoint
 app.get('/', (c) => c.json({ status: 'ok', message: '똥글똥글 API' }));
 
-// GitHub webhook
-app.route('/', githubRouter);
-
-// n8n용 API
-app.route('/', reminderRouter);
-app.route('/', statusRouter);
-
-// Pylon GraphQL 엔드포인트
-// Pylon은 Hono 앱으로 직접 라우팅할 수 있습니다
-app.route('/', pylonApp);
-
-const port = parseInt(process.env.PORT || '3000');
-
-console.log(`🚀 Server starting on port ${port}`);
-
-// HTTP 서버 시작
-serve({
-  fetch: app.fetch,
-  port,
+// GitHub webhook - Issue comment
+app.post('/webhook/github', async (c) => {
+  const githubEvent = c.req.header('x-github-event');
+  if (githubEvent === 'issue_comment') {
+    return handleIssueComment(c);
+  }
+  if (githubEvent === 'issues') {
+    return handleIssues(c);
+  }
+  return handleUnknownEvent(c);
 });
 
-console.log(`✅ Server ready on http://localhost:${port}`);
-console.log(`📊 GraphQL: http://localhost:${port}/graphql`);
+// Reminder API
+app.get('/api/reminder', getReminderCycles);
+app.get('/api/reminder/:cycleId/not-submitted', getNotSubmittedMembers);
+app.post('/api/reminder/send-reminders', sendReminderNotifications);
 
-// Discord Bot 시작 (토큰이 설정된 경우만)
-const { env } = await import('./env');
+// Status API
+app.get('/api/status/current', getCurrentCycle);
+app.get('/api/status/current/discord', getCurrentCycleDiscord);
+app.get('/api/status/:cycleId', getStatus);
+app.get('/api/status/:cycleId/discord', getStatusDiscord);
+
+// ========================================
+// GraphQL API
+// ========================================
+
+export { graphql };
+
+// ========================================
+// Discord Bot Integration
+// ========================================
+
 if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
-  try {
-    // 슬래시 명령어 등록
-    const { createCommands } = await import('./presentation/discord/commands');
-    const commands = createCommands();
-    await registerSlashCommands(commands);
+  void (async () => {
+    try {
+      const { createCommands } =
+        await import('./presentation/discord/commands');
+      const commands = createCommands();
+      await registerSlashCommands(commands);
 
-    // Discord Bot 로그인
-    const discordBot = createDiscordBot();
-    await discordBot.login(env.DISCORD_BOT_TOKEN);
-  } catch (error) {
-    console.error('❌ Failed to start Discord Bot:', error);
-  }
+      const discordBot = createDiscordBot();
+      await discordBot.login(env.DISCORD_BOT_TOKEN);
+    } catch (error) {
+      console.error('❌ Failed to start Discord Bot:', error);
+    }
+  })();
 } else {
   console.log(
     '⚠️  Discord Bot not configured. Set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID to enable.'
   );
 }
+
+serve(app, (info) => {
+  console.log(`🚀 Server started on http://localhost:${info.port}`);
+});
+
+// Export default app for Pylon
+export default app;

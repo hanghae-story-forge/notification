@@ -1,5 +1,5 @@
 import { createStatusMessage } from '@/infrastructure/external/discord';
-import type { AppContext } from '@/infrastructure/lib/router';
+import type { AppContext } from '@/presentation/shared';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 // DDD Layer imports

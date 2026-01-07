@@ -16,12 +16,10 @@ export const env = createEnv({
       .optional(),
     DISCORD_BOT_TOKEN: z
       .string()
-      .min(1, { message: 'DISCORD_BOT_TOKEN is required' })
-      .optional(),
+      .min(1, { message: 'DISCORD_BOT_TOKEN is required' }),
     DISCORD_CLIENT_ID: z
       .string()
-      .min(1, { message: 'DISCORD_CLIENT_ID is required' })
-      .optional(),
+      .min(1, { message: 'DISCORD_CLIENT_ID is required' }),
     DISCORD_GUILD_ID: z
       .string()
       .min(1, { message: 'DISCORD_GUILD_ID is required' })

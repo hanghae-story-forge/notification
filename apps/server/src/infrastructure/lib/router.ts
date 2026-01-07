@@ -13,6 +13,8 @@ export type AppOpenAPIHono = OpenAPIHono<{
   Variables: Variables;
 }>;
 
+// Pylon uses Hono under the hood, so we can use Hono's Context type
+// The Bindings must match what's defined in pylon.d.ts
 export type AppContext = Context<{ Bindings: Bindings; Variables: Variables }>;
 
 export function createRouter() {
