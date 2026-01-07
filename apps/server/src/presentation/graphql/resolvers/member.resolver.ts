@@ -1,21 +1,25 @@
 // Member Domain Resolvers
 
 import {
+  container,
+  MEMBER_REPO_TOKEN,
+  MEMBER_SERVICE_TOKEN,
+} from '@/shared/di';
+import type { MemberRepository, MemberService } from '@/domain';
+import {
   GetAllMembersQuery,
   GetMemberByGithubQuery,
   CreateMemberCommand,
 } from '@/application';
-import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle';
-import { MemberService } from '@/domain/member/member.service';
 import { GqlMember } from '../types';
 import { domainToGraphqlMember } from '../mappers';
 
 // ========================================
-// Repository & Service Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const memberRepo = new DrizzleMemberRepository();
-const memberService = new MemberService(memberRepo);
+const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
+const memberService = container.resolve<MemberService>(MEMBER_SERVICE_TOKEN);
 
 // ========================================
 // Query & Command Instances

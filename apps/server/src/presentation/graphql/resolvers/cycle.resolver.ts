@@ -1,19 +1,28 @@
 // Cycle Domain Resolvers
 
 import {
+  container,
+  CYCLE_REPO_TOKEN,
+  GENERATION_REPO_TOKEN,
+  ORGANIZATION_REPO_TOKEN,
+  SUBMISSION_REPO_TOKEN,
+  ORGANIZATION_MEMBER_REPO_TOKEN,
+  MEMBER_REPO_TOKEN,
+} from '@/shared/di';
+import type {
+  CycleRepository,
+  GenerationRepository,
+  OrganizationRepository,
+  SubmissionRepository,
+  OrganizationMemberRepository,
+  MemberRepository,
+} from '@/domain';
+import {
   GetCyclesByGenerationQuery,
   GetCycleByIdQuery,
   GetCycleStatusQuery,
   CreateCycleCommand,
 } from '@/application';
-import {
-  DrizzleCycleRepository,
-  DrizzleGenerationRepository,
-  DrizzleSubmissionRepository,
-  DrizzleOrganizationRepository,
-  DrizzleOrganizationMemberRepository,
-  DrizzleMemberRepository,
-} from '@/infrastructure/persistence/drizzle';
 import { GqlCycle, GqlCycleStatus, GqlGeneration } from '../types';
 import {
   domainToGraphqlCycle,
@@ -26,15 +35,23 @@ import { GenerationId } from '@/domain/generation/generation.domain';
 import { OrganizationId } from '@/domain/organization/organization.domain';
 
 // ========================================
-// Repository Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const cycleRepo = new DrizzleCycleRepository();
-const generationRepo = new DrizzleGenerationRepository();
-const submissionRepo = new DrizzleSubmissionRepository();
-const organizationRepo = new DrizzleOrganizationRepository();
-const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
-const memberRepo = new DrizzleMemberRepository();
+const cycleRepo = container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
+const generationRepo = container.resolve<GenerationRepository>(
+  GENERATION_REPO_TOKEN
+);
+const organizationRepo = container.resolve<OrganizationRepository>(
+  ORGANIZATION_REPO_TOKEN
+);
+const submissionRepo = container.resolve<SubmissionRepository>(
+  SUBMISSION_REPO_TOKEN
+);
+const organizationMemberRepo = container.resolve<OrganizationMemberRepository>(
+  ORGANIZATION_MEMBER_REPO_TOKEN
+);
+const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
 
 // ========================================
 // Query & Command Instances

@@ -5,6 +5,15 @@ import { app } from '@getcronit/pylon';
 import { serve } from '@hono/node-server';
 
 // ========================================
+// DI Container Registration
+// ========================================
+
+import { registerDependencies } from './shared/di';
+
+// Register all dependencies before importing handlers
+registerDependencies();
+
+// ========================================
 // Global Error Handlers
 // ========================================
 

@@ -2,19 +2,27 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import { createCommands } from './commands';
 import { registerSlashCommands } from './commands/index';
 import { DiscordCommand } from './commands/types';
-import { OrganizationAutocomplete } from './autocompletions/OrganizationAutocomplete';
-import { GenerationAutocomplete } from './autocompletions/GenerationAutocomplete';
-import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
-import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
+
+// DI Container imports
+import {
+  container,
+  ORGANIZATION_AUTOCOMPLETE_TOKEN,
+  GENERATION_AUTOCOMPLETE_TOKEN,
+} from '@/shared/di';
+
+import type { OrganizationAutocomplete } from './autocompletions/OrganizationAutocomplete';
+import type { GenerationAutocomplete } from './autocompletions/GenerationAutocomplete';
 
 const commands = createCommands();
 const commandMap = new Map<string, DiscordCommand>();
 
-// Autocomplete handlers
-const organizationRepo = new DrizzleOrganizationRepository();
-const generationRepo = new DrizzleGenerationRepository();
-const organizationAutocomplete = new OrganizationAutocomplete(organizationRepo);
-const generationAutocomplete = new GenerationAutocomplete(generationRepo);
+// Autocomplete handlers from DI container
+const organizationAutocomplete = container.resolve<OrganizationAutocomplete>(
+  ORGANIZATION_AUTOCOMPLETE_TOKEN
+);
+const generationAutocomplete = container.resolve<GenerationAutocomplete>(
+  GENERATION_AUTOCOMPLETE_TOKEN
+);
 
 commands.forEach((cmd) => {
   commandMap.set(cmd.definition.toJSON().name, cmd);

@@ -1,15 +1,18 @@
 // Organization Domain Resolvers
 
+import { container, ORGANIZATION_REPO_TOKEN } from '@/shared/di';
+import type { OrganizationRepository } from '@/domain';
 import { GetOrganizationQuery } from '@/application';
-import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle';
 import { GqlOrganization } from '../types';
 import { domainToGraphqlOrganization } from '../mappers';
 
 // ========================================
-// Repository Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const organizationRepo = new DrizzleOrganizationRepository();
+const organizationRepo = container.resolve<OrganizationRepository>(
+  ORGANIZATION_REPO_TOKEN
+);
 
 // ========================================
 // Query Instances

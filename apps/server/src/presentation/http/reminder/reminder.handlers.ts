@@ -1,36 +1,27 @@
 import type { AppContext } from '@/presentation/shared';
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
+// DI Container imports
+import {
+  container,
+  GET_REMINDER_TARGETS_QUERY_TOKEN,
+  DISCORD_WEBHOOK_CLIENT_TOKEN,
+} from '@/shared/di';
+
 // DDD Layer imports
-import { GetReminderTargetsQuery } from '@/application/queries';
-import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
-import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
-import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
-import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
-import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
-import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
-import { DiscordWebhookClient } from '@/infrastructure/external/discord';
 import { NotFoundError } from '@/domain/common/errors';
+import type { GetReminderTargetsQuery } from '@/application/queries/get-reminder-targets.query';
+import type { IDiscordWebhookClient } from '@/infrastructure/external/discord';
 
 // ========================================
-// Repository & Query Instances
+// Resolve Dependencies from Container
 // ========================================
 
-const cycleRepo = new DrizzleCycleRepository();
-const generationRepo = new DrizzleGenerationRepository();
-const submissionRepo = new DrizzleSubmissionRepository();
-const memberRepo = new DrizzleMemberRepository();
-const organizationRepo = new DrizzleOrganizationRepository();
-const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
-const discordClient = new DiscordWebhookClient();
-
-const getReminderTargetsQuery = new GetReminderTargetsQuery(
-  cycleRepo,
-  generationRepo,
-  organizationRepo,
-  submissionRepo,
-  organizationMemberRepo,
-  memberRepo
+const getReminderTargetsQuery = container.resolve<GetReminderTargetsQuery>(
+  GET_REMINDER_TARGETS_QUERY_TOKEN
+);
+const discordClient = container.resolve<IDiscordWebhookClient>(
+  DISCORD_WEBHOOK_CLIENT_TOKEN
 );
 
 // ========================================
