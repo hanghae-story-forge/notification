@@ -3,6 +3,7 @@
 import { Generation } from '@/domain/generation/generation.domain';
 import { GqlCycle } from './cycle.type';
 import { GqlOrganization } from './organization.type';
+import { GqlGenerationMember } from './generation-member.type';
 
 export class GqlGeneration {
   id: number;
@@ -12,11 +13,13 @@ export class GqlGeneration {
   createdAt: string;
   organization?: GqlOrganization;
   cycles?: GqlCycle[];
+  members?: GqlGenerationMember[];
 
   constructor(
     generation: Generation,
     organization?: GqlOrganization,
-    cycles?: GqlCycle[]
+    cycles?: GqlCycle[],
+    members?: GqlGenerationMember[]
   ) {
     this.id = generation.id.value;
     this.name = generation.name;
@@ -25,5 +28,6 @@ export class GqlGeneration {
     this.createdAt = generation.createdAt.toISOString();
     this.organization = organization;
     this.cycles = cycles;
+    this.members = members;
   }
 }

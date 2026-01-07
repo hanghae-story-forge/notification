@@ -5,7 +5,9 @@ import { GqlGeneration } from '../types';
 
 export const domainToGraphqlGeneration = (
   generation: Generation,
-  organization?: GqlGeneration['organization']
+  organization?: GqlGeneration['organization'],
+  cycles?: GqlGeneration['cycles'],
+  members?: GqlGeneration['members']
 ): GqlGeneration => {
-  return new GqlGeneration(generation, organization);
+  return new GqlGeneration(generation, organization, cycles, members);
 };

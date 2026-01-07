@@ -1,10 +1,11 @@
 // Organization Mapper
 
 import { Organization } from '@/domain/organization/organization.domain';
-import { GqlOrganization } from '../types';
+import { GqlOrganization, GqlOrganizationMember } from '../types';
 
 export const domainToGraphqlOrganization = (
-  organization: Organization
+  organization: Organization,
+  members?: GqlOrganizationMember[]
 ): GqlOrganization => {
   const dto = organization.toDTO();
   const gqlOrg = new GqlOrganization();
@@ -14,5 +15,6 @@ export const domainToGraphqlOrganization = (
   gqlOrg.discordWebhookUrl = dto.discordWebhookUrl;
   gqlOrg.isActive = dto.isActive;
   gqlOrg.createdAt = dto.createdAt;
+  gqlOrg.members = members;
   return gqlOrg;
 };

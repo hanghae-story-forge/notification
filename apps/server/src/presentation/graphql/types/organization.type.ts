@@ -1,5 +1,7 @@
 // GraphQL Organization Type
 
+import { GqlOrganizationMember } from './organization-member.type';
+
 export class GqlOrganization {
   id!: number;
   name!: string;
@@ -7,4 +9,5 @@ export class GqlOrganization {
   discordWebhookUrl!: string | null;
   isActive!: boolean;
   createdAt!: string;
+  members?: GqlOrganizationMember[];
 }
