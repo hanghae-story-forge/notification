@@ -25,6 +25,16 @@ export const createDiscordBot = (): Client => {
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   });
 
+  // Global error handlers to prevent process crashes
+  client.on('error', (error) => {
+    console.error('Discord client error:', error);
+  });
+
+  // Handle unhandled rejections from Discord.js
+  client.on('shardError', (error) => {
+    console.error('Discord shard error:', error);
+  });
+
   client.once('ready', () => {
     console.log(`✅ Discord Bot logged in as ${client.user?.tag}`);
   });
@@ -35,12 +45,20 @@ export const createDiscordBot = (): Client => {
       const { options } = interaction;
 
       if (options.getFocused(true).name === 'organization') {
-        await organizationAutocomplete.execute(interaction);
+        try {
+          await organizationAutocomplete.execute(interaction);
+        } catch (error) {
+          console.error('Error handling autocomplete:', error);
+        }
         return;
       }
 
       if (options.getFocused(true).name === 'generation') {
-        await generationAutocomplete.execute(interaction);
+        try {
+          await generationAutocomplete.execute(interaction);
+        } catch (error) {
+          console.error('Error handling autocomplete:', error);
+        }
         return;
       }
 
@@ -55,7 +73,31 @@ export const createDiscordBot = (): Client => {
 
     const command = commandMap.get(commandName);
     if (command) {
-      await command.execute(interaction);
+      try {
+        await command.execute(interaction);
+      } catch (error) {
+        console.error(`Error executing command ${commandName}:`, error);
+
+        // Try to send error response if interaction hasn't been replied to
+        if (interaction.isRepliable()) {
+          try {
+            if (interaction.deferred || interaction.replied) {
+              await interaction.editReply({
+                content:
+                  '❌ 명령 실행 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+              });
+            } else {
+              await interaction.reply({
+                content:
+                  '❌ 명령 실행 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                ephemeral: true,
+              });
+            }
+          } catch (replyError) {
+            console.error('Error sending error response:', replyError);
+          }
+        }
+      }
     } else {
       console.log(`⚠️  Unknown command: ${commandName}`);
     }

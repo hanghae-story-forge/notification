@@ -4,6 +4,23 @@ import { sql } from 'drizzle-orm';
 import { app } from '@getcronit/pylon';
 import { serve } from '@hono/node-server';
 
+// ========================================
+// Global Error Handlers
+// ========================================
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit the process, just log the error
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process immediately, log and continue
+  // In production, you might want to exit after cleanup
+});
+
 import {
   createDiscordBot,
   registerSlashCommands,
