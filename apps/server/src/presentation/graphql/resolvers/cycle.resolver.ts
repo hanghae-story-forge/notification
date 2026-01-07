@@ -14,10 +14,7 @@ import {
   DrizzleOrganizationMemberRepository,
   DrizzleMemberRepository,
 } from '@/infrastructure/persistence/drizzle';
-import {
-  GqlCycle,
-  GqlCycleStatus,
-} from '../types';
+import { GqlCycle, GqlCycleStatus } from '../types';
 import {
   domainToGraphqlCycle,
   createGqlCycle,
