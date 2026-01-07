@@ -43,7 +43,7 @@ export const members = pgTable('members', {
   discordId: text('discord_id').notNull().unique(), // Discord User ID (고유)
   discordUsername: text('discord_username'), // Discord username (변경 가능)
   discordAvatar: text('discord_avatar'), // Discord avatar hash
-  github: text('github'), // GitHub username (optional, 더 이상 unique 아님)
+  githubUsername: text('github_username'), // GitHub username (optional, 더 이상 unique 아님)
   name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

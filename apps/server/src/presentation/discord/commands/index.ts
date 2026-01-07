@@ -2,17 +2,26 @@ import { REST, Routes } from 'discord.js';
 import { env } from '@/env';
 import { DiscordCommand } from './types';
 import { CheckSubmissionCommand } from './CheckSubmissionCommand';
+import { CycleStatusCommand } from './CycleStatusCommand';
 import { CurrentCycleCommand } from './CurrentCycleCommand';
 import { CreateMemberCommand } from './CreateMemberCommand';
 import { CreateOrganizationCommand } from './CreateOrganizationCommand';
 import { ListOrganizationsCommand } from './ListOrganizationsCommand';
+import { RegisterCommand } from './RegisterCommand';
+import { JoinOrganizationDiscordCommand } from './JoinOrganizationCommand';
+import { ApproveMemberCommand } from './ApproveMemberCommand';
+import { JoinGenerationDiscordCommand } from './JoinGenerationCommand';
 import { GetCycleStatusQuery } from '@/application/queries';
 import {
   CreateMemberCommand as AppCreateMemberCommand,
   CreateOrganizationCommand as AppCreateOrganizationCommand,
+  JoinOrganizationCommand as AppJoinOrganizationCommand,
+  UpdateMemberStatusCommand,
+  JoinGenerationCommand as AppJoinGenerationCommand,
 } from '@/application/commands';
 import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
+import { DrizzleGenerationMemberRepository } from '@/infrastructure/persistence/drizzle/generation-member.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
 import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
@@ -22,6 +31,7 @@ import { MemberService } from '@/domain/member/member.service';
 // Repository instances
 const cycleRepo = new DrizzleCycleRepository();
 const generationRepo = new DrizzleGenerationRepository();
+const generationMemberRepo = new DrizzleGenerationMemberRepository();
 const submissionRepo = new DrizzleSubmissionRepository();
 const memberRepo = new DrizzleMemberRepository();
 const organizationRepo = new DrizzleOrganizationRepository();
@@ -36,6 +46,22 @@ const createMemberCommand = new AppCreateMemberCommand(
 const createOrganizationCommand = new AppCreateOrganizationCommand(
   organizationRepo
 );
+const joinOrganizationCommand = new AppJoinOrganizationCommand(
+  organizationRepo,
+  memberRepo,
+  organizationMemberRepo
+);
+const updateMemberStatusCommand = new UpdateMemberStatusCommand(
+  organizationRepo,
+  organizationMemberRepo
+);
+const joinGenerationCommand = new AppJoinGenerationCommand(
+  generationRepo,
+  memberRepo,
+  organizationRepo,
+  organizationMemberRepo,
+  generationMemberRepo
+);
 
 const getCycleStatusQuery = new GetCycleStatusQuery(
   cycleRepo,
@@ -49,7 +75,20 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
 // Command instances
 export const createCommands = (): DiscordCommand[] => {
   return [
+    new RegisterCommand(createMemberCommand, memberRepo),
+    new JoinOrganizationDiscordCommand(joinOrganizationCommand),
+    new ApproveMemberCommand(
+      updateMemberStatusCommand,
+      memberRepo,
+      organizationRepo
+    ),
+    new JoinGenerationDiscordCommand(
+      joinGenerationCommand,
+      memberRepo,
+      generationRepo
+    ),
     new CheckSubmissionCommand(getCycleStatusQuery),
+    new CycleStatusCommand(getCycleStatusQuery),
     new CurrentCycleCommand(getCycleStatusQuery),
     new CreateMemberCommand(createMemberCommand, memberRepo),
     new CreateOrganizationCommand(createOrganizationCommand),

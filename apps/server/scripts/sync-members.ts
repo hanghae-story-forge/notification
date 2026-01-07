@@ -74,7 +74,7 @@ async function getOrganizationMembers(org: string): Promise<GitHubMember[]> {
 
 // 멤버 생성 또는 조회
 async function getOrCreateMember(github: string, name: string) {
-  const existing = await db.select().from(members).where(eq(members.github, github)).limit(1);
+  const existing = await db.select().from(members).where(eq(members.githubUsername, github)).limit(1);
 
   if (existing.length > 0) {
     // 이름이 변경되었으면 업데이트
@@ -90,7 +90,7 @@ async function getOrCreateMember(github: string, name: string) {
   const newMember = await db
     .insert(members)
     .values({
-      github,
+      githubUsername: github,
       name,
       discordId,
     })
@@ -148,7 +148,7 @@ async function main() {
 
   for (const githubMember of githubMembers) {
     const member = await getOrCreateMember(githubMember.login, githubMember.name ?? githubMember.login);
-    console.log(`  👤 ${member.github} - ${member.name} (ID: ${member.id})`);
+    console.log(`  👤 ${member.githubUsername} - ${member.name} (ID: ${member.id})`);
   }
 
   console.log('\n✅ Member sync complete!');

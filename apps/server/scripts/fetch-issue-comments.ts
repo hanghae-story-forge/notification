@@ -49,7 +49,7 @@ async function getIssueComments(owner: string, repo: string, issueNumber: number
 // 제출 내역 DB에 저장
 async function saveSubmission(cycleId: number, github: string, url: string, commentId: string) {
   // 멤버 조회
-  const member = await db.select().from(members).where(eq(members.github, github)).limit(1);
+  const member = await db.select().from(members).where(eq(members.githubUsername, github)).limit(1);
 
   if (member.length === 0) {
     console.warn(`  ⚠️  Member not found: @${github}`);

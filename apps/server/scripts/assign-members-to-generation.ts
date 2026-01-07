@@ -32,7 +32,7 @@ async function assignMembersToGeneration(generationId: number, githubUsernames: 
 
   for (const github of githubUsernames) {
     // 멤버 조회
-    const member = await db.select().from(members).where(eq(members.github, github)).limit(1);
+    const member = await db.select().from(members).where(eq(members.githubUsername, github)).limit(1);
 
     if (member.length === 0) {
       console.log(`  ⚠️  Member not found: @${github}`);
