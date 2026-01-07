@@ -91,7 +91,7 @@ export class Member extends AggregateRoot<MemberId> {
     discordId: string;
     discordUsername?: string;
     discordAvatar?: string;
-    github?: string;
+    githubUsername?: string;
     name: string;
     createdAt: Date;
   }): Member {
@@ -100,7 +100,7 @@ export class Member extends AggregateRoot<MemberId> {
       discordId: data.discordId,
       discordUsername: data.discordUsername,
       discordAvatar: data.discordAvatar,
-      githubUsername: data.github,
+      githubUsername: data.githubUsername,
       name: data.name,
       createdAt: data.createdAt,
     });

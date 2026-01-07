@@ -16,7 +16,7 @@ export class DrizzleMemberRepository implements MemberRepository {
         discordId: dto.discordId,
         discordUsername: dto.discordUsername,
         discordAvatar: dto.discordAvatar,
-        github: dto.githubUsername,
+        githubUsername: dto.githubUsername,
         name: dto.name,
       });
     } else {
@@ -27,7 +27,7 @@ export class DrizzleMemberRepository implements MemberRepository {
           discordId: dto.discordId,
           discordUsername: dto.discordUsername,
           discordAvatar: dto.discordAvatar,
-          github: dto.githubUsername,
+          githubUsername: dto.githubUsername,
           name: dto.name,
         })
         .where(eq(members.id, dto.id));
@@ -66,7 +66,7 @@ export class DrizzleMemberRepository implements MemberRepository {
     const result = await db
       .select()
       .from(members)
-      .where(eq(members.github, githubUsername))
+      .where(eq(members.githubUsername, githubUsername))
       .limit(1);
 
     if (result.length === 0) {
@@ -86,7 +86,7 @@ export class DrizzleMemberRepository implements MemberRepository {
     discordId: string;
     discordUsername: string | null;
     discordAvatar: string | null;
-    github: string | null;
+    githubUsername: string | null;
     name: string;
     createdAt: Date;
   }): Member {
@@ -95,7 +95,7 @@ export class DrizzleMemberRepository implements MemberRepository {
       discordId: row.discordId,
       discordUsername: row.discordUsername ?? undefined,
       discordAvatar: row.discordAvatar ?? undefined,
-      github: row.github ?? undefined,
+      githubUsername: row.githubUsername ?? undefined,
       name: row.name,
       createdAt: row.createdAt,
     });
