@@ -15,19 +15,26 @@ import { GqlMember } from '../types';
 import { domainToGraphqlMember } from '../mappers';
 
 // ========================================
-// Resolve Dependencies from Container
+// Lazy Dependency Resolution
 // ========================================
+// Using lazy getters to ensure DI is registered before resolution
+// This is needed because modules may be evaluated before registerDependencies() is called
 
-const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
-const memberService = container.resolve<MemberService>(MEMBER_SERVICE_TOKEN);
+let getAllMembersQuery: GetAllMembersQuery | null = null;
+let getMemberByGithubQuery: GetMemberByGithubQuery | null = null;
+let createMemberCommand: CreateMemberCommand | null = null;
 
-// ========================================
-// Query & Command Instances
-// ========================================
+const getQueries = () => {
+  if (!getAllMembersQuery || !getMemberByGithubQuery || !createMemberCommand) {
+    const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
+    const memberService = container.resolve<MemberService>(MEMBER_SERVICE_TOKEN);
 
-const getAllMembersQuery = new GetAllMembersQuery(memberRepo);
-const getMemberByGithubQuery = new GetMemberByGithubQuery(memberRepo);
-const createMemberCommand = new CreateMemberCommand(memberRepo, memberService);
+    getAllMembersQuery = new GetAllMembersQuery(memberRepo);
+    getMemberByGithubQuery = new GetMemberByGithubQuery(memberRepo);
+    createMemberCommand = new CreateMemberCommand(memberRepo, memberService);
+  }
+  return { getAllMembersQuery, getMemberByGithubQuery, createMemberCommand };
+};
 
 // ========================================
 // Resolvers
@@ -36,12 +43,14 @@ const createMemberCommand = new CreateMemberCommand(memberRepo, memberService);
 export const memberQueries = {
   // 멤버 전체 조회
   members: async (): Promise<GqlMember[]> => {
+    const { getAllMembersQuery } = getQueries();
     const members = await getAllMembersQuery.execute();
     return members.map(domainToGraphqlMember);
   },
 
   // 멤버 단건 조회 (GitHub username으로)
   member: async (github: string): Promise<GqlMember | null> => {
+    const { getMemberByGithubQuery } = getQueries();
     const member = await getMemberByGithubQuery.execute(github);
     return member ? domainToGraphqlMember(member) : null;
   },
@@ -54,6 +63,7 @@ export const memberMutations = {
     name: string,
     discordId?: string
   ): Promise<GqlMember> => {
+    const { createMemberCommand } = getQueries();
     const result = await createMemberCommand.execute({
       githubUsername: github,
       name,
