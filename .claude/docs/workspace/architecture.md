@@ -23,7 +23,7 @@
 
 ## Application Architecture
 
-### server (@dongueldonguel/server)
+### server (@hanghae-study/server)
 
 [server 앱 아키텍처 문서](../apps/server/facts/) 참조
 
@@ -48,7 +48,7 @@ apps/server/src/
     └── external/       # 외부 서비스
 ```
 
-### client (@dongueldonguel/client)
+### client (@hanghae-study/client)
 
 개발 예정
 

@@ -20,7 +20,7 @@ color: blue
 ## 프로젝트 개요
 
 - **구조**: Turborepo Monorepo
-- **Apps**: server (@dongueldonguel/server), client (@dongueldonguel/client)
+- **Apps**: server (@hanghae-study/server), client (@hanghae-study/client)
 - **Server 스택**: Hono (TypeScript), Drizzle ORM, PostgreSQL
 - **목적**: 격주 글쓰기 모임 자동화 시스템
 
@@ -84,8 +84,8 @@ apps/server/src/
 
 - **Root**: `/baku/`
 - **Apps**:
-  - `server` (@dongueldonguel/server)
-  - `client` (@dongueldonguel/client)
+  - `server` (@hanghae-study/server)
+  - `client` (@hanghae-study/client)
 - **Packages**: None yet
 ```
 

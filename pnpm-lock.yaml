@@ -17,13 +17,13 @@ importers:
 
   apps/client:
     devDependencies:
-      '@dongueldonguel/config-eslint':
+      '@hanghae-study/config-eslint':
         specifier: workspace:*
         version: link:../../packages/config/eslint
-      '@dongueldonguel/config-prettier':
+      '@hanghae-study/config-prettier':
         specifier: workspace:*
         version: link:../../packages/config/prettier
-      '@dongueldonguel/config-typescript':
+      '@hanghae-study/config-typescript':
         specifier: workspace:*
         version: link:../../packages/config/typescript
       typescript:
@@ -69,18 +69,18 @@ importers:
         specifier: ^4.3.5
         version: 4.3.5
     devDependencies:
-      '@dongueldonguel/config-eslint':
-        specifier: workspace:*
-        version: link:../../packages/config/eslint
-      '@dongueldonguel/config-prettier':
-        specifier: workspace:*
-        version: link:../../packages/config/prettier
-      '@dongueldonguel/config-typescript':
-        specifier: workspace:*
-        version: link:../../packages/config/typescript
       '@getcronit/pylon-dev':
         specifier: ^1.0.6
         version: 1.0.6(@types/node@22.19.3)(hono@4.11.3)(typescript@5.9.3)
+      '@hanghae-study/config-eslint':
+        specifier: workspace:*
+        version: link:../../packages/config/eslint
+      '@hanghae-study/config-prettier':
+        specifier: workspace:*
+        version: link:../../packages/config/prettier
+      '@hanghae-study/config-typescript':
+        specifier: workspace:*
+        version: link:../../packages/config/typescript
       '@hono/node-server':
         specifier: ^1.14.1
         version: 1.19.7(hono@4.11.3)
