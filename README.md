@@ -97,6 +97,105 @@ pnpm run dev
 
 ## API 명세
 
+### GraphQL API (Pylon)
+
+#### `http://localhost:3000/graphql` - GraphQL Playground
+
+Pylon 프레임워크가 제공하는 내장 GraphQL Playground입니다. 쿼리와 뮤테이션을 테스트할 수 있는 그래픽 인터페이스입니다.
+
+**주요 쿼리**:
+```graphql
+# 조직 조회
+query {
+  organization(slug: "dongueldonguel") {
+    id
+    name
+    slug
+    discordWebhookUrl
+    isActive
+    createdAt
+  }
+}
+
+# 전체 멤버 조회
+query {
+  members {
+    id
+    github
+    name
+    discordId
+  }
+}
+
+# 활성화된 기수 조회
+query {
+  activeGeneration {
+    id
+    name
+    startedAt
+    isActive
+  }
+}
+
+# 사이클 제출 현황
+query {
+  cycleStatus(cycleId: 1, organizationSlug: "dongueldonguel") {
+    cycle {
+      id
+      week
+      startDate
+      endDate
+    }
+    summary {
+      total
+      submitted
+      notSubmitted
+    }
+    submitted {
+      member { name github }
+      url
+      submittedAt
+    }
+    notSubmitted {
+      name
+      github
+    }
+  }
+}
+```
+
+**주요 뮤테이션**:
+```graphql
+# 멤버 추가
+mutation {
+  addMember(
+    github: "newuser"
+    name: "새 사용자"
+    discordId: "123456789"
+  ) {
+    id
+    github
+    name
+  }
+}
+
+# 기수 생성
+mutation {
+  addGeneration(
+    name: "똥글똥글 2기"
+    startedAt: "2025-01-01T00:00:00Z"
+    organizationSlug: "dongueldonguel"
+  ) {
+    id
+    name
+  }
+}
+```
+
+#### `http://localhost:3000/viewer` - GraphQL Viewer
+
+스키마를 시각적으로 탐색할 수 있는 뷰어입니다. 타입, 쿼리, 뮤테이션의 구조를 실시간으로 확인할 수 있습니다.
+
 ### GitHub Webhook
 
 #### `POST /webhook/github`
