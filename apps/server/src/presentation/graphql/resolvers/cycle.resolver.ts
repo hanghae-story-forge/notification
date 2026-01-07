@@ -49,7 +49,12 @@ let generationRepo: GenerationRepository | null = null;
 let organizationRepo: OrganizationRepository | null = null;
 
 const getQueries = () => {
-  if (!getCyclesByGenerationQuery || !getCycleByIdQuery || !getCycleStatusQuery || !createCycleCommand) {
+  if (
+    !getCyclesByGenerationQuery ||
+    !getCycleByIdQuery ||
+    !getCycleStatusQuery ||
+    !createCycleCommand
+  ) {
     cycleRepo = container.resolve<CycleRepository>(CYCLE_REPO_TOKEN);
     generationRepo = container.resolve<GenerationRepository>(
       GENERATION_REPO_TOKEN
@@ -60,9 +65,10 @@ const getQueries = () => {
     const submissionRepo = container.resolve<SubmissionRepository>(
       SUBMISSION_REPO_TOKEN
     );
-    const organizationMemberRepo = container.resolve<OrganizationMemberRepository>(
-      ORGANIZATION_MEMBER_REPO_TOKEN
-    );
+    const organizationMemberRepo =
+      container.resolve<OrganizationMemberRepository>(
+        ORGANIZATION_MEMBER_REPO_TOKEN
+      );
     const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
 
     getCyclesByGenerationQuery = new GetCyclesByGenerationQuery(cycleRepo);
@@ -82,7 +88,15 @@ const getQueries = () => {
       organizationRepo
     );
   }
-  return { getCyclesByGenerationQuery, getCycleByIdQuery, getCycleStatusQuery, createCycleCommand, cycleRepo, generationRepo, organizationRepo };
+  return {
+    getCyclesByGenerationQuery,
+    getCycleByIdQuery,
+    getCycleStatusQuery,
+    createCycleCommand,
+    cycleRepo,
+    generationRepo,
+    organizationRepo,
+  };
 };
 
 // ========================================
@@ -110,7 +124,7 @@ async function loadGenerationWithOrganization(
 }
 
 async function loadCycleWithGeneration(
-  cycle: Awaited<ReturnType<typeof getCycleByIdQuery['execute']>>
+  cycle: Awaited<ReturnType<(typeof getCycleByIdQuery)['execute']>>
 ): Promise<GqlCycle | null> {
   if (!cycle) return null;
 

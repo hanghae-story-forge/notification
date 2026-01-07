@@ -28,7 +28,11 @@ let generationRepo: GenerationRepository | null = null;
 let organizationRepo: OrganizationRepository | null = null;
 
 const getQueries = () => {
-  if (!getAllGenerationsQuery || !getGenerationByIdQuery || !createGenerationCommand) {
+  if (
+    !getAllGenerationsQuery ||
+    !getGenerationByIdQuery ||
+    !createGenerationCommand
+  ) {
     generationRepo = container.resolve<GenerationRepository>(
       GENERATION_REPO_TOKEN
     );
@@ -43,7 +47,13 @@ const getQueries = () => {
       organizationRepo
     );
   }
-  return { getAllGenerationsQuery, getGenerationByIdQuery, createGenerationCommand, generationRepo, organizationRepo };
+  return {
+    getAllGenerationsQuery,
+    getGenerationByIdQuery,
+    createGenerationCommand,
+    generationRepo,
+    organizationRepo,
+  };
 };
 
 // ========================================
@@ -51,7 +61,7 @@ const getQueries = () => {
 // ========================================
 
 async function loadGenerationWithOrganization(
-  generation: Awaited<ReturnType<typeof getGenerationByIdQuery['execute']>>
+  generation: Awaited<ReturnType<(typeof getGenerationByIdQuery)['execute']>>
 ): Promise<GqlGeneration | null> {
   if (!generation) return null;
 

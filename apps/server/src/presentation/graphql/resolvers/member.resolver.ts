@@ -27,7 +27,8 @@ let createMemberCommand: CreateMemberCommand | null = null;
 const getQueries = () => {
   if (!getAllMembersQuery || !getMemberByGithubQuery || !createMemberCommand) {
     const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
-    const memberService = container.resolve<MemberService>(MEMBER_SERVICE_TOKEN);
+    const memberService =
+      container.resolve<MemberService>(MEMBER_SERVICE_TOKEN);
 
     getAllMembersQuery = new GetAllMembersQuery(memberRepo);
     getMemberByGithubQuery = new GetMemberByGithubQuery(memberRepo);

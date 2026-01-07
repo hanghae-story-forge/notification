@@ -25,18 +25,29 @@ import type { CreateCycleCommand } from '@/application/commands/create-cycle.com
 import type { IDiscordWebhookClient } from '@/infrastructure/external/discord';
 
 // ========================================
-// Resolve Dependencies from Container
+// Lazy Dependency Resolution
 // ========================================
+// Using lazy getters to ensure DI is registered before resolution
+// This is needed because modules may be evaluated before registerDependencies() is called
 
-const recordSubmissionCommand = container.resolve<RecordSubmissionCommand>(
-  RECORD_SUBMISSION_COMMAND_TOKEN
-);
-const createCycleCommand = container.resolve<CreateCycleCommand>(
-  CREATE_CYCLE_COMMAND_TOKEN
-);
-const discordClient = container.resolve<IDiscordWebhookClient>(
-  DISCORD_WEBHOOK_CLIENT_TOKEN
-);
+let recordSubmissionCommand: RecordSubmissionCommand | null = null;
+let createCycleCommand: CreateCycleCommand | null = null;
+let discordClient: IDiscordWebhookClient | null = null;
+
+const getDependencies = () => {
+  if (!recordSubmissionCommand || !createCycleCommand || !discordClient) {
+    recordSubmissionCommand = container.resolve<RecordSubmissionCommand>(
+      RECORD_SUBMISSION_COMMAND_TOKEN
+    );
+    createCycleCommand = container.resolve<CreateCycleCommand>(
+      CREATE_CYCLE_COMMAND_TOKEN
+    );
+    discordClient = container.resolve<IDiscordWebhookClient>(
+      DISCORD_WEBHOOK_CLIENT_TOKEN
+    );
+  }
+  return { recordSubmissionCommand, createCycleCommand, discordClient };
+};
 
 // ========================================
 // Utilities
@@ -123,6 +134,7 @@ export const handleIssueComment = async (c: AppContext) => {
 
   try {
     // Command 실행 (DDD Use Case)
+    const { recordSubmissionCommand, discordClient } = getDependencies();
     const result = await recordSubmissionCommand.execute({
       githubUsername,
       blogUrl,
@@ -132,7 +144,7 @@ export const handleIssueComment = async (c: AppContext) => {
 
     // Discord 알림 전송
     if (discordWebhookUrl) {
-      await discordClient.sendSubmissionNotification(
+      await discordClient!.sendSubmissionNotification(
         discordWebhookUrl,
         result.memberName,
         result.cycleName,
@@ -198,6 +210,7 @@ export const handleIssues = async (c: AppContext) => {
 
   try {
     // Command 실행 (DDD Use Case)
+    const { createCycleCommand } = getDependencies();
     const result = await createCycleCommand.execute({
       organizationSlug,
       week,

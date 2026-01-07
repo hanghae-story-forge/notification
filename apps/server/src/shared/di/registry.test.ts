@@ -96,9 +96,7 @@ describe('DI Registry Integration', () => {
     });
 
     it('should resolve all service tokens without errors', () => {
-      expect(() =>
-        container.resolve(SUBMISSION_SERVICE_TOKEN)
-      ).not.toThrow();
+      expect(() => container.resolve(SUBMISSION_SERVICE_TOKEN)).not.toThrow();
       expect(() => container.resolve(MEMBER_SERVICE_TOKEN)).not.toThrow();
       expect(() =>
         container.resolve(DISCORD_WEBHOOK_CLIENT_TOKEN)
@@ -109,9 +107,7 @@ describe('DI Registry Integration', () => {
       expect(() =>
         container.resolve(RECORD_SUBMISSION_COMMAND_TOKEN)
       ).not.toThrow();
-      expect(() =>
-        container.resolve(CREATE_CYCLE_COMMAND_TOKEN)
-      ).not.toThrow();
+      expect(() => container.resolve(CREATE_CYCLE_COMMAND_TOKEN)).not.toThrow();
     });
 
     it('should resolve all query tokens without errors', () => {
@@ -170,9 +166,9 @@ describe('DI Registry Integration', () => {
       container.clear();
 
       // Trying to resolve without registering should fail
-      expect(() =>
-        container.resolve(ORGANIZATION_AUTOCOMPLETE_TOKEN)
-      ).toThrow('Dependency not found');
+      expect(() => container.resolve(ORGANIZATION_AUTOCOMPLETE_TOKEN)).toThrow(
+        'Dependency not found'
+      );
     });
 
     it('should succeed when resolving after registration', () => {
@@ -200,9 +196,8 @@ describe('DI Registry Integration', () => {
      */
     it('should allow GraphQL resolvers to work after registration', async () => {
       // Import GraphQL resolvers
-      const { queryResolvers, mutationResolvers } = await import(
-        '@/presentation/graphql/resolvers'
-      );
+      const { queryResolvers, mutationResolvers } =
+        await import('@/presentation/graphql/resolvers');
 
       // The resolvers should be defined
       expect(queryResolvers).toBeDefined();

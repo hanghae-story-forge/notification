@@ -10,12 +10,21 @@ import { NotFoundError } from '@/domain/common/errors';
 import type { GetCycleStatusQuery } from '@/application/queries/get-cycle-status.query';
 
 // ========================================
-// Resolve Dependencies from Container
+// Lazy Dependency Resolution
 // ========================================
+// Using lazy getters to ensure DI is registered before resolution
+// This is needed because modules may be evaluated before registerDependencies() is called
 
-const getCycleStatusQuery = container.resolve<GetCycleStatusQuery>(
-  GET_CYCLE_STATUS_QUERY_TOKEN
-);
+let getCycleStatusQuery: GetCycleStatusQuery | null = null;
+
+const getQuery = () => {
+  if (!getCycleStatusQuery) {
+    getCycleStatusQuery = container.resolve<GetCycleStatusQuery>(
+      GET_CYCLE_STATUS_QUERY_TOKEN
+    );
+  }
+  return getCycleStatusQuery;
+};
 
 // ========================================
 // Handlers
@@ -33,7 +42,8 @@ export const getCurrentCycle = async (c: AppContext) => {
   }
 
   try {
-    const result = await getCycleStatusQuery.getCurrentCycle(organizationSlug);
+    const query = getQuery();
+    const result = await query.getCurrentCycle(organizationSlug);
 
     if (!result) {
       return c.json(
@@ -64,7 +74,8 @@ export const getCurrentCycleDiscord = async (c: AppContext) => {
   }
 
   try {
-    const result = await getCycleStatusQuery.getCurrentCycle(organizationSlug);
+    const query = getQuery();
+    const result = await query.getCurrentCycle(organizationSlug);
 
     if (!result) {
       return c.json(
@@ -73,7 +84,7 @@ export const getCurrentCycleDiscord = async (c: AppContext) => {
       );
     }
 
-    const names = await getCycleStatusQuery.getCycleParticipantNames(
+    const names = await query.getCycleParticipantNames(
       result.id,
       organizationSlug
     );
@@ -118,10 +129,8 @@ export const getStatus = async (c: AppContext) => {
   }
 
   try {
-    const result = await getCycleStatusQuery.getCycleStatus(
-      cycleId,
-      organizationSlug
-    );
+    const query = getQuery();
+    const result = await query.getCycleStatus(cycleId, organizationSlug);
     return c.json(result, HttpStatusCodes.OK);
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -148,7 +157,8 @@ export const getStatusDiscord = async (c: AppContext) => {
   }
 
   try {
-    const names = await getCycleStatusQuery.getCycleParticipantNames(
+    const query = getQuery();
+    const names = await query.getCycleParticipantNames(
       cycleId,
       organizationSlug
     );

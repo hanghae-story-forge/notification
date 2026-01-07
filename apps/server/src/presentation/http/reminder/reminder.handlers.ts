@@ -14,15 +14,25 @@ import type { GetReminderTargetsQuery } from '@/application/queries/get-reminder
 import type { IDiscordWebhookClient } from '@/infrastructure/external/discord';
 
 // ========================================
-// Resolve Dependencies from Container
+// Lazy Dependency Resolution
 // ========================================
+// Using lazy getters to ensure DI is registered before resolution
+// This is needed because modules may be evaluated before registerDependencies() is called
 
-const getReminderTargetsQuery = container.resolve<GetReminderTargetsQuery>(
-  GET_REMINDER_TARGETS_QUERY_TOKEN
-);
-const discordClient = container.resolve<IDiscordWebhookClient>(
-  DISCORD_WEBHOOK_CLIENT_TOKEN
-);
+let getReminderTargetsQuery: GetReminderTargetsQuery | null = null;
+let discordClient: IDiscordWebhookClient | null = null;
+
+const getDependencies = () => {
+  if (!getReminderTargetsQuery || !discordClient) {
+    getReminderTargetsQuery = container.resolve<GetReminderTargetsQuery>(
+      GET_REMINDER_TARGETS_QUERY_TOKEN
+    );
+    discordClient = container.resolve<IDiscordWebhookClient>(
+      DISCORD_WEBHOOK_CLIENT_TOKEN
+    );
+  }
+  return { getReminderTargetsQuery, discordClient };
+};
 
 // ========================================
 // Handlers
@@ -41,6 +51,7 @@ export const getReminderCycles = async (c: AppContext) => {
   }
 
   try {
+    const { getReminderTargetsQuery } = getDependencies();
     const cycles = await getReminderTargetsQuery.getCyclesWithDeadlineIn(
       organizationSlug,
       hoursBefore
@@ -71,6 +82,7 @@ export const getNotSubmittedMembers = async (c: AppContext) => {
   }
 
   try {
+    const { getReminderTargetsQuery } = getDependencies();
     const result = await getReminderTargetsQuery.getNotSubmittedMembers(
       cycleId,
       organizationSlug
@@ -111,6 +123,7 @@ export const sendReminderNotifications = async (c: AppContext) => {
   }
 
   try {
+    const { getReminderTargetsQuery, discordClient } = getDependencies();
     const cycles = await getReminderTargetsQuery.getCyclesWithDeadlineIn(
       organizationSlug,
       hoursBefore
@@ -133,7 +146,7 @@ export const sendReminderNotifications = async (c: AppContext) => {
       const endDate = new Date(result.endDate);
 
       // Discord 알림 전송
-      await discordClient.sendReminderNotification(
+      await discordClient!.sendReminderNotification(
         discordWebhookUrl,
         cycleInfo.cycleName,
         endDate,

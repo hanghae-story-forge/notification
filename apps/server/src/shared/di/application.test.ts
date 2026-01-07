@@ -66,7 +66,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve GenerationRepository with correct implementation', () => {
-      const repo = container.resolve<GenerationRepository>(GENERATION_REPO_TOKEN);
+      const repo = container.resolve<GenerationRepository>(
+        GENERATION_REPO_TOKEN
+      );
 
       expect(repo).toBeDefined();
       expect(repo).toHaveProperty('save');
@@ -110,7 +112,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve SubmissionRepository with correct implementation', () => {
-      const repo = container.resolve<SubmissionRepository>(SUBMISSION_REPO_TOKEN);
+      const repo = container.resolve<SubmissionRepository>(
+        SUBMISSION_REPO_TOKEN
+      );
 
       expect(repo).toBeDefined();
       expect(repo).toHaveProperty('save');
@@ -126,7 +130,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve SubmissionService with repository dependency', () => {
-      const service = container.resolve<SubmissionService>(SUBMISSION_SERVICE_TOKEN);
+      const service = container.resolve<SubmissionService>(
+        SUBMISSION_SERVICE_TOKEN
+      );
 
       expect(service).toBeDefined();
       expect(service).toBeInstanceOf(Object);
@@ -140,8 +146,12 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve services as singletons', () => {
-      const service1 = container.resolve<SubmissionService>(SUBMISSION_SERVICE_TOKEN);
-      const service2 = container.resolve<SubmissionService>(SUBMISSION_SERVICE_TOKEN);
+      const service1 = container.resolve<SubmissionService>(
+        SUBMISSION_SERVICE_TOKEN
+      );
+      const service2 = container.resolve<SubmissionService>(
+        SUBMISSION_SERVICE_TOKEN
+      );
 
       expect(service1).toBe(service2);
     });
@@ -177,7 +187,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve CreateCycleCommand with all dependencies', () => {
-      const command = container.resolve<CreateCycleCommand>(CREATE_CYCLE_COMMAND_TOKEN);
+      const command = container.resolve<CreateCycleCommand>(
+        CREATE_CYCLE_COMMAND_TOKEN
+      );
 
       expect(command).toBeDefined();
       expect(command).toHaveProperty('execute');
@@ -201,7 +213,9 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve GetCycleStatusQuery with all dependencies', () => {
-      const query = container.resolve<GetCycleStatusQuery>(GET_CYCLE_STATUS_QUERY_TOKEN);
+      const query = container.resolve<GetCycleStatusQuery>(
+        GET_CYCLE_STATUS_QUERY_TOKEN
+      );
 
       expect(query).toBeDefined();
       expect(query).toHaveProperty('getCurrentCycle');
@@ -219,8 +233,12 @@ describe('Application DI Integration', () => {
     });
 
     it('should resolve queries as singletons', () => {
-      const query1 = container.resolve<GetCycleStatusQuery>(GET_CYCLE_STATUS_QUERY_TOKEN);
-      const query2 = container.resolve<GetCycleStatusQuery>(GET_CYCLE_STATUS_QUERY_TOKEN);
+      const query1 = container.resolve<GetCycleStatusQuery>(
+        GET_CYCLE_STATUS_QUERY_TOKEN
+      );
+      const query2 = container.resolve<GetCycleStatusQuery>(
+        GET_CYCLE_STATUS_QUERY_TOKEN
+      );
 
       expect(query1).toBe(query2);
     });
@@ -266,7 +284,9 @@ describe('Application DI Integration', () => {
       );
 
       // SubmissionService should have the same submission repository instance
-      const service = container.resolve<SubmissionService>(SUBMISSION_SERVICE_TOKEN);
+      const service = container.resolve<SubmissionService>(
+        SUBMISSION_SERVICE_TOKEN
+      );
 
       expect(service).toBeDefined();
     });
@@ -276,9 +296,13 @@ describe('Application DI Integration', () => {
       const generationRepo = container.resolve<GenerationRepository>(
         GENERATION_REPO_TOKEN
       );
-      const orgRepo = container.resolve<OrganizationRepository>(ORGANIZATION_REPO_TOKEN);
+      const orgRepo = container.resolve<OrganizationRepository>(
+        ORGANIZATION_REPO_TOKEN
+      );
 
-      const command = container.resolve<CreateCycleCommand>(CREATE_CYCLE_COMMAND_TOKEN);
+      const command = container.resolve<CreateCycleCommand>(
+        CREATE_CYCLE_COMMAND_TOKEN
+      );
 
       expect(command).toBeDefined();
     });
@@ -288,9 +312,13 @@ describe('Application DI Integration', () => {
       const generationRepo = container.resolve<GenerationRepository>(
         GENERATION_REPO_TOKEN
       );
-      const orgRepo = container.resolve<OrganizationRepository>(ORGANIZATION_REPO_TOKEN);
+      const orgRepo = container.resolve<OrganizationRepository>(
+        ORGANIZATION_REPO_TOKEN
+      );
 
-      const query = container.resolve<GetCycleStatusQuery>(GET_CYCLE_STATUS_QUERY_TOKEN);
+      const query = container.resolve<GetCycleStatusQuery>(
+        GET_CYCLE_STATUS_QUERY_TOKEN
+      );
 
       expect(query).toBeDefined();
     });
@@ -309,8 +337,12 @@ describe('Application DI Integration', () => {
     });
 
     it('should return same service instance across multiple resolves', () => {
-      const service1 = container.resolve<SubmissionService>(SUBMISSION_SERVICE_TOKEN);
-      const service2 = container.resolve<SubmissionService>(SUBMISSION_SERVICE_TOKEN);
+      const service1 = container.resolve<SubmissionService>(
+        SUBMISSION_SERVICE_TOKEN
+      );
+      const service2 = container.resolve<SubmissionService>(
+        SUBMISSION_SERVICE_TOKEN
+      );
 
       expect(service1).toBe(service2);
     });
@@ -348,9 +380,8 @@ describe('Application DI Integration', () => {
       registerDependencies();
 
       // Import the actual GraphQL resolvers
-      const { queryResolvers, mutationResolvers } = await import(
-        '@/presentation/graphql/resolvers'
-      );
+      const { queryResolvers, mutationResolvers } =
+        await import('@/presentation/graphql/resolvers');
 
       expect(queryResolvers).toBeDefined();
       expect(mutationResolvers).toBeDefined();
@@ -366,9 +397,8 @@ describe('Application DI Integration', () => {
       registerDependencies();
 
       // Import HTTP handlers (they should work after DI registration)
-      const { handleIssueComment } = await import(
-        '@/presentation/http/github/github.handlers'
-      );
+      const { handleIssueComment } =
+        await import('@/presentation/http/github/github.handlers');
 
       expect(typeof handleIssueComment).toBe('function');
     });
@@ -388,13 +418,18 @@ describe('Application DI Integration', () => {
       expect(bot).toBeDefined();
 
       // Step 4: Import GraphQL resolvers
-      const { queryResolvers } = await import('@/presentation/graphql/resolvers');
+      const { queryResolvers } =
+        await import('@/presentation/graphql/resolvers');
       expect(queryResolvers).toBeDefined();
 
       // Step 5: Verify all critical dependencies are resolvable
       expect(() => container.resolve(CYCLE_REPO_TOKEN)).not.toThrow();
-      expect(() => container.resolve(ORGANIZATION_AUTOCOMPLETE_TOKEN)).not.toThrow();
-      expect(() => container.resolve(RECORD_SUBMISSION_COMMAND_TOKEN)).not.toThrow();
+      expect(() =>
+        container.resolve(ORGANIZATION_AUTOCOMPLETE_TOKEN)
+      ).not.toThrow();
+      expect(() =>
+        container.resolve(RECORD_SUBMISSION_COMMAND_TOKEN)
+      ).not.toThrow();
     });
   });
 });

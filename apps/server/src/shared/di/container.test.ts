@@ -64,8 +64,10 @@ describe('DIContainer', () => {
         'singleton'
       );
 
-      const instance1 = testContainer.resolve<SingletonService>(SINGLETON_TOKEN);
-      const instance2 = testContainer.resolve<SingletonService>(SINGLETON_TOKEN);
+      const instance1 =
+        testContainer.resolve<SingletonService>(SINGLETON_TOKEN);
+      const instance2 =
+        testContainer.resolve<SingletonService>(SINGLETON_TOKEN);
 
       instance1.increment();
       expect(instance2.counter).toBe(1);
@@ -90,8 +92,10 @@ describe('DIContainer', () => {
         'transient'
       );
 
-      const instance1 = testContainer.resolve<TransientService>(TRANSIENT_TOKEN);
-      const instance2 = testContainer.resolve<TransientService>(TRANSIENT_TOKEN);
+      const instance1 =
+        testContainer.resolve<TransientService>(TRANSIENT_TOKEN);
+      const instance2 =
+        testContainer.resolve<TransientService>(TRANSIENT_TOKEN);
 
       instance1.increment();
       expect(instance2.counter).toBe(0);
