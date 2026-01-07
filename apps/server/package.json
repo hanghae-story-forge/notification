@@ -1,5 +1,5 @@
 {
-  "name": "@dongueldonguel/server",
+  "name": "@hanghae-study/server",
   "version": "1.0.0",
   "description": "똥글똥글 자동화 API 서버",
   "type": "module",
@@ -48,9 +48,9 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
-    "@dongueldonguel/config-eslint": "workspace:*",
-    "@dongueldonguel/config-prettier": "workspace:*",
-    "@dongueldonguel/config-typescript": "workspace:*",
+    "@hanghae-study/config-eslint": "workspace:*",
+    "@hanghae-study/config-prettier": "workspace:*",
+    "@hanghae-study/config-typescript": "workspace:*",
     "@getcronit/pylon-dev": "^1.0.6",
     "@hono/node-server": "^1.14.1",
     "@hono/zod-openapi": "^1.2.0",
