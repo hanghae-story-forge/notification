@@ -7,7 +7,7 @@ const commands = createCommands();
 const commandMap = new Map<string, DiscordCommand>();
 
 commands.forEach((cmd) => {
-  commandMap.set(cmd.definition.name, cmd);
+  commandMap.set(cmd.definition.toJSON().name, cmd);
 });
 
 export const createDiscordBot = (): Client => {
