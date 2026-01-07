@@ -38,7 +38,7 @@ RUN apk add --no-cache libc6-compat curl && \
     addgroup --system --gid 1001 hono && \
     adduser --system --uid 1001 -G hono hono
 
-COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/server/.pylon ./apps/server/.pylon
 COPY --from=installer /app/. .
 
 RUN chown -R hono:hono /app
