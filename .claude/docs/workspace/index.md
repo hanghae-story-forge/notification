@@ -13,8 +13,8 @@
 ```
 baku/
 ├── apps/
-│   ├── server/          # 메인 API 서버 (@dongueldonguel/server)
-│   └── client/          # 클라이언트 앱 (@dongueldonguel/client) - 개발 예정
+│   ├── server/          # 메인 API 서버 (@hanghae-study/server)
+│   └── client/          # 클라이언트 앱 (@hanghae-study/client) - 개발 예정
 ├── packages/            # 공유 패키지 - 향후 추가 예정
 ├── .claude/             # Claude Code 설정 및 문서
 └── test-webhook/        # GitHub 웹훅 테스트 페이로드
@@ -22,7 +22,7 @@ baku/
 
 ## Applications
 
-### server (@dongueldonguel/server)
+### server (@hanghae-study/server)
 
 격주 글쓰기 모임을 위한 자동화 API 서버입니다.
 
@@ -31,7 +31,7 @@ baku/
 - **Architecture**: Domain-Driven Design (DDD)
 - **Documentation**: [apps/server/](../apps/server/)
 
-### client (@dongueldonguel/client)
+### client (@hanghae-study/client)
 
 클라이언트 애플리케이션 (개발 예정)
 

@@ -13,7 +13,7 @@ COPY apps/client/package.json ./apps/client/
 # Copy source files for turbo prune
 COPY apps/server ./apps/server
 
-RUN turbo prune --docker --out-dir=output --scope=@dongueldonguel/server
+RUN turbo prune --docker --out-dir=output --scope=@hanghae-study/server
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat curl
@@ -26,7 +26,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY --from=installer /app .
 COPY --from=pruner /app/output/full ./
-RUN corepack enable pnpm && pnpm build --filter=@dongueldonguel/server
+RUN corepack enable pnpm && pnpm build --filter=@hanghae-study/server
 
 FROM base AS runner
 WORKDIR /app
