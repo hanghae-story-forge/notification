@@ -24,7 +24,9 @@ export class GenerationCommand implements DiscordCommand {
         )
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('current').setDescription('현재 활성화된 기수 정보를 확인합니다')
+      subcommand
+        .setName('current')
+        .setDescription('현재 활성화된 기수 정보를 확인합니다')
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -39,7 +41,9 @@ export class GenerationCommand implements DiscordCommand {
         )
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('list').setDescription('등록된 모든 기수 목록을 확인합니다')
+      subcommand
+        .setName('list')
+        .setDescription('등록된 모든 기수 목록을 확인합니다')
     );
 
   constructor(
@@ -65,7 +69,9 @@ export class GenerationCommand implements DiscordCommand {
     }
   }
 
-  private async handleJoin(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleJoin(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {
@@ -132,7 +138,9 @@ export class GenerationCommand implements DiscordCommand {
     }
   }
 
-  private async handleCurrent(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleCurrent(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply();
 
     try {
@@ -146,9 +154,10 @@ export class GenerationCommand implements DiscordCommand {
       }
 
       // 첫 번째 활성화된 조직의 현재 기수 찾기
-      const currentGeneration = await this.generationRepo.findActiveByOrganization(
-        activeOrgs[0].id.value
-      );
+      const currentGeneration =
+        await this.generationRepo.findActiveByOrganization(
+          activeOrgs[0].id.value
+        );
 
       if (!currentGeneration) {
         await interaction.editReply({
@@ -163,9 +172,10 @@ export class GenerationCommand implements DiscordCommand {
       );
 
       // 기수원 수 확인
-      const generationMembers = await this.generationMemberRepo.findByGeneration(
-        currentGeneration.id.value
-      );
+      const generationMembers =
+        await this.generationMemberRepo.findByGeneration(
+          currentGeneration.id.value
+        );
 
       await interaction.editReply({
         content:
@@ -184,7 +194,9 @@ export class GenerationCommand implements DiscordCommand {
     }
   }
 
-  private async handleStatus(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleStatus(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply();
 
     try {
@@ -201,9 +213,8 @@ export class GenerationCommand implements DiscordCommand {
       }
 
       // 기수원 목록 가져오기
-      const generationMembers = await this.generationMemberRepo.findByGeneration(
-        generation.id.value
-      );
+      const generationMembers =
+        await this.generationMemberRepo.findByGeneration(generation.id.value);
 
       // 기수원의 멤버 정보 가져오기
       const memberDetails = await Promise.all(
@@ -238,7 +249,9 @@ export class GenerationCommand implements DiscordCommand {
     }
   }
 
-  private async handleList(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleList(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply();
 
     try {
@@ -254,10 +267,11 @@ export class GenerationCommand implements DiscordCommand {
       let message = `📋 **기수 목록** (총 ${allGenerations.length}개)\n\n`;
 
       for (const generation of allGenerations) {
-        const cycles = await this.cycleRepo.findByGeneration(generation.id.value);
-        const generationMembers = await this.generationMemberRepo.findByGeneration(
+        const cycles = await this.cycleRepo.findByGeneration(
           generation.id.value
         );
+        const generationMembers =
+          await this.generationMemberRepo.findByGeneration(generation.id.value);
 
         message += `**${generation.name}**\n`;
         message += `   참여자: ${generationMembers.length}명 | `;

@@ -32,7 +32,9 @@ export class OrganizationCommand implements DiscordCommand {
         )
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('list').setDescription('등록된 모든 스터디(조직) 목록을 조회합니다')
+      subcommand
+        .setName('list')
+        .setDescription('등록된 모든 스터디(조직) 목록을 조회합니다')
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -65,7 +67,9 @@ export class OrganizationCommand implements DiscordCommand {
     }
   }
 
-  private async handleCreate(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleCreate(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {
@@ -101,7 +105,9 @@ export class OrganizationCommand implements DiscordCommand {
     }
   }
 
-  private async handleList(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleList(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply();
 
     try {
@@ -146,7 +152,9 @@ export class OrganizationCommand implements DiscordCommand {
     }
   }
 
-  private async handleJoin(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleJoin(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {

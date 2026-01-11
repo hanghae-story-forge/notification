@@ -36,7 +36,10 @@ export class MemberCommand implements DiscordCommand {
             .setAutocomplete(true)
         )
         .addUserOption((option) =>
-          option.setName('user').setDescription('승인할 사용자').setRequired(true)
+          option
+            .setName('user')
+            .setDescription('승인할 사용자')
+            .setRequired(true)
         )
         .addStringOption((option) =>
           option
@@ -68,7 +71,9 @@ export class MemberCommand implements DiscordCommand {
     }
   }
 
-  private async handleCreate(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleCreate(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {
@@ -119,11 +124,16 @@ export class MemberCommand implements DiscordCommand {
     }
   }
 
-  private async handleApprove(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleApprove(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: false });
 
     try {
-      const organizationSlug = interaction.options.getString('organization', true);
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
       const targetUser = interaction.options.getUser('user', true);
       const action = interaction.options.getString('action', true);
 

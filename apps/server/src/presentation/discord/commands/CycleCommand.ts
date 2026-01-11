@@ -13,7 +13,9 @@ export class CycleCommand implements DiscordCommand {
         .setDescription('현재 진행 중인 주차 정보를 확인합니다')
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('status').setDescription('현재 주차 제출 현황을 확인합니다')
+      subcommand
+        .setName('status')
+        .setDescription('현재 주차 제출 현황을 확인합니다')
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -41,7 +43,9 @@ export class CycleCommand implements DiscordCommand {
     }
   }
 
-  private async handleCurrent(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleCurrent(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     console.log('🔵 cycle current: Starting...');
 
     try {
@@ -81,7 +85,9 @@ export class CycleCommand implements DiscordCommand {
     }
   }
 
-  private async handleStatus(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleStatus(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply();
 
     try {
@@ -124,7 +130,9 @@ export class CycleCommand implements DiscordCommand {
     }
   }
 
-  private async handleList(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleList(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     console.log('🔵 cycle list: Starting...');
 
     try {

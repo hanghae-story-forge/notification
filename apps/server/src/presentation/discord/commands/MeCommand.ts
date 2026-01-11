@@ -15,10 +15,14 @@ export class MeCommand implements DiscordCommand {
       subcommand.setName('info').setDescription('내 기본 정보를 확인합니다')
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('organizations').setDescription('내가 속한 조직 목록을 확인합니다')
+      subcommand
+        .setName('organizations')
+        .setDescription('내가 속한 조직 목록을 확인합니다')
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName('generations').setDescription('내가 속한 기수 목록을 확인합니다')
+      subcommand
+        .setName('generations')
+        .setDescription('내가 속한 기수 목록을 확인합니다')
     );
 
   constructor(
@@ -41,7 +45,9 @@ export class MeCommand implements DiscordCommand {
     }
   }
 
-  private async handleInfo(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleInfo(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {
@@ -55,7 +61,8 @@ export class MeCommand implements DiscordCommand {
       const member = await this.memberRepo.findByDiscordId(interaction.user.id);
       if (!member) {
         await interaction.editReply({
-          content: '❌ 회원 정보를 찾을 수 없습니다. `/member create` 명령어로 먼저 회원 등록을 해주세요.',
+          content:
+            '❌ 회원 정보를 찾을 수 없습니다. `/member create` 명령어로 먼저 회원 등록을 해주세요.',
         });
         return;
       }
@@ -68,8 +75,9 @@ export class MeCommand implements DiscordCommand {
       ).length;
 
       // 소속 기수 수 확인
-      const generationMembers =
-        await this.generationMemberRepo.findByMember(member.id);
+      const generationMembers = await this.generationMemberRepo.findByMember(
+        member.id
+      );
 
       await interaction.editReply({
         content:
@@ -88,7 +96,9 @@ export class MeCommand implements DiscordCommand {
     }
   }
 
-  private async handleOrganizations(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleOrganizations(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {
@@ -112,7 +122,8 @@ export class MeCommand implements DiscordCommand {
 
       if (organizationMembers.length === 0) {
         await interaction.editReply({
-          content: '📋 아직 소속된 조직이 없습니다.\n\n`/organization join` 명령어로 조직에 가입 신청을 해주세요!',
+          content:
+            '📋 아직 소속된 조직이 없습니다.\n\n`/organization join` 명령어로 조직에 가입 신청을 해주세요!',
         });
         return;
       }
@@ -149,7 +160,9 @@ export class MeCommand implements DiscordCommand {
     }
   }
 
-  private async handleGenerations(interaction: ChatInputCommandInteraction): Promise<void> {
+  private async handleGenerations(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
     await interaction.deferReply({ ephemeral: true });
 
     try {
@@ -168,12 +181,14 @@ export class MeCommand implements DiscordCommand {
         return;
       }
 
-      const generationMembers =
-        await this.generationMemberRepo.findByMember(member.id);
+      const generationMembers = await this.generationMemberRepo.findByMember(
+        member.id
+      );
 
       if (generationMembers.length === 0) {
         await interaction.editReply({
-          content: '📋 아직 참여 중인 기수가 없습니다.\n\n`/generation join` 명령어로 기수에 참여해주세요!',
+          content:
+            '📋 아직 참여 중인 기수가 없습니다.\n\n`/generation join` 명령어로 기수에 참여해주세요!',
         });
         return;
       }
@@ -181,7 +196,9 @@ export class MeCommand implements DiscordCommand {
       let message = `📋 **내 참여 기수** (총 ${generationMembers.length}개)\n\n`;
 
       for (const genMember of generationMembers) {
-        const generation = await this.generationRepo.findById(genMember.generationId);
+        const generation = await this.generationRepo.findById(
+          genMember.generationId
+        );
         if (generation) {
           // 조직 정보도 가져오기
           const organization = await this.organizationRepo.findById(
