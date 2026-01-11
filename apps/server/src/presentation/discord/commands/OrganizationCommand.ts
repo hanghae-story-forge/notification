@@ -100,7 +100,8 @@ export class OrganizationCommand implements DiscordCommand {
       try {
         if (errorMessage.includes('already exists')) {
           await interaction.editReply({
-            content: '❌ 이미 존재하는 슬러그입니다. 다른 슬러그를 사용해주세요.',
+            content:
+              '❌ 이미 존재하는 슬러그입니다. 다른 슬러그를 사용해주세요.',
           });
         } else {
           await interaction.editReply({
