@@ -1,8 +1,8 @@
 // Generation Repository Implementation - Drizzle ORM
 
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { generations } from '../drizzle-db/schema';
+import { generations, cycles, generationMembers } from '../drizzle-db/schema';
 import {
   Generation,
   GenerationId,
@@ -107,6 +107,41 @@ export class DrizzleGenerationRepository implements GenerationRepository {
   async findAll(): Promise<Generation[]> {
     const result = await db.select().from(generations);
     return result.map((row) => this.mapToEntity(row));
+  }
+
+  async findAllWithStats(): Promise<
+    Array<{
+      generation: Generation;
+      cycleCount: number;
+      memberCount: number;
+    }>
+  > {
+    const result = await db
+      .select({
+        generation: {
+          id: generations.id,
+          organizationId: generations.organizationId,
+          name: generations.name,
+          startedAt: generations.startedAt,
+          isActive: generations.isActive,
+          createdAt: generations.createdAt,
+        },
+        cycleCount: sql<number>`count(distinct ${cycles.id})`,
+        memberCount: sql<number>`count(distinct ${generationMembers.id})`,
+      })
+      .from(generations)
+      .leftJoin(cycles, eq(generations.id, cycles.generationId))
+      .leftJoin(
+        generationMembers,
+        eq(generations.id, generationMembers.generationId)
+      )
+      .groupBy(generations.id);
+
+    return result.map((row) => ({
+      generation: this.mapToEntity(row.generation),
+      cycleCount: row.cycleCount,
+      memberCount: row.memberCount,
+    }));
   }
 
   private mapToEntity(row: {

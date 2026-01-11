@@ -1,9 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { MemberRepository } from '@/domain/member/member.repository';
-import { OrganizationRepository } from '@/domain/organization/organization.repository';
-import { OrganizationId } from '@/domain/organization/organization.domain';
 import { OrganizationMemberRepository } from '@/domain/organization-member/organization-member.repository';
-import { GenerationRepository } from '@/domain/generation/generation.repository';
 import { GenerationMemberRepository } from '@/domain/generation-member/generation-member.repository';
 import { DiscordCommand } from './types';
 
@@ -27,9 +24,7 @@ export class MeCommand implements DiscordCommand {
 
   constructor(
     private readonly memberRepo: MemberRepository,
-    private readonly organizationRepo: OrganizationRepository,
     private readonly organizationMemberRepo: OrganizationMemberRepository,
-    private readonly generationRepo: GenerationRepository,
     private readonly generationMemberRepo: GenerationMemberRepository
   ) {}
 
@@ -118,7 +113,9 @@ export class MeCommand implements DiscordCommand {
       }
 
       const organizationMembers =
-        await this.organizationMemberRepo.findByMember(member.id);
+        await this.organizationMemberRepo.findByMemberWithOrganizations(
+          member.id
+        );
 
       if (organizationMembers.length === 0) {
         await interaction.editReply({
@@ -130,22 +127,19 @@ export class MeCommand implements DiscordCommand {
 
       let message = `📋 **내 소속 조직** (총 ${organizationMembers.length}개)\n\n`;
 
-      for (const orgMember of organizationMembers) {
-        const organization = await this.organizationRepo.findById(
-          orgMember.organizationId
-        );
+      for (const { organizationMember, organization } of organizationMembers) {
         if (organization) {
           const statusEmoji =
-            orgMember.status.value === 'APPROVED'
+            organizationMember.status.value === 'APPROVED'
               ? '✅'
-              : orgMember.status.value === 'PENDING'
+              : organizationMember.status.value === 'PENDING'
                 ? '⏳'
                 : '❌';
 
-          message += `${statusEmoji} **${organization.name.value}**\n`;
-          message += `   상태: ${orgMember.status.value} | `;
-          message += `역할: ${orgMember.role.value}\n`;
-          message += `   가입일: ${new Date(orgMember.joinedAt).toLocaleDateString('ko-KR')}\n\n`;
+          message += `${statusEmoji} **${organization.name}**\n`;
+          message += `   상태: ${organizationMember.status.value} | `;
+          message += `역할: ${organizationMember.role.value}\n`;
+          message += `   가입일: ${new Date(organizationMember.joinedAt).toLocaleDateString('ko-KR')}\n\n`;
         }
       }
 
@@ -181,9 +175,8 @@ export class MeCommand implements DiscordCommand {
         return;
       }
 
-      const generationMembers = await this.generationMemberRepo.findByMember(
-        member.id
-      );
+      const generationMembers =
+        await this.generationMemberRepo.findByMemberWithGenerations(member.id);
 
       if (generationMembers.length === 0) {
         await interaction.editReply({
@@ -195,19 +188,11 @@ export class MeCommand implements DiscordCommand {
 
       let message = `📋 **내 참여 기수** (총 ${generationMembers.length}개)\n\n`;
 
-      for (const genMember of generationMembers) {
-        const generation = await this.generationRepo.findById(
-          genMember.generationId
-        );
+      for (const { generation, organization } of generationMembers) {
         if (generation) {
-          // 조직 정보도 가져오기
-          const organization = await this.organizationRepo.findById(
-            OrganizationId.create(generation.organizationId)
-          );
-
           message += `🎯 **${generation.name}**\n`;
           if (organization) {
-            message += `   조직: ${organization.name.value}\n`;
+            message += `   조직: ${organization.name}\n`;
           }
           message += `   시작일: ${new Date(generation.startedAt).toLocaleDateString('ko-KR')}\n`;
           if (generation.isActive) {

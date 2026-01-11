@@ -310,7 +310,7 @@ export class GenerationCommand implements DiscordCommand {
     await interaction.deferReply();
 
     try {
-      const allGenerations = await this.generationRepo.findAll();
+      const allGenerations = await this.generationRepo.findAllWithStats();
 
       if (allGenerations.length === 0) {
         await interaction.editReply({
@@ -321,16 +321,10 @@ export class GenerationCommand implements DiscordCommand {
 
       let message = `📋 **기수 목록** (총 ${allGenerations.length}개)\n\n`;
 
-      for (const generation of allGenerations) {
-        const cycles = await this.cycleRepo.findByGeneration(
-          generation.id.value
-        );
-        const generationMembers =
-          await this.generationMemberRepo.findByGeneration(generation.id.value);
-
+      for (const { generation, cycleCount, memberCount } of allGenerations) {
         message += `**${generation.name}**\n`;
-        message += `   참여자: ${generationMembers.length}명 | `;
-        message += `진행 주차: ${cycles.length}주차\n`;
+        message += `   참여자: ${memberCount}명 | `;
+        message += `진행 주차: ${cycleCount}주차\n`;
         message += `   시작일: ${new Date(generation.startedAt).toLocaleDateString('ko-KR')}\n\n`;
       }
 

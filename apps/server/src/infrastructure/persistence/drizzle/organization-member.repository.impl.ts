@@ -2,7 +2,7 @@
 
 import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { organizationMembers } from '../drizzle-db/schema';
+import { organizationMembers, organizations } from '../drizzle-db/schema';
 import {
   OrganizationMember,
   OrganizationMemberId,
@@ -211,6 +211,43 @@ export class DrizzleOrganizationMemberRepository implements OrganizationMemberRe
       );
 
     return result[0]?.count ?? 0;
+  }
+
+  async findByMemberWithOrganizations(memberId: MemberId): Promise<
+    Array<{
+      organizationMember: OrganizationMember;
+      organization: { id: number; name: string } | null;
+    }>
+  > {
+    const result = await db
+      .select({
+        organizationMember: {
+          id: organizationMembers.id,
+          organizationId: organizationMembers.organizationId,
+          memberId: organizationMembers.memberId,
+          role: organizationMembers.role,
+          status: organizationMembers.status,
+          joinedAt: organizationMembers.joinedAt,
+          updatedAt: organizationMembers.updatedAt,
+        },
+        organization: {
+          id: organizations.id,
+          name: organizations.name,
+        },
+      })
+      .from(organizationMembers)
+      .leftJoin(
+        organizations,
+        eq(organizationMembers.organizationId, organizations.id)
+      )
+      .where(eq(organizationMembers.memberId, memberId.value));
+
+    return result.map((row) => ({
+      organizationMember: this.mapToEntity(row.organizationMember),
+      organization: row.organization
+        ? { id: row.organization.id, name: row.organization.name }
+        : null,
+    }));
   }
 
   private mapToEntity(row: {
