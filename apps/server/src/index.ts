@@ -127,28 +127,20 @@ export { graphql };
 // ========================================
 
 // Only start Discord Bot in production
-if (env.NODE_ENV === 'production') {
-  if (env.DISCORD_BOT_TOKEN && env.DISCORD_CLIENT_ID) {
-    void (async () => {
-      try {
-        const { createCommands } =
-          await import('./presentation/discord/commands');
-        const commands = createCommands();
-        await registerSlashCommands(commands);
+if (env.APP_ENV === 'production') {
+  void (async () => {
+    try {
+      const { createCommands } =
+        await import('./presentation/discord/commands');
+      const commands = createCommands();
+      await registerSlashCommands(commands);
 
-        const discordBot = createDiscordBot();
-        await discordBot.login(env.DISCORD_BOT_TOKEN);
-      } catch (error) {
-        console.error('❌ Failed to start Discord Bot:', error);
-      }
-    })();
-  } else {
-    console.log(
-      '⚠️  Discord Bot not configured. Set DISCORD_BOT_TOKEN and DISCORD_CLIENT_ID to enable.'
-    );
-  }
-} else {
-  console.log('ℹ️  Discord Bot is disabled in development mode');
+      const discordBot = createDiscordBot();
+      await discordBot.login(env.DISCORD_BOT_TOKEN);
+    } catch (error) {
+      console.error('❌ Failed to start Discord Bot:', error);
+    }
+  })();
 }
 
 serve(app, (info) => {
