@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { MemberRepository } from '@/domain/member/member.repository';
 import { OrganizationRepository } from '@/domain/organization/organization.repository';
+import { OrganizationId } from '@/domain/organization/organization.domain';
 import { OrganizationMemberRepository } from '@/domain/organization-member/organization-member.repository';
 import { GenerationRepository } from '@/domain/generation/generation.repository';
 import { GenerationMemberRepository } from '@/domain/generation-member/generation-member.repository';
@@ -184,7 +185,7 @@ export class MeCommand implements DiscordCommand {
         if (generation) {
           // 조직 정보도 가져오기
           const organization = await this.organizationRepo.findById(
-            generation.organizationId
+            OrganizationId.create(generation.organizationId)
           );
 
           message += `🎯 **${generation.name}**\n`;
