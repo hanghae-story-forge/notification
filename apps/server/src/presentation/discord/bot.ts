@@ -1,4 +1,9 @@
-import { Client, GatewayIntentBits } from 'discord.js';
+import {
+  Client,
+  GatewayIntentBits,
+  DiscordAPIError,
+  HTTPError,
+} from 'discord.js';
 import { createCommands } from './commands';
 import { registerSlashCommands } from './commands/index';
 import { DiscordCommand } from './commands/types';
@@ -34,6 +39,23 @@ const getGenerationAutocomplete = (): GenerationAutocomplete => {
   );
 };
 
+/**
+ * Check if an error is a Discord API error that should be silently ignored.
+ * These errors occur when interactions expire or are cancelled by user action.
+ */
+function isIgnorableDiscordError(error: unknown): boolean {
+  if (error instanceof DiscordAPIError) {
+    // 10062: Unknown interaction - interaction expired (3s timeout)
+    // 40060: Interaction has already been acknowledged - user typed quickly
+    return error.code === 10062 || error.code === 40060;
+  }
+  if (error instanceof HTTPError) {
+    // Network errors or Discord API issues - also ignorable for autocomplete
+    return true;
+  }
+  return false;
+}
+
 export const createDiscordBot = (): Client => {
   const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
@@ -66,6 +88,10 @@ export const createDiscordBot = (): Client => {
         try {
           await getOrganizationAutocomplete().execute(interaction);
         } catch (error) {
+          if (isIgnorableDiscordError(error)) {
+            // Silently ignore - user typed quickly or interaction expired
+            return;
+          }
           logger.discord.error('Organization autocomplete error', error, {
             user: interaction.user.id,
           });
@@ -77,6 +103,10 @@ export const createDiscordBot = (): Client => {
         try {
           await getGenerationAutocomplete().execute(interaction);
         } catch (error) {
+          if (isIgnorableDiscordError(error)) {
+            // Silently ignore - user typed quickly or interaction expired
+            return;
+          }
           logger.discord.error('Generation autocomplete error', error, {
             user: interaction.user.id,
           });

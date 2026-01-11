@@ -1,7 +1,24 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+  DiscordAPIError,
+} from 'discord.js';
 import { GetCycleStatusQuery } from '@/application/queries';
 import { createStatusMessage } from '@/infrastructure/external/discord';
 import { DiscordCommand } from './types';
+
+/**
+ * Check if an error is a Discord API error that should be silently ignored.
+ * These errors occur when interactions expire or are cancelled by user action.
+ */
+function isIgnorableDiscordError(error: unknown): boolean {
+  if (error instanceof DiscordAPIError) {
+    // 10062: Unknown interaction - interaction expired (3s timeout)
+    // 40060: Interaction has already been acknowledged - race condition
+    return error.code === 10062 || error.code === 40060;
+  }
+  return false;
+}
 
 export class CycleCommand implements DiscordCommand {
   readonly definition = new SlashCommandBuilder()
@@ -64,8 +81,9 @@ export class CycleCommand implements DiscordCommand {
     }
 
     try {
-      const currentCycle =
-        await this.getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+      const currentCycle = await this.getCycleStatusQuery.getCurrentCycle(
+        'dongueldonguel'
+      );
 
       if (!currentCycle) {
         await interaction.editReply({
@@ -77,7 +95,11 @@ export class CycleCommand implements DiscordCommand {
       const daysUntilDeadline = currentCycle.daysLeft;
 
       await interaction.editReply({
-        content: `📅 **현재 주차 정보**\n\n**기수**: ${currentCycle.generationName}\n**주차**: ${currentCycle.week}주차\n**마감일**: ${new Date(currentCycle.endDate).toLocaleDateString('ko-KR')} (${
+        content: `📅 **현재 주차 정보**\n\n**기수**: ${
+          currentCycle.generationName
+        }\n**주차**: ${currentCycle.week}주차\n**마감일**: ${new Date(
+          currentCycle.endDate
+        ).toLocaleDateString('ko-KR')} (${
           daysUntilDeadline > 0 ? `D-${daysUntilDeadline}` : '오늘 마감'
         })\n\n이슈 링크: ${currentCycle.githubIssueUrl}`,
       });
@@ -99,8 +121,9 @@ export class CycleCommand implements DiscordCommand {
     await interaction.deferReply();
 
     try {
-      const currentCycle =
-        await this.getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+      const currentCycle = await this.getCycleStatusQuery.getCurrentCycle(
+        'dongueldonguel'
+      );
 
       if (!currentCycle) {
         await interaction.editReply({
@@ -146,6 +169,11 @@ export class CycleCommand implements DiscordCommand {
     try {
       await interaction.deferReply();
     } catch (error) {
+      if (isIgnorableDiscordError(error)) {
+        // Interaction expired or already acknowledged - silently ignore
+        console.log('⚠️ cycle list: interaction expired or cancelled');
+        return;
+      }
       console.error('❌ cycle list: deferReply failed:', error);
       return;
     }
@@ -175,7 +203,9 @@ export class CycleCommand implements DiscordCommand {
           cycles
             .map(
               (c) =>
-                `  • ${c.week}주차: ${c.startDate.toLocaleDateString('ko-KR')} ~ ${c.endDate.toLocaleDateString('ko-KR')}`
+                `  • ${c.week}주차: ${c.startDate.toLocaleDateString(
+                  'ko-KR'
+                )} ~ ${c.endDate.toLocaleDateString('ko-KR')}`
             )
             .join('\n'),
       });
@@ -195,12 +225,15 @@ export class CycleCommand implements DiscordCommand {
     generationName: string,
     organizationSlug: string
   ): Promise<Array<{ week: number; startDate: Date; endDate: Date }> | null> {
-    const { DrizzleCycleRepository } =
-      await import('@/infrastructure/persistence/drizzle/cycle.repository.impl');
-    const { DrizzleGenerationRepository } =
-      await import('@/infrastructure/persistence/drizzle/generation.repository.impl');
-    const { DrizzleOrganizationRepository } =
-      await import('@/infrastructure/persistence/drizzle/organization.repository.impl');
+    const { DrizzleCycleRepository } = await import(
+      '@/infrastructure/persistence/drizzle/cycle.repository.impl'
+    );
+    const { DrizzleGenerationRepository } = await import(
+      '@/infrastructure/persistence/drizzle/generation.repository.impl'
+    );
+    const { DrizzleOrganizationRepository } = await import(
+      '@/infrastructure/persistence/drizzle/organization.repository.impl'
+    );
 
     const cycleRepo = new DrizzleCycleRepository();
     const generationRepo = new DrizzleGenerationRepository();
