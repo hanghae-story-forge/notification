@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | grep -qE '(git push --force|git reset --hard|rm -rf)' && (echo \"⚠️  위험한 명령어 감지: $(cat)\" | tee -a ~/.claude/dangerous-commands.log) || exit(0)"
+            "command": "jq -r '.tool_input.command' | grep -qE '(git push --force|git reset --hard|rm -rf)' && (echo \"⚠️  위험한 명령어 감지: $(cat)\" | tee -a ~/.claude/dangerous-commands.log) || true"
           }
         ]
       }
