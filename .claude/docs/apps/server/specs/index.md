@@ -1,9 +1,9 @@
 ---
 metadata:
   version: "2.0.0"
-  created_at: "2026-01-05T10:00:00Z"
-  last_verified: "2026-01-05T12:00:00Z"
-  git_commit: "ac29965"
+  created_at: "2026-01-11T10:00:00Z"
+  last_verified: "2026-01-11T12:00:00Z"
+  git_commit: "cdbdf2d"
   based_on_facts: "../facts/index.md"
   based_on_insights: "../insights/index.md"
 ---
@@ -13,8 +13,8 @@ metadata:
 - **Scope**: 전체 시스템 기능 명세
 - **Based on Facts**: [../facts/index.md](../facts/index.md)
 - **Based on Insights**: [../insights/index.md](../insights/index.md)
-- **Last Verified**: 2026-01-05
-- **Git Commit**: ac29965
+- **Last Verified**: 2026-01-11
+- **Git Commit**: cdbdf2d
 
 ## 개요
 

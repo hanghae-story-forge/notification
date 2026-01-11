@@ -1,10 +1,10 @@
-# 똥글똥글 (Lome) Server - Complete Technical Facts
+# 똥글똥글 (Donguel-Donguel) Server - Complete Technical Facts
 
 - **Project**: 똥글똥글 (Donguel-Donguel) - Bi-weekly writing group automation system
 - **Scope**: apps/server
 - **Architecture**: Domain-Driven Design (DDD) + CQRS + Clean Architecture
-- **Last Verified**: 2026-01-07
-- **Repo Ref**: 9164ce1
+- **Last Verified**: 2026-01-11
+- **Repo Ref**: cdbdf2d
 
 ## Quick Navigation
 
@@ -267,8 +267,124 @@ pnpm format               # Format with Prettier
 
 ## Metadata
 
-- **Last Verified**: 2026-01-07
-- **Git Commit**: 9164ce1283112dd34a47ff830c0679e7128506d5
+- **Last Verified**: 2026-01-11
+- **Git Commit**: cdbdf2d1efe48aaee1bb65c8cb58f773e41d30ee
 - **Source**: apps/server/src/
 - **Architecture**: DDD + CQRS + Clean Architecture
-- **Tech Stack**: Hono, TypeScript, Drizzle ORM, PostgreSQL, Discord.js
+- **Tech Stack**: Hono, TypeScript, Drizzle ORM, PostgreSQL, Discord.js, Pylon GraphQL
+
+---
+
+## Comprehensive Index
+
+### Domain Layer (8 Domains)
+
+| Domain | Description | Key Entities | Documentation |
+|--------|-------------|--------------|---------------|
+| **Organization** | Multi-tenant organization management | Organization, OrganizationSlug, OrganizationName | [organization.md](./domain/organization.md) |
+| **OrganizationMember** | Organization-member relationship | OrganizationMember, MemberRole, MemberStatus | [organization-member.md](./domain/organization-member.md) |
+| **Member** | User management | Member, MemberId, GithubUsername | [member.md](./domain/member.md) |
+| **Generation** | Cohort/Class management | Generation, GenerationName | [generation.md](./domain/generation.md) |
+| **GenerationMember** | Generation-member relationship | GenerationMember | [generation-member.md](./domain/generation-member.md) |
+| **Cycle** | Weekly submission periods | Cycle, Week, CycleDates | [cycle.md](./domain/cycle.md) |
+| **Submission** | Blog post submissions | Submission, BlogUrl | [submission.md](./domain/submission.md) |
+| **Auth** | JWT authentication | JWTService, Token, Payload | [auth.md](./domain/auth.md) |
+
+### Application Layer (CQRS)
+
+#### Commands (9 handlers)
+
+| Command | Purpose | Documentation |
+|---------|---------|---------------|
+| **RecordSubmissionCommand** | Record blog submission from GitHub webhook | [commands.md](./application/commands.md) |
+| **CreateCycleCommand** | Create new cycle from GitHub issue | [commands.md](./application/commands.md) |
+| **CreateGenerationCommand** | Create new generation | [commands.md](./application/commands.md) |
+| **CreateMemberCommand** | Register new member | [commands.md](./application/commands.md) |
+| **CreateOrganizationCommand** | Create new organization | [commands.md](./application/commands.md) |
+| **JoinGenerationCommand** | Join generation as member | [commands.md](./application/commands.md) |
+| **JoinOrganizationCommand** | Request to join organization | [commands.md](./application/commands.md) |
+| **AddMemberToOrganizationCommand** | Add member to organization | [commands.md](./application/commands.md) |
+| **UpdateMemberStatusCommand** | Update organization member status | [commands.md](./application/commands.md) |
+
+#### Queries (12 handlers)
+
+| Query | Purpose | Documentation |
+|-------|---------|---------------|
+| **GetCycleStatusQuery** | Get cycle submission status | [queries.md](./application/queries.md) |
+| **GetReminderTargetsQuery** | Get cycles with upcoming deadlines | [queries.md](./application/queries.md) |
+| **GetOrganizationQuery** | Get organization by slug | [queries.md](./application/queries.md) |
+| **GetAllMembersQuery** | Get all members | [queries.md](./application/queries.md) |
+| **GetMemberByGithubQuery** | Get member by GitHub username | [queries.md](./application/queries.md) |
+| **GetAllGenerationsQuery** | Get all generations | [queries.md](./application/queries.md) |
+| **GetGenerationByIdQuery** | Get generation by ID | [queries.md](./application/queries.md) |
+| **GetCycleByIdQuery** | Get cycle by ID | [queries.md](./application/queries.md) |
+| **GetCyclesByGenerationQuery** | Get cycles by generation | [queries.md](./application/queries.md) |
+| **GetOrganizationMembersQuery** | Get organization members | [queries.md](./application/queries.md) |
+| **GetMemberOrganizationsQuery** | Get member organizations | [queries.md](./application/queries.md) |
+| **GetActiveCycleQuery** | Get currently active cycle | [queries.md](./application/queries.md) |
+
+#### Event Handlers (1 handler)
+
+| Event Handler | Purpose | Documentation |
+|---------------|---------|---------------|
+| **SubmissionEventHandler** | Handle submission events and send Discord notifications | [event-handlers.md](./application/event-handlers.md) |
+
+### Presentation Layer
+
+#### HTTP Routes (3 route files)
+
+| Route | Endpoints | Purpose | Documentation |
+|-------|-----------|---------|---------------|
+| **GitHub Webhook** | POST /webhook/github | Handle GitHub events | [github.md](./routes/github.md) |
+| **Reminder API** | GET /api/reminder, POST /api/reminder/send-reminders | Deadline reminders | [reminder.md](./routes/reminder.md) |
+| **Status API** | GET /api/status/:cycleId, GET /api/status/current | Submission status | [status.md](./routes/status.md) |
+
+#### GraphQL API (Pylon)
+
+| Type | Operations | Documentation |
+|------|------------|---------------|
+| **Queries (8)** | members, member, generations, generation, activeGeneration, cycles, cycle, activeCycle | [graphql.md](./presentation/graphql.md) |
+| **Mutations (4)** | addMember, addGeneration, addCycle, addSubmission | [graphql.md](./presentation/graphql.md) |
+
+#### Discord Bot Commands
+
+| Command | Purpose | Documentation |
+|---------|---------|---------------|
+| **/register** | Register as member | [discord.md](./presentation/discord.md) |
+| **/join-organization** | Join organization | [discord.md](./presentation/discord.md) |
+| **/create-organization** | Create organization | [discord.md](./presentation/discord.md) |
+| **/approve-member** | Approve/reject member | [discord.md](./presentation/discord.md) |
+| **/join-generation** | Join generation | [discord.md](./presentation/discord.md) |
+| **/cycle-status** | Show submission status | [discord.md](./presentation/discord.md) |
+| **/current-cycle** | Show current cycle | [discord.md](./presentation/discord.md) |
+| **/check-submission** | Check your submission | [discord.md](./presentation/discord.md) |
+| **/list-organizations** | List organizations | [discord.md](./presentation/discord.md) |
+
+### Infrastructure Layer
+
+| Component | Purpose | Documentation |
+|-----------|---------|---------------|
+| **Persistence** | Drizzle ORM repositories for all entities | [persistence.md](./infrastructure/persistence.md) |
+| **JWT Service** | JWT token generation and validation | [jwt.md](./infrastructure/jwt.md) |
+| **External Services** | Discord webhook, GitHub client | [external.md](./infrastructure/external.md) |
+| **Error Handler** | Custom error types and handling | [error.md](./lib/error.md) |
+| **Router** | Hono router configuration | [router.md](./lib/router.md) |
+| **Discord Service** | Discord message formatting | [discord.md](./services/discord.md) |
+
+### Database Schema
+
+| Table | Purpose | Documentation |
+|-------|---------|---------------|
+| **organizations** | Study groups | [schema.md](./database/schema.md) |
+| **organization_members** | Organization membership | [schema.md](./database/schema.md) |
+| **members** | Members | [schema.md](./database/schema.md) |
+| **generations** | Cohorts/periods | [schema.md](./database/schema.md) |
+| **generation_members** | Generation membership (deprecated) | [schema.md](./database/schema.md) |
+| **cycles** | Weekly cycles | [schema.md](./database/schema.md) |
+| **submissions** | Blog submissions | [schema.md](./database/schema.md) |
+
+### Configuration
+
+| Config | Purpose | Documentation |
+|--------|---------|---------------|
+| **Environment Variables** | App configuration | [environment.md](./config/environment.md) |

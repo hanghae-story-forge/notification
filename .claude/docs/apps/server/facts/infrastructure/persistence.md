@@ -1,181 +1,230 @@
 # Infrastructure Persistence Layer
 
-- **Scope**: apps/server
-- **Layer**: infrastructure
-- **Source of Truth**: apps/server/src/infrastructure/persistence/
-- **Last Verified**: 2025-01-07
-- **Repo Ref**: 82509c3
+---
+metadata:
+  version: "2.0.0"
+  created_at: "2026-01-11T00:00:00Z"
+  last_verified: "2026-01-11T00:00:00Z"
+  git_commit: "cdbdf2d"
+  scope: "apps/server/src/infrastructure/persistence"
+  source_files:
+    apps/server/src/infrastructure/persistence/drizzle-db/schema.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/cycle.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/member.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/submission.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/generation.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/organization.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/organization-member.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+    apps/server/src/infrastructure/persistence/drizzle/generation-member.repository.impl.ts:
+      git_hash: "cdbdf2d"
+      source_exists: true
+---
 
-## Drizzle DB Setup
+## Database Schema (Drizzle ORM)
 
 - **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts`
-- **Purpose**: Drizzle ORM 스키마 정의 (PostgreSQL)
-- **ORM**: Drizzle ORM with postgres.js driver
-- **Connection String**: `DATABASE_URL` 환경 변수
+- **ORM**: Drizzle ORM with PostgreSQL (postgres.js driver)
+- **Tables**:
 
-### Table: organizations
+### organizations
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L25-L38)
 - **Purpose**: 조직(스터디 그룹) 테이블
 - **Columns**:
-  - `id: serial` - PK
-  - `name: text` - 조직 이름 (UNIQUE, NOT NULL)
-  - `slug: text` - URL 식별자 (UNIQUE, NOT NULL, INDEXED)
-  - `discord_webhook_url: text` - Discord 웹훅 URL
-  - `is_active: boolean` - 활성화 상태 (DEFAULT: true)
-  - `created_at: timestamp` - 생성 일시 (DEFAULT: NOW())
-- **Indexes**:
-  - `organizations_slug_idx` - slug 컬럼
+  - `id: serial` (PK)
+  - `name: text` (NOT NULL, UNIQUE) - 조직 이름
+  - `slug: text` (NOT NULL, UNIQUE) - URL 식별자
+  - `discordWebhookUrl: text` - Discord 웹훅 URL
+  - `isActive: boolean` (DEFAULT true) - 활성화 상태
+  - `createdAt: timestamp` (DEFAULT now())
+- **Indexes**: `slugIdx` on `slug`
 
-### Table: members
+### members
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L40-L49)
-- **Purpose**: 회원 테이블 (Discord 기반)
+- **Purpose**: 회원 테이블 (Discord 기반 인증)
 - **Columns**:
-  - `id: serial` - PK
-  - `discord_id: text` - Discord User ID (UNIQUE, NOT NULL)
-  - `discord_username: text` - Discord 사용자명
-  - `discord_avatar: text` - Discord 아바타 해시
-  - `github: text` - GitHub 사용자명 (더 이상 unique 아님)
-  - `name: text` - 회원 실명 (NOT NULL)
-  - `created_at: timestamp` - 생성 일시 (DEFAULT: NOW())
+  - `id: serial` (PK)
+  - `discordId: text` (NOT NULL, UNIQUE) - Discord User ID (고유 식별자)
+  - `discordUsername: text` - Discord username (변경 가능)
+  - `discordAvatar: text` - Discord avatar hash
+  - `githubUsername: text` - GitHub username (선택, 더 이상 unique 아님)
+  - `name: text` (NOT NULL) - 회원 이름
+  - `createdAt: timestamp` (DEFAULT now())
 
-### Table: generations
+### generations
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L51-L67)
-- **Purpose**: 기수 테이블 (조직에 속함)
+- **Purpose**: 기수 테이블
 - **Columns**:
-  - `id: serial` - PK
-  - `organization_id: integer` - 조직 ID (FK → organizations.id, NOT NULL)
-  - `name: text` - 기수명 (NOT NULL)
-  - `started_at: timestamp` - 시작일 (NOT NULL)
-  - `is_active: boolean` - 활성화 상태 (DEFAULT: true)
-  - `created_at: timestamp` - 생성 일시 (DEFAULT: NOW())
-- **Indexes**:
-  - `generations_org_idx` - organization_id 컬럼
-- **Foreign Keys**:
-  - `organization_id` → `organizations.id`
+  - `id: serial` (PK)
+  - `organizationId: integer` (NOT NULL, FK → organizations.id) - 조직 ID
+  - `name: text` (NOT NULL) - 기수명 (예: "똥글똥글 1기")
+  - `startedAt: timestamp` (NOT NULL) - 시작일
+  - `isActive: boolean` (DEFAULT true) - 활성화 상태
+  - `createdAt: timestamp` (DEFAULT now())
+- **Indexes**: `orgIdx` on `organizationId`
 
-### Table: cycles
+### cycles
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L69-L86)
-- **Purpose**: 사이클(주차) 테이블 (기수에 속함)
+- **Purpose**: 사이클(주차) 테이블
 - **Columns**:
-  - `id: serial` - PK
-  - `generation_id: integer` - 기수 ID (FK → generations.id, NOT NULL)
-  - `week: integer` - 주차 번호 (NOT NULL)
-  - `start_date: timestamp` - 시작일 (NOT NULL)
-  - `end_date: timestamp` - 종료일 (NOT NULL)
-  - `github_issue_url: text` - GitHub Issue URL
-  - `created_at: timestamp` - 생성 일시 (DEFAULT: NOW())
-- **Indexes**:
-  - `cycles_generation_idx` - generation_id 컬럼
-- **Foreign Keys**:
-  - `generation_id` → `generations.id`
+  - `id: serial` (PK)
+  - `generationId: integer` (NOT NULL, FK → generations.id) - 기수 ID
+  - `week: integer` (NOT NULL) - 주차 번호 (1, 2, 3...)
+  - `startDate: timestamp` (NOT NULL) - 시작일
+  - `endDate: timestamp` (NOT NULL) - 종료일
+  - `githubIssueUrl: text` - GitHub Issue URL
+  - `createdAt: timestamp` (DEFAULT now())
+- **Indexes**: `generationIdx` on `generationId`
 
-### Table: organization_members
+### organization_members
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L88-L111)
-- **Purpose**: 조직-회원 조인 테이블 (다대다 관계)
+- **Purpose**: 조직-멤버 조인 테이블 (멀티 테넌트 지원)
 - **Columns**:
-  - `id: serial` - PK
-  - `organization_id: integer` - 조직 ID (FK → organizations.id, NOT NULL)
-  - `member_id: integer` - 회원 ID (FK → members.id, NOT NULL)
-  - `role: organization_role` - 역할 (OWNER/ADMIN/MEMBER, NOT NULL)
-  - `status: organization_member_status` - 상태 (PENDING/APPROVED/REJECTED/INACTIVE, NOT NULL)
-  - `joined_at: timestamp` - 가입 일시 (DEFAULT: NOW())
-  - `updated_at: timestamp` - 상태 변경 일시 (DEFAULT: NOW())
-- **Indexes**:
-  - `org_members_org_member_idx` - (organization_id, member_id)
-  - `org_members_status_idx` - status 컬럼
-- **Foreign Keys**:
-  - `organization_id` → `organizations.id`
-  - `member_id` → `members.id`
+  - `id: serial` (PK)
+  - `organizationId: integer` (NOT NULL, FK → organizations.id)
+  - `memberId: integer` (NOT NULL, FK → members.id)
+  - `role: organization_role` (NOT NULL) - 역할 (OWNER, ADMIN, MEMBER)
+  - `status: organization_member_status` (NOT NULL) - 상태 (PENDING, APPROVED, REJECTED, INACTIVE)
+  - `joinedAt: timestamp` (DEFAULT now())
+  - `updatedAt: timestamp` (DEFAULT now())
+- **Indexes**: `orgMemberIdx` on `(organizationId, memberId)`, `statusIdx` on `status`
 
-### Table: generation_members (Deprecated)
+### generation_members
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L113-L132)
-- **Purpose**: 기수-회원 조인 테이블 (organization_members로 대체됨)
-- **Status**: Deprecated (하위 호환용으로 유지)
+- **Purpose**: 기수-멤버 조인 테이블 (deprecated, organization_members로 대체)
+- **Columns**:
+  - `id: serial` (PK)
+  - `generationId: integer` (NOT NULL, FK → generations.id)
+  - `memberId: integer` (NOT NULL, FK → members.id)
+  - `joinedAt: timestamp` (DEFAULT now())
+- **Indexes**: `generationMemberIdx` on `(generationId, memberId)`
 
-### Table: submissions
+### submissions
 
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle-db/schema.ts` (L134-L156)
 - **Purpose**: 제출 테이블
 - **Columns**:
-  - `id: serial` - PK
-  - `cycle_id: integer` - 사이클 ID (FK → cycles.id, NOT NULL)
-  - `member_id: integer` - 회원 ID (FK → members.id, NOT NULL)
-  - `url: text` - 블로그 글 URL (NOT NULL)
-  - `submitted_at: timestamp` - 제출 일시 (DEFAULT: NOW())
-  - `github_comment_id: text` - GitHub 댓글 ID (UNIQUE, 중복 방지)
-- **Indexes**:
-  - `submissions_cycle_member_idx` - (cycle_id, member_id)
-  - `submissions_github_comment_idx` - github_comment_id
-- **Foreign Keys**:
-  - `cycle_id` → `cycles.id`
-  - `member_id` → `members.id`
+  - `id: serial` (PK)
+  - `cycleId: integer` (NOT NULL, FK → cycles.id)
+  - `memberId: integer` (NOT NULL, FK → members.id)
+  - `url: text` (NOT NULL) - 블로그 글 URL
+  - `submittedAt: timestamp` (DEFAULT now())
+  - `githubCommentId: text` (UNIQUE) - GitHub 댓글 ID (중복 방지)
+- **Indexes**: `cycleMemberIdx` on `(cycleId, memberId)`
+
+### Enums
+
+```typescript
+enum organization_member_status {
+  PENDING,
+  APPROVED,
+  REJECTED,
+  INACTIVE
+}
+
+enum organization_role {
+  OWNER,
+  ADMIN,
+  MEMBER
+}
+```
 
 ## Repository Implementations
 
-### DrizzleOrganizationRepository
-
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle/organization.repository.impl.ts`
-- **Purpose**: OrganizationRepository 인터페이스의 Drizzle ORM 구현체
-- **Methods**:
-  - `save(organization)` - UPSERT (id가 0이면 INSERT, 아니면 UPDATE)
-  - `findById(id)` - SELECT WHERE id = ?
-  - `findBySlug(slug)` - SELECT WHERE slug = ?
-  - `findAll()` - SELECT ALL
-
-### DrizzleMemberRepository
-
-- **Location**: `apps/server/src/infrastructure/persistence/drizzle/member.repository.impl.ts`
-- **Purpose**: MemberRepository 인터페이스의 Drizzle ORM 구현체
-- **Methods**:
-  - `save(member)` - UPSERT
-  - `findById(id)` - SELECT WHERE id = ?
-  - `findByDiscordId(discordId)` - SELECT WHERE discord_id = ?
-  - `findByGithubUsername(github)` - SELECT WHERE github = ?
-  - `findAll()` - SELECT ALL
-
-### DrizzleCycleRepository
+### CycleRepositoryImpl
 
 - **Location**: `apps/server/src/infrastructure/persistence/drizzle/cycle.repository.impl.ts`
-- **Purpose**: CycleRepository 인터페이스의 Drizzle ORM 구현체
-- **Methods**:
-  - `save(cycle)` - UPSERT
-  - `findById(id)` - SELECT WHERE id = ?
-  - `findByGenerationAndWeek(generationId, week)` - SELECT WHERE generation_id = ? AND week = ?
-  - `findByIssueUrl(issueUrl)` - SELECT WHERE github_issue_url = ?
-  - `findActiveCyclesByGeneration(generationId)` - SELECT WHERE generation_id = ? AND start_date <= NOW() AND end_date >= NOW()
+- **Purpose**: Cycle repository 구현 (Drizzle ORM)
+- **Key Methods**:
+  - `save(cycle)` - Drizzle transaction으로 upsert
+  - `findById(id)` - `select().where(eq(id))`
+  - `findByIssueUrl(issueUrl)` - `where(eq(githubIssueUrl))`
+  - `findActiveCyclesByGeneration(generationId)` - `where(isActive())`
+  - `findCyclesWithDeadlineInRangeByOrganization(orgId, start, end)` - 복잡한 날짜 범위 쿼리
 
-### DrizzleSubmissionRepository
+### MemberRepositoryImpl
+
+- **Location**: `apps/server/src/infrastructure/persistence/drizzle/member.repository.impl.ts`
+- **Purpose**: Member repository 구현
+- **Key Methods**:
+  - `save(member)` - upsert (discordId unique)
+  - `findByDiscordId(discordId)` - 주요 조회 방식
+  - `findByGithubUsername(githubUsername)` - GitHub username으로 조회
+  - `findAll()` - 전체 조회
+
+### SubmissionRepositoryImpl
 
 - **Location**: `apps/server/src/infrastructure/persistence/drizzle/submission.repository.impl.ts`
-- **Purpose**: SubmissionRepository 인터페이스의 Drizzle ORM 구현체
-- **Methods**:
-  - `save(submission)` - INSERT
-  - `findById(id)` - SELECT WHERE id = ?
-  - `findByCycleId(cycleId)` - SELECT WHERE cycle_id = ?
-  - `findByGithubCommentId(githubCommentId)` - SELECT WHERE github_comment_id = ?
+- **Purpose**: Submission repository 구현
+- **Key Methods**:
+  - `save(submission)` - insert (githubCommentId unique)
+  - `findByCycleId(cycleId)` - `where(eq(cycleId))`
+  - `findByGithubCommentId(commentId)` - 중복 체크용
+  - `existsByGithubCommentId(commentId)` - boolean 반환
 
-### DrizzleGenerationRepository
+### GenerationRepositoryImpl
 
 - **Location**: `apps/server/src/infrastructure/persistence/drizzle/generation.repository.impl.ts`
-- **Purpose**: GenerationRepository 인터페이스의 Drizzle ORM 구현체
-- **Methods**:
-  - `save(generation)` - UPSERT
-  - `findById(id)` - SELECT WHERE id = ?
-  - `findActiveByOrganization(organizationId)` - SELECT WHERE organization_id = ? AND is_active = true
+- **Purpose**: Generation repository 구현
+- **Key Methods**:
+  - `findActiveByOrganization(organizationId)` - 조직의 활성 기수 조회
+  - `findByOrganization(organizationId)` - 조직의 모든 기수 조회
 
-### DrizzleOrganizationMemberRepository
+### OrganizationRepositoryImpl
+
+- **Location**: `apps/server/src/infrastructure/persistence/drizzle/organization.repository.impl.ts`
+- **Purpose**: Organization repository 구현
+- **Key Methods**:
+  - `findBySlug(slug)` - 주요 조회 방식
+  - `save(organization)` - upsert (slug unique)
+
+### OrganizationMemberRepositoryImpl
 
 - **Location**: `apps/server/src/infrastructure/persistence/drizzle/organization-member.repository.impl.ts`
-- **Purpose**: OrganizationMemberRepository 인터페이스의 Drizzle ORM 구현체
-- **Methods**:
-  - `save(organizationMember)` - UPSERT
-  - `findById(id)` - SELECT WHERE id = ?
-  - `findByOrganizationAndMember(organizationId, memberId)` - SELECT WHERE organization_id = ? AND member_id = ?
-  - `findActiveByOrganization(organizationId)` - SELECT WHERE organization_id = ? AND status = 'APPROVED'
-  - `isActiveMember(organizationId, memberId)` - EXISTS (SELECT 1 WHERE organization_id = ? AND member_id = ? AND status = 'APPROVED')
+- **Purpose**: OrganizationMember repository 구현
+- **Key Methods**:
+  - `findActiveByOrganization(organizationId)` - 활성 멤버 조회
+  - `isActiveMember(organizationId, memberId)` - 활성 멤버 확인
+  - `findByOrganizationAndMember(organizationId, memberId)` - 조직+회원으로 조회
+
+### GenerationMemberRepositoryImpl
+
+- **Location**: `apps/server/src/infrastructure/persistence/drizzle/generation-member.repository.impl.ts`
+- **Purpose**: GenerationMember repository 구현
+- **Key Methods**:
+  - `findByGeneration(generationId)` - 기수별 조회
+  - `findByMember(memberId)` - 회원별 조회
+
+## Database Connection
+
+- **Location**: `apps/server/src/infrastructure/lib/db.ts`
+- **Driver**: postgres.js
+- **Connection String**: `DATABASE_URL` environment variable
+- **Default**: `postgresql://localhost:5432/dongueldonguel`
+
+## Evidence
+
+```typescript
+// Schema example: members table (L41-L49)
+export const members = pgTable('members', {
+  id: serial('id').primaryKey(),
+  discordId: text('discord_id').notNull().unique(), // 고유 식별자
+  discordUsername: text('discord_username'),
+  discordAvatar: text('discord_avatar'),
+  githubUsername: text('githubUsername'), // 더 이상 unique 아님
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+```
