@@ -8,6 +8,7 @@ import {
   ConflictError,
   UnauthorizedError,
 } from '@/domain/common/errors';
+import { logger } from '@/infrastructure/lib/logger';
 
 export type AppContext = Context;
 
@@ -53,12 +54,20 @@ function getErrorResponse(error: Error): { error: string } {
  */
 export const asyncHandler = (handler: (c: AppContext) => Promise<Response>) => {
   return async (c: AppContext): Promise<Response> => {
+    const startTime = Date.now();
+    const path = c.req.path;
+    const method = c.req.method;
+
     try {
       return await handler(c);
     } catch (error) {
+      const duration = Date.now() - startTime;
+
       if (error instanceof Error) {
         const statusCode = getStatusCodeForError(error);
-        console.error(`Error in ${c.req.path}:`, error);
+
+        logger.api.error('API error', error, { method, path, statusCode });
+
         // 204 No Content는 body를 가질 수 없으므로 제외
         // Hono의 c.json은 ContentfulStatusCode만 허용
         return c.json(
@@ -74,7 +83,11 @@ export const asyncHandler = (handler: (c: AppContext) => Promise<Response>) => {
       }
 
       // 알 수 없는 에러 타입
-      console.error(`Unknown error in ${c.req.path}:`, error);
+      logger.api.error('Unknown API error', error, {
+        method,
+        path,
+        duration: `${duration}ms`,
+      });
       return c.json(
         { error: 'Internal server error' },
         HttpStatusCodes.INTERNAL_SERVER_ERROR

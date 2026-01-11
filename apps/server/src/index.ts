@@ -36,6 +36,7 @@ import {
 } from './presentation/discord/bot';
 
 import { env } from './env';
+import { logger } from './infrastructure/lib/logger';
 
 // Import GraphQL configuration
 import { graphql } from './presentation/graphql/pylon.service';
@@ -61,6 +62,36 @@ import {
   getStatus,
   getStatusDiscord,
 } from './presentation/http/status/status.handlers';
+
+// ========================================
+// Logging Middleware
+// ========================================
+
+app.use('*', async (c, next) => {
+  const startTime = Date.now();
+  const path = c.req.path;
+  const method = c.req.method;
+
+  // Health check은 로그에서 제외 (너무 많이 호출됨)
+  if (path !== '/health') {
+    logger.api.info('API request', { method, path });
+  }
+
+  await next();
+
+  const duration = Date.now() - startTime;
+  const statusCode = c.res.status;
+
+  // Health check은 로그에서 제외
+  if (path !== '/health') {
+    logger.api.info('API response', {
+      method,
+      path,
+      statusCode,
+      duration: `${duration}ms`,
+    });
+  }
+});
 
 // ========================================
 // REST Endpoints
@@ -130,15 +161,23 @@ export { graphql };
 if (env.APP_ENV === 'production') {
   void (async () => {
     try {
+      logger.discord.info('Starting Discord Bot...');
+
       const { createCommands } =
         await import('./presentation/discord/commands');
       const commands = createCommands();
+
+      logger.discord.info('Registering slash commands...', {
+        count: commands.length,
+      });
       await registerSlashCommands(commands);
 
       const discordBot = createDiscordBot();
+      logger.discord.info('Logging in to Discord...');
       await discordBot.login(env.DISCORD_BOT_TOKEN);
+      logger.discord.info('Discord Bot started successfully');
     } catch (error) {
-      console.error('❌ Failed to start Discord Bot:', error);
+      logger.discord.error('Failed to start Discord Bot', error);
     }
   })();
 }

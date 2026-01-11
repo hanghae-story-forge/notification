@@ -1,6 +1,7 @@
 import { REST, Routes } from 'discord.js';
 import { env } from '@/env';
 import { DiscordCommand } from './types';
+import { logger } from '@/infrastructure/lib/logger';
 import { CycleCommand } from './CycleCommand';
 import { MemberCommand } from './MemberCommand';
 import { OrganizationCommand } from './OrganizationCommand';
@@ -97,44 +98,55 @@ export const createCommands = (): DiscordCommand[] => {
 export const registerSlashCommands = async (
   commands: DiscordCommand[]
 ): Promise<void> => {
+  const startTime = Date.now();
   const commandDefinitions = commands.map((cmd) => cmd.definition.toJSON());
+  const commandNames = commands.map((cmd) => cmd.definition.toJSON().name);
+
+  logger.discord.info('Registering slash commands', {
+    count: commands.length,
+    commands: commandNames,
+  });
 
   const botToken = env.DISCORD_BOT_TOKEN;
   if (!botToken) {
+    logger.discord.error('DISCORD_BOT_TOKEN is not set');
     throw new Error('DISCORD_BOT_TOKEN is not set');
   }
 
   const rest = new REST({ version: '10' }).setToken(botToken);
 
   try {
-    console.log('🔄 Started refreshing application (/) commands.');
-
     const clientId = env.DISCORD_CLIENT_ID;
     if (!clientId) {
+      logger.discord.error('DISCORD_CLIENT_ID is not set');
       throw new Error('DISCORD_CLIENT_ID is not set');
     }
 
     const guildId = env.DISCORD_GUILD_ID;
 
     if (guildId) {
+      logger.discord.info('Registering guild commands', { guildId });
       await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
         body: commandDefinitions,
       });
-      console.log(
-        `✅ Successfully registered guild commands for server: ${guildId}`
-      );
+      logger.discord.info('Successfully registered guild commands', {
+        guildId,
+        duration: `${Date.now() - startTime}ms`,
+      });
     } else {
+      logger.discord.info('Registering global commands');
       await rest.put(Routes.applicationCommands(clientId), {
         body: commandDefinitions,
       });
-      console.log(
-        '✅ Successfully registered global commands (may take up to 1 hour to propagate)'
+      logger.discord.warn(
+        'Registered global commands (may take up to 1 hour to propagate)',
+        { duration: `${Date.now() - startTime}ms` }
       );
     }
-
-    console.log('✅ Successfully reloaded application (/) commands.');
   } catch (error) {
-    console.error('❌ Error registering slash commands:', error);
+    logger.discord.error('Failed to register slash commands', error, {
+      commandCount: commands.length,
+    });
     throw error;
   }
 };
