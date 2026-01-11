@@ -74,7 +74,11 @@ export class MemberCommand implements DiscordCommand {
   private async handleCreate(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       const name = interaction.options.getString('name', true);
@@ -112,14 +116,18 @@ export class MemberCommand implements DiscordCommand {
       const errorMessage =
         error instanceof Error ? error.message : '알 수 없는 오류';
 
-      if (errorMessage.includes('이미 존재')) {
-        await interaction.editReply({
-          content: '❌ 이미 등록된 회원입니다.',
-        });
-      } else {
-        await interaction.editReply({
-          content: `❌ 회원 등록 중 오류가 발생했습니다: ${errorMessage}`,
-        });
+      try {
+        if (errorMessage.includes('이미 존재')) {
+          await interaction.editReply({
+            content: '❌ 이미 등록된 회원입니다.',
+          });
+        } else {
+          await interaction.editReply({
+            content: `❌ 회원 등록 중 오류가 발생했습니다: ${errorMessage}`,
+          });
+        }
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
       }
     }
   }
@@ -127,7 +135,11 @@ export class MemberCommand implements DiscordCommand {
   private async handleApprove(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: false });
+    try {
+      await interaction.deferReply();
+    } catch {
+      return;
+    }
 
     try {
       const organizationSlug = interaction.options.getString(
@@ -180,9 +192,13 @@ export class MemberCommand implements DiscordCommand {
       const errorMessage =
         error instanceof Error ? error.message : '알 수 없는 오류';
 
-      await interaction.editReply({
-        content: `❌ 오류가 발생했습니다: ${errorMessage}`,
-      });
+      try {
+        await interaction.editReply({
+          content: `❌ 오류가 발생했습니다: ${errorMessage}`,
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 }

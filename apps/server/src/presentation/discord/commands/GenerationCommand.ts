@@ -72,7 +72,11 @@ export class GenerationCommand implements DiscordCommand {
   private async handleJoin(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       const generationName = interaction.options.getString('name', true);
@@ -122,18 +126,22 @@ export class GenerationCommand implements DiscordCommand {
       const errorMessage =
         error instanceof Error ? error.message : '알 수 없는 오류';
 
-      if (errorMessage.includes('must join organization')) {
-        await interaction.editReply({
-          content: '❌ 먼저 조직에 가입하고 승인을 받아야 합니다.',
-        });
-      } else if (errorMessage.includes('must be APPROVED')) {
-        await interaction.editReply({
-          content: '❌ 조직원 승인이 필요합니다. 관리자에게 문의해주세요.',
-        });
-      } else {
-        await interaction.editReply({
-          content: `❌ 기수 참여 중 오류가 발생했습니다: ${errorMessage}`,
-        });
+      try {
+        if (errorMessage.includes('must join organization')) {
+          await interaction.editReply({
+            content: '❌ 먼저 조직에 가입하고 승인을 받아야 합니다.',
+          });
+        } else if (errorMessage.includes('must be APPROVED')) {
+          await interaction.editReply({
+            content: '❌ 조직원 승인이 필요합니다. 관리자에게 문의해주세요.',
+          });
+        } else {
+          await interaction.editReply({
+            content: `❌ 기수 참여 중 오류가 발생했습니다: ${errorMessage}`,
+          });
+        }
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
       }
     }
   }
@@ -141,7 +149,11 @@ export class GenerationCommand implements DiscordCommand {
   private async handleCurrent(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    try {
+      await interaction.deferReply();
+    } catch {
+      return;
+    }
 
     try {
       // 활성화된 조직 찾기
@@ -188,16 +200,24 @@ export class GenerationCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling generation current:', error);
-      await interaction.editReply({
-        content: '❌ 기수 정보 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 기수 정보 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 
   private async handleStatus(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    try {
+      await interaction.deferReply();
+    } catch {
+      return;
+    }
 
     try {
       const generationName = interaction.options.getString('name', true);
@@ -243,16 +263,24 @@ export class GenerationCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling generation status:', error);
-      await interaction.editReply({
-        content: '❌ 기수 현황 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 기수 현황 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 
   private async handleList(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    try {
+      await interaction.deferReply();
+    } catch {
+      return;
+    }
 
     try {
       const allGenerations = await this.generationRepo.findAll();
@@ -284,9 +312,13 @@ export class GenerationCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling generation list:', error);
-      await interaction.editReply({
-        content: '❌ 기수 목록 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 기수 목록 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 }
