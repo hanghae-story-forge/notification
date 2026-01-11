@@ -23,9 +23,17 @@ export class CycleCommand implements DiscordCommand {
         .setDescription('특정 기수의 주차 목록을 확인합니다')
         .addStringOption((option) =>
           option
+            .setName('organization')
+            .setDescription('조직')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((option) =>
+          option
             .setName('generation')
             .setDescription('기수 이름 (예: 똥글똥글 1기)')
             .setRequired(true)
+            .setAutocomplete(true)
         )
     );
 
@@ -143,8 +151,8 @@ export class CycleCommand implements DiscordCommand {
     }
 
     try {
+      const organizationSlug = interaction.options.getString('organization', true);
       const generationName = interaction.options.getString('generation', true);
-      const organizationSlug = 'dongueldonguel';
 
       const cycles = await this.findCyclesByGeneration(
         generationName,

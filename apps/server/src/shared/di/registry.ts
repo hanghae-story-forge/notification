@@ -237,7 +237,11 @@ export function registerDependencies(): void {
 
   container.register(
     GENERATION_AUTOCOMPLETE_TOKEN,
-    () => new GenerationAutocomplete(container.resolve(GENERATION_REPO_TOKEN)),
+    () =>
+      new GenerationAutocomplete(
+        container.resolve(GENERATION_REPO_TOKEN),
+        container.resolve(ORGANIZATION_REPO_TOKEN)
+      ),
     'singleton'
   );
 }
