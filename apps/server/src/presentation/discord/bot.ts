@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import { createCommands } from './commands';
 import { registerSlashCommands } from './commands/index';
 import { DiscordCommand } from './commands/types';
+import { logger } from '@/infrastructure/lib/logger';
 
 // DI Container imports
 import {
@@ -40,16 +41,20 @@ export const createDiscordBot = (): Client => {
 
   // Global error handlers to prevent process crashes
   client.on('error', (error) => {
-    console.error('Discord client error:', error);
+    logger.discord.error('Discord client error', error);
   });
 
   // Handle unhandled rejections from Discord.js
   client.on('shardError', (error) => {
-    console.error('Discord shard error:', error);
+    logger.discord.error('Discord shard error', error);
   });
 
   client.once('ready', () => {
-    console.log(`✅ Discord Bot logged in as ${client.user?.tag}`);
+    logger.discord.info('Discord Bot logged in', {
+      tag: client.user?.tag,
+      id: client.user?.id,
+      guilds: client.guilds.cache.size,
+    });
   });
 
   client.on('interactionCreate', async (interaction) => {
@@ -61,7 +66,9 @@ export const createDiscordBot = (): Client => {
         try {
           await getOrganizationAutocomplete().execute(interaction);
         } catch (error) {
-          console.error('Error handling autocomplete:', error);
+          logger.discord.error('Organization autocomplete error', error, {
+            user: interaction.user.id,
+          });
         }
         return;
       }
@@ -70,7 +77,9 @@ export const createDiscordBot = (): Client => {
         try {
           await getGenerationAutocomplete().execute(interaction);
         } catch (error) {
-          console.error('Error handling autocomplete:', error);
+          logger.discord.error('Generation autocomplete error', error, {
+            user: interaction.user.id,
+          });
         }
         return;
       }
@@ -82,14 +91,28 @@ export const createDiscordBot = (): Client => {
     if (!interaction.isChatInputCommand()) return;
 
     const { commandName } = interaction;
-    console.log(`📝 Received command: ${commandName}`);
+    const startTime = Date.now();
+    const userId = interaction.user.id;
+    const username = interaction.user.username;
+
+    logger.discord.discordCommand(commandName, username);
 
     const command = commandMap.get(commandName);
     if (command) {
       try {
         await command.execute(interaction);
+        const duration = Date.now() - startTime;
+        logger.discord.discordCommandSuccess(commandName, duration, {
+          userId,
+          username,
+        });
       } catch (error) {
-        console.error(`Error executing command ${commandName}:`, error);
+        const duration = Date.now() - startTime;
+        logger.discord.discordCommandError(commandName, error, {
+          userId,
+          username,
+          duration: `${duration}ms`,
+        });
 
         // Try to send error response if interaction hasn't been replied to
         if (interaction.isRepliable()) {
@@ -107,12 +130,19 @@ export const createDiscordBot = (): Client => {
               });
             }
           } catch (replyError) {
-            console.error('Error sending error response:', replyError);
+            logger.discord.error('Error sending error response', replyError, {
+              command: commandName,
+              userId,
+            });
           }
         }
       }
     } else {
-      console.log(`⚠️  Unknown command: ${commandName}`);
+      logger.discord.warn('Unknown command received', {
+        command: commandName,
+        userId,
+        username,
+      });
     }
   });
 
