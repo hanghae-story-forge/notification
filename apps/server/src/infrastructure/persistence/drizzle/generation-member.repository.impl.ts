@@ -2,7 +2,11 @@
 
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { generationMembers } from '../drizzle-db/schema';
+import {
+  generationMembers,
+  generations,
+  organizations,
+} from '../drizzle-db/schema';
 import {
   GenerationMember,
   GenerationMemberId,
@@ -79,6 +83,67 @@ export class DrizzleGenerationMemberRepository implements GenerationMemberReposi
       .where(eq(generationMembers.memberId, memberId.value));
 
     return result.map((row) => this.mapToEntity(row));
+  }
+
+  async findByMemberWithGenerations(memberId: MemberId): Promise<
+    Array<{
+      generationMember: GenerationMember;
+      generation: {
+        id: number;
+        name: string;
+        organizationId: number;
+        startedAt: Date;
+        isActive: boolean;
+      } | null;
+      organization: { id: number; name: string } | null;
+    }>
+  > {
+    const result = await db
+      .select({
+        generationMember: {
+          id: generationMembers.id,
+          generationId: generationMembers.generationId,
+          memberId: generationMembers.memberId,
+          joinedAt: generationMembers.joinedAt,
+        },
+        generation: {
+          id: generations.id,
+          name: generations.name,
+          organizationId: generations.organizationId,
+          startedAt: generations.startedAt,
+          isActive: generations.isActive,
+        },
+        organization: {
+          id: organizations.id,
+          name: organizations.name,
+        },
+      })
+      .from(generationMembers)
+      .innerJoin(
+        generations,
+        eq(generationMembers.generationId, generations.id)
+      )
+      .innerJoin(
+        organizations,
+        eq(generations.organizationId, organizations.id)
+      )
+      .where(eq(generationMembers.memberId, memberId.value));
+
+    return result.map((row) => ({
+      generationMember: this.mapToEntity(row.generationMember),
+      generation: row.generation
+        ? {
+            id: row.generation.id,
+            name: row.generation.name,
+            organizationId: row.generation.organizationId,
+            startedAt: row.generation.startedAt,
+            isActive: row.generation.isActive,
+          }
+        : null,
+      organization: row.organization
+        ? { id: row.organization.id, name: row.organization.name }
+        : null,
+    }));
   }
 
   async delete(generationMember: GenerationMember): Promise<void> {

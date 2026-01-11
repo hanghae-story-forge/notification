@@ -59,4 +59,12 @@ export interface OrganizationMemberRepository {
 
   // 조직의 활성 멤버 수 조회
   countActiveByOrganization(organizationId: OrganizationId): Promise<number>;
+
+  // 멤버가 속한 모든 조직을 조직 정보와 함께 조회 (N+1 해결)
+  findByMemberWithOrganizations(memberId: MemberId): Promise<
+    Array<{
+      organizationMember: OrganizationMember;
+      organization: { id: number; name: string } | null;
+    }>
+  >;
 }

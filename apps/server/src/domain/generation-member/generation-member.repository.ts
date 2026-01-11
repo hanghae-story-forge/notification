@@ -36,6 +36,23 @@ export interface GenerationMemberRepository {
   findByMember(memberId: MemberId): Promise<GenerationMember[]>;
 
   /**
+   * 멤버가 속한 모든 기수를 기수 및 조직 정보와 함께 조회 (N+1 해결)
+   */
+  findByMemberWithGenerations(memberId: MemberId): Promise<
+    Array<{
+      generationMember: GenerationMember;
+      generation: {
+        id: number;
+        name: string;
+        organizationId: number;
+        startedAt: Date;
+        isActive: boolean;
+      } | null;
+      organization: { id: number; name: string } | null;
+    }>
+  >;
+
+  /**
    * 기수원 삭제
    */
   delete(generationMember: GenerationMember): Promise<void>;
