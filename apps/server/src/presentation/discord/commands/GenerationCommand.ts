@@ -17,6 +17,13 @@ export class GenerationCommand implements DiscordCommand {
         .setDescription('기수에 참여합니다 (조직원만 가능)')
         .addStringOption((option) =>
           option
+            .setName('organization')
+            .setDescription('조직')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((option) =>
+          option
             .setName('name')
             .setDescription('기수 이름 (예: 똥글똥글 1기)')
             .setRequired(true)
@@ -27,11 +34,27 @@ export class GenerationCommand implements DiscordCommand {
       subcommand
         .setName('current')
         .setDescription('현재 활성화된 기수 정보를 확인합니다')
+        .addStringOption((option) =>
+          option
+            .setName('organization')
+            .setDescription(
+              '조직 (선택사항 - 미입력 시 모든 활성화된 조직 표시)'
+            )
+            .setRequired(false)
+            .setAutocomplete(true)
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName('status')
         .setDescription('기수 참여 현황을 확인합니다')
+        .addStringOption((option) =>
+          option
+            .setName('organization')
+            .setDescription('조직')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
         .addStringOption((option) =>
           option
             .setName('name')
@@ -75,6 +98,10 @@ export class GenerationCommand implements DiscordCommand {
     await interaction.deferReply({ ephemeral: true });
 
     try {
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
       const generationName = interaction.options.getString('name', true);
 
       if (!interaction.user) {
@@ -93,12 +120,24 @@ export class GenerationCommand implements DiscordCommand {
         return;
       }
 
-      // 기수 찾기
-      const generations = await this.generationRepo.findAll();
+      // 조직 찾기
+      const organization =
+        await this.organizationRepo.findBySlug(organizationSlug);
+      if (!organization) {
+        await interaction.editReply({
+          content: '❌ 조직을 찾을 수 없습니다.',
+        });
+        return;
+      }
+
+      // 해당 조직의 기수 찾기
+      const generations = await this.generationRepo.findByOrganization(
+        organization.id.value
+      );
       const generation = generations.find((g) => g.name === generationName);
       if (!generation) {
         await interaction.editReply({
-          content: '❌ 기수를 찾을 수 없습니다.',
+          content: `❌ "${organizationSlug}" 조직에서 "${generationName}" 기수를 찾을 수 없습니다.`,
         });
         return;
       }
@@ -200,14 +239,30 @@ export class GenerationCommand implements DiscordCommand {
     await interaction.deferReply();
 
     try {
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
       const generationName = interaction.options.getString('name', true);
 
-      // 기수 찾기
-      const generations = await this.generationRepo.findAll();
+      // 조직 찾기
+      const organization =
+        await this.organizationRepo.findBySlug(organizationSlug);
+      if (!organization) {
+        await interaction.editReply({
+          content: `❌ "${organizationSlug}" 조직을 찾을 수 없습니다.`,
+        });
+        return;
+      }
+
+      // 해당 조직의 기수 찾기
+      const generations = await this.generationRepo.findByOrganization(
+        organization.id.value
+      );
       const generation = generations.find((g) => g.name === generationName);
       if (!generation) {
         await interaction.editReply({
-          content: `❌ "${generationName}" 기수를 찾을 수 없습니다.`,
+          content: `❌ "${organizationSlug}" 조직에서 "${generationName}" 기수를 찾을 수 없습니다.`,
         });
         return;
       }
