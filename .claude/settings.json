@@ -1,0 +1,61 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx|json|css)$'; then pnpm exec prettier --write \"$file_path\" 2>/dev/null || true; fi; }"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -qE '\\.(ts|tsx)$'; then cd apps/server && pnpm exec eslint \"$file_path\" --fix 2>/dev/null || true; fi; }"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -qE '\\.(ts|tsx)$'; then cd apps/server && pnpm type-check 2>/dev/null & fi; }"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -qE 'test\\.ts$'; then cd apps/server && pnpm test 2>/dev/null & fi; }"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json, sys; d=json.load(sys.stdin); p=d.get('tool_input',{}).get('file_path',''); sys.exit(2 if any(x in p for x in ['.env','.envrc','package-lock.json','.git/']) else 0)\""
+          },
+          {
+            "type": "command",
+            "command": "python3 -c \"import json, sys; d=json.load(sys.stdin); p=d.get('tool_input',{}).get('file_path',''); import sys; sys.stdout.write('⚠️  DB 스키마 파일 수정 중. 마이그레이션 실행: pnpm db:generate && pnpm db:migrate' if 'schema' in p.lower() else '') && exit(0)\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -qE '(git push --force|git reset --hard|rm -rf)' && (echo \"⚠️  위험한 명령어 감지: $(cat)\" | tee -a ~/.claude/dangerous-commands.log) || exit(0)"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🚀 똥글똥글 (Donguel-Donguel) 프로젝트\\n\\n📦 스택: Hono, TypeScript, Drizzle ORM, PostgreSQL\\n🎨 코드 스타일: 세미콜론, 싱글 쿼트, 2스페이스 indent\\n🔧 빌드: turbo로 모노레포 관리\\n📁 구조: 도메인 주도 설계 (apps/server/src/domain/)\\n\\n주요 명령어:\\n  pnpm dev          - 개발 서버 시작\\n  pnpm build        - 빌드\\n  pnpm lint         - 린트 체크\\n  pnpm format       - 포맷팅\\n  pnpm db:generate  - DB 마이그레이션 생성\\n  pnpm db:migrate   - DB 마이그레이션 실행\\n  pnpm test         - 테스트 실행'"
+          }
+        ]
+      }
+    ]
+  }
+}
