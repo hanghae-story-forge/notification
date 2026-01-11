@@ -65,7 +65,6 @@ export const asyncHandler = (handler: (c: AppContext) => Promise<Response>) => {
 
       if (error instanceof Error) {
         const statusCode = getStatusCodeForError(error);
-        const errorName = error.constructor.name;
 
         logger.apiError(method, path, statusCode, error);
 

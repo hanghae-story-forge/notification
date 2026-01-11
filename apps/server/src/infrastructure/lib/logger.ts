@@ -36,7 +36,8 @@ class Logger {
 
     // Pretty print for development
     const contextStr = context ? ` ${JSON.stringify(context)}` : '';
-    return `[${timestamp}] ${level.toUpperCase():padEnd(5)} [${this.context}] ${message}${contextStr}`;
+    const paddedLevel = level.toUpperCase().padEnd(5);
+    return `[${timestamp}] ${paddedLevel} [${this.context}] ${message}${contextStr}`;
   }
 
   debug(message: string, context?: LogContext): void {
@@ -56,11 +57,14 @@ class Logger {
   error(message: string, error?: Error | unknown, context?: LogContext): void {
     const errorContext = {
       ...context,
-      error: error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      } : error,
+      error:
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : error,
     };
     console.error(this.formatMessage('error', message, errorContext));
   }
