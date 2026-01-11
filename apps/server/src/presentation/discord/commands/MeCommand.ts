@@ -48,7 +48,11 @@ export class MeCommand implements DiscordCommand {
   private async handleInfo(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       if (!interaction.user) {
@@ -90,16 +94,24 @@ export class MeCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling me info:', error);
-      await interaction.editReply({
-        content: '❌ 정보 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 정보 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 
   private async handleOrganizations(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       if (!interaction.user) {
@@ -154,16 +166,24 @@ export class MeCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling me organizations:', error);
-      await interaction.editReply({
-        content: '❌ 조직 목록 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 조직 목록 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 
   private async handleGenerations(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       if (!interaction.user) {
@@ -223,9 +243,13 @@ export class MeCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling me generations:', error);
-      await interaction.editReply({
-        content: '❌ 기수 목록 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 기수 목록 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 }

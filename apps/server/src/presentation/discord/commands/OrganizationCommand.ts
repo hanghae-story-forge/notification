@@ -70,7 +70,11 @@ export class OrganizationCommand implements DiscordCommand {
   private async handleCreate(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       const name = interaction.options.getString('name', true);
@@ -93,14 +97,19 @@ export class OrganizationCommand implements DiscordCommand {
       const errorMessage =
         error instanceof Error ? error.message : '알 수 없는 오류';
 
-      if (errorMessage.includes('already exists')) {
-        await interaction.editReply({
-          content: '❌ 이미 존재하는 슬러그입니다. 다른 슬러그를 사용해주세요.',
-        });
-      } else {
-        await interaction.editReply({
-          content: `❌ 조직 생성 중 오류가 발생했습니다: ${errorMessage}`,
-        });
+      try {
+        if (errorMessage.includes('already exists')) {
+          await interaction.editReply({
+            content:
+              '❌ 이미 존재하는 슬러그입니다. 다른 슬러그를 사용해주세요.',
+          });
+        } else {
+          await interaction.editReply({
+            content: `❌ 조직 생성 중 오류가 발생했습니다: ${errorMessage}`,
+          });
+        }
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
       }
     }
   }
@@ -108,7 +117,11 @@ export class OrganizationCommand implements DiscordCommand {
   private async handleList(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply();
+    try {
+      await interaction.deferReply();
+    } catch {
+      return;
+    }
 
     try {
       const allOrgs = await this.organizationRepo.findAll();
@@ -146,16 +159,24 @@ export class OrganizationCommand implements DiscordCommand {
       });
     } catch (error) {
       console.error('Error handling organization list:', error);
-      await interaction.editReply({
-        content: '❌ 스터디 목록 조회 중 오류가 발생했습니다.',
-      });
+      try {
+        await interaction.editReply({
+          content: '❌ 스터디 목록 조회 중 오류가 발생했습니다.',
+        });
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
+      }
     }
   }
 
   private async handleJoin(
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
 
     try {
       const organizationSlug = interaction.options.getString('name', true);
@@ -193,18 +214,22 @@ export class OrganizationCommand implements DiscordCommand {
       const errorMessage =
         error instanceof Error ? error.message : '알 수 없는 오류';
 
-      if (errorMessage.includes('not found')) {
-        await interaction.editReply({
-          content: '❌ 조직을 찾을 수 없습니다. 슬러그를 확인해주세요.',
-        });
-      } else if (errorMessage.includes('Member with Discord ID')) {
-        await interaction.editReply({
-          content: '❌ 먼저 `/member create` 명령어로 회원 등록을 해주세요.',
-        });
-      } else {
-        await interaction.editReply({
-          content: `❌ 조직 가입 중 오류가 발생했습니다: ${errorMessage}`,
-        });
+      try {
+        if (errorMessage.includes('not found')) {
+          await interaction.editReply({
+            content: '❌ 조직을 찾을 수 없습니다. 슬러그를 확인해주세요.',
+          });
+        } else if (errorMessage.includes('Member with Discord ID')) {
+          await interaction.editReply({
+            content: '❌ 먼저 `/member create` 명령어로 회원 등록을 해주세요.',
+          });
+        } else {
+          await interaction.editReply({
+            content: `❌ 조직 가입 중 오류가 발생했습니다: ${errorMessage}`,
+          });
+        }
+      } catch (editError) {
+        console.error('Failed to send error reply:', editError);
       }
     }
   }
