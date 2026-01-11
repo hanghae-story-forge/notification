@@ -74,7 +74,7 @@ app.use('*', async (c, next) => {
 
   // Health check은 로그에서 제외 (너무 많이 호출됨)
   if (path !== '/health') {
-    logger.apiRequest(method, path);
+    logger.api.info('API request', { method, path });
   }
 
   await next();
@@ -84,7 +84,12 @@ app.use('*', async (c, next) => {
 
   // Health check은 로그에서 제외
   if (path !== '/health') {
-    logger.apiResponse(method, path, statusCode, duration);
+    logger.api.info('API response', {
+      method,
+      path,
+      statusCode,
+      duration: `${duration}ms`,
+    });
   }
 });
 
@@ -158,9 +163,8 @@ if (env.APP_ENV === 'production') {
     try {
       logger.discord.info('Starting Discord Bot...');
 
-      const { createCommands } = await import(
-        './presentation/discord/commands'
-      );
+      const { createCommands } =
+        await import('./presentation/discord/commands');
       const commands = createCommands();
 
       logger.discord.info('Registering slash commands...', {

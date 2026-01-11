@@ -66,7 +66,7 @@ export const asyncHandler = (handler: (c: AppContext) => Promise<Response>) => {
       if (error instanceof Error) {
         const statusCode = getStatusCodeForError(error);
 
-        logger.apiError(method, path, statusCode, error);
+        logger.api.error('API error', error, { method, path, statusCode });
 
         // 204 No Content는 body를 가질 수 없으므로 제외
         // Hono의 c.json은 ContentfulStatusCode만 허용
