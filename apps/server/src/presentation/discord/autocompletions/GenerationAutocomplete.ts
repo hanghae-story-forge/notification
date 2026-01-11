@@ -1,5 +1,6 @@
 import { AutocompleteInteraction } from 'discord.js';
 import { GenerationRepository } from '@/domain/generation/generation.repository';
+import { Generation } from '@/domain/generation/generation.domain';
 import { OrganizationRepository } from '@/domain/organization/organization.repository';
 
 export class GenerationAutocomplete {
@@ -14,7 +15,7 @@ export class GenerationAutocomplete {
     // organization 옵션이 있는 경우 해당 조직의 기수만 표시
     const organizationSlug = interaction.options.getString('organization');
 
-    let generations;
+    let generations: Generation[];
 
     if (organizationSlug) {
       // 조직으로 필터링

@@ -151,7 +151,10 @@ export class CycleCommand implements DiscordCommand {
     }
 
     try {
-      const organizationSlug = interaction.options.getString('organization', true);
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
       const generationName = interaction.options.getString('generation', true);
 
       const cycles = await this.findCyclesByGeneration(

@@ -37,7 +37,9 @@ export class GenerationCommand implements DiscordCommand {
         .addStringOption((option) =>
           option
             .setName('organization')
-            .setDescription('조직 (선택사항 - 미입력 시 모든 활성화된 조직 표시)')
+            .setDescription(
+              '조직 (선택사항 - 미입력 시 모든 활성화된 조직 표시)'
+            )
             .setRequired(false)
             .setAutocomplete(true)
         )
@@ -96,7 +98,10 @@ export class GenerationCommand implements DiscordCommand {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      const organizationSlug = interaction.options.getString('organization', true);
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
       const generationName = interaction.options.getString('name', true);
 
       if (!interaction.user) {
@@ -234,7 +239,10 @@ export class GenerationCommand implements DiscordCommand {
     await interaction.deferReply();
 
     try {
-      const organizationSlug = interaction.options.getString('organization', true);
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
       const generationName = interaction.options.getString('name', true);
 
       // 조직 찾기
