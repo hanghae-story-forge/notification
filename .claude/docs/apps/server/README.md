@@ -2,7 +2,7 @@
 
 ## 문서화 완료 현황
 
-이 문서는 2025-01-07에 Git commit `82509c3`을 기준으로 자동 추출되었습니다.
+이 문서는 2026-01-11에 Git commit `cdbdf2d`를 기준으로 자동 추출되었습니다.
 
 ### 문서 구조
 
@@ -39,9 +39,9 @@
 └── specs/                      # 기술 명세
 ```
 
-### 주요 변경사항 (Commit 82509c3)
+### 주요 변경사항 (Commit cdbdf2d)
 
-#### 멀티 테넌트 아키텍처 도입
+#### 멀티 테넌트 아키텍처 도입 (v3.0.0)
 1. **새로운 도메인**:
    - `Organization` - 조직(스터디 그룹) 엔티티
    - `OrganizationMember` - 조직-회원 관계 엔티티
@@ -54,36 +54,42 @@
    - `members.github` 더 이상 unique 아님
 
 3. **새로운 CQRS Handlers**:
-   - `CreateOrganizationCommand` - 조직 생성
-   - `JoinOrganizationCommand` - 조직 가입
-   - `AddMemberToOrganizationCommand` - 멤버 추가
-   - `GetOrganizationQuery` - 조직 조회
-   - `GetOrganizationMembersQuery` - 조직원 목록
+   - Commands (9개): RecordSubmission, CreateCycle, CreateGeneration, CreateMember, CreateOrganization, JoinGeneration, JoinOrganization, AddMemberToOrganization, UpdateMemberStatus
+   - Queries (12개): GetCycleStatus, GetReminderTargets, GetOrganization, GetAllMembers, GetMemberByGithub, GetAllGenerations, GetGenerationById, GetCycleById, GetCyclesByGeneration, GetOrganizationMembers, GetMemberOrganizations, GetActiveCycle
+   - Event Handlers (1개): SubmissionEventHandler
 
 4. **프레젠테이션 계층 확장**:
-   - Discord Bot Slash Commands (`/check-submission`, `/current-cycle`)
+   - Discord Bot Slash Commands (9개): /register, /join-organization, /create-organization, /approve-member, /join-generation, /cycle-status, /current-cycle, /check-submission, /list-organizations
    - Pylon GraphQL API (Code-First approach)
+   - HTTP Routes: GitHub Webhook, Reminder API, Status API
+
+#### DDD 아키텍처 리팩토링 (v2.0.0)
+- 4계층 DDD 구조 도입 (Domain, Application, Infrastructure, Presentation)
+- CQRS 패턴 적용
+- 도메인 이벤트 기반 알림 시스템
+- 값 객체로 데이터 무결성 보장
 
 ### 문서화 범위
 
-#### Domain Layer (7개 도메인)
+#### Domain Layer (8개 도메인)
 - ✅ Organization (조직) - Aggregate Root, Value Objects, Repository
 - ✅ OrganizationMember (조직원) - Entity, Value Objects, Enums, Repository
 - ✅ Auth (인증) - JWT Value Objects, Service Interface
 - ✅ Member (회원) - Aggregate Root, Value Objects, Service, Repository
 - ✅ Cycle (사이클) - Aggregate Root, Value Objects, Repository
 - ✅ Generation (기수) - Aggregate Root, Service, Repository
+- ✅ GenerationMember (기수원) - Entity, Repository (deprecated)
 - ✅ Submission (제출) - Aggregate Root, Value Objects, Service, Repository
 
 #### Application Layer (CQRS)
-- ✅ Commands (8개) - CreateOrganization, JoinOrganization, AddMemberToOrganization, CreateMember, CreateGeneration, CreateCycle, RecordSubmission, UpdateMemberStatus
-- ✅ Queries (10개) - GetOrganization, GetOrganizationMembers, GetMemberOrganizations, GetAllMembers, GetMemberByGithub, GetAllGenerations, GetGenerationById, GetCycleById, GetCyclesByGeneration, GetCycleStatus
+- ✅ Commands (9개) - CreateOrganization, JoinOrganization, AddMemberToOrganization, CreateMember, CreateGeneration, CreateCycle, RecordSubmission, JoinGeneration, UpdateMemberStatus
+- ✅ Queries (12개) - GetOrganization, GetOrganizationMembers, GetMemberOrganizations, GetAllMembers, GetMemberByGithub, GetAllGenerations, GetGenerationById, GetCycleById, GetCyclesByGeneration, GetCycleStatus, GetReminderTargets, GetActiveCycle
 - ✅ Event Handlers (1개) - SubmissionEventHandler
 
 #### Presentation Layer
 - ✅ HTTP Routes - GitHub Webhook, Reminder API, Status API
 - ✅ GraphQL API - Pylon Queries (8개), Mutations (4개)
-- ✅ Discord Bot - Slash Commands (2개), Registration
+- ✅ Discord Bot - Slash Commands (9개), Registration
 
 #### Infrastructure Layer
 - ✅ Persistence - Drizzle ORM Schema (7개 테이블), Repository Implementations (7개)
@@ -95,12 +101,14 @@
 
 ### 통계
 
-- **총 문서 파일**: 20개
-- **총 라인 수**: 약 1,500라인
-- **다룬 엔티티**: 7개
-- **다룬 CQRS Handlers**: 19개
-- **다룬 API Endpoints**: 15개
+- **총 문서 파일**: 47개
+- **총 라인 수**: 약 3,500+라인
+- **다룬 엔티티**: 8개 도메인
+- **다룬 CQRS Handlers**: 22개 (Commands: 9, Queries: 12, Event Handlers: 1)
+- **다룬 API Endpoints**: 20+개 (HTTP: 10, GraphQL: 12, Discord: 9)
 - **다룬 DB Tables**: 7개
+- **운영 분석 문서**: 13개 (Operations: 10, Impact: 3)
+- **기능 명세서**: 11개
 
 ### 사용 방법
 
@@ -123,10 +131,92 @@
 ### 참고
 
 - **Source Code**: `apps/server/src/`
-- **Git Commit**: 82509c3098d10848b4ac6fcb83e1c285cbaeb0c3
-- **Last Updated**: 2025-01-07
-- **Documentation Tool**: codebase-extractor (Claude Agent)
+- **Git Commit**: cdbdf2d1efe48aaee1bb65c8cb58f773e41d30ee
+- **Last Updated**: 2026-01-11
+- **Documentation Tool**: feature-analysis-orchestrator (Claude Agent)
 
 ---
 
 이 문서는 코드베이스 구조를 이해하고, 각 레이어의 책임을 파악하며, 특정 기능을 찾을 수 있도록 설계되었습니다.
+
+## Quick Start Guide
+
+### 1. 프로젝트 이해하기
+
+똥글똥글은 **격주 글쓰기 모임 자동화 시스템**입니다:
+- 멤버들이 GitHub Issue에 댓글로 블로그 글을 제출
+- 시스템이 자동으로 제출을 기록하고 Discord에 알림
+- 마감 임박 시 자동 리마인더 발송
+- 제출 현황 실시간 조회
+
+### 2. 핵심 아키텍처
+
+**DDD 4계층 구조**:
+```
+Presentation (HTTP/GraphQL/Discord) → Application (CQRS) → Domain (Business Logic) → Infrastructure (DB/External)
+```
+
+**주요 패턴**:
+- **CQRS**: 명령(Command)과 조회(Query) 분리
+- **Domain Events**: 도메인 이벤트 기반 알림
+- **Value Objects**: 데이터 무결성 보장
+- **Aggregates**: 트랜잭션 경계 명확화
+
+### 3. 문서 탐색 경로
+
+**새로운 팀원**:
+1. [facts/index.md](./facts/index.md) - 전체 개요와 핵심 개념
+2. [insights/index.md](./insights/index.md) - 비즈니스 가치와 운영 효율
+3. [specs/index.md](./specs/index.md) - 기능 명세서
+
+**기능 개발**:
+1. [facts/domain/](./facts/domain/) - 관련 도메인 엔티티 확인
+2. [facts/application/](./facts/application/) - Command/Query 핸들러 확인
+3. [specs/](./specs/) - 기능 명세서 참조
+
+**운영/유지보수**:
+1. [insights/operations/](./insights/operations/) - 운영 분석
+2. [insights/impact/](./insights/impact/) - 영향 분석
+3. [facts/infrastructure/](./facts/infrastructure/) - 인프라 구조
+
+### 4. 주요 기능
+
+**핵심 기능**:
+- GitHub Webhook 자동화 (제출 수집, 회차 생성)
+- Discord 알림 시스템 (제출, 리마인더, 현황)
+- 리마인더 시스템 (마감 임박 알림)
+- 제출 현황 조회 (실시간 통계)
+- Discord Bot (9개 슬래시 명령어)
+
+**멀티 테넌트 기능**:
+- 조직 관리 (다중 스터디 그룹 지원)
+- 조직원 관리 (승인 기반 가입)
+- 역할 기반 접근 제어 (OWNER, ADMIN, MEMBER)
+
+### 5. 데이터 모델
+
+**핵심 엔티티 관계**:
+```
+Organization (조직)
+  ├── Generation (기수)
+  │    └── Cycle (회차)
+  │         └── Submission (제출)
+  └── OrganizationMember (조직원)
+       └── Member (회원)
+```
+
+### 6. API 엔드포인트
+
+**HTTP API**:
+- `POST /webhook/github` - GitHub webhook
+- `GET /api/reminder` - 리마인더 대상 조회
+- `GET /api/status/:cycleId` - 제출 현황 조회
+
+**GraphQL API**:
+- Queries: members, generations, cycles, cycleStatus
+- Mutations: addMember, addGeneration, addCycle, addSubmission
+
+**Discord Bot**:
+- /register, /join-organization, /create-organization
+- /approve-member, /join-generation
+- /cycle-status, /current-cycle, /check-submission, /list-organizations
