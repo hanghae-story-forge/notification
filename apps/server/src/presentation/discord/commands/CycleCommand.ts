@@ -81,9 +81,8 @@ export class CycleCommand implements DiscordCommand {
     }
 
     try {
-      const currentCycle = await this.getCycleStatusQuery.getCurrentCycle(
-        'dongueldonguel'
-      );
+      const currentCycle =
+        await this.getCycleStatusQuery.getCurrentCycle('dongueldonguel');
 
       if (!currentCycle) {
         await interaction.editReply({
@@ -121,9 +120,8 @@ export class CycleCommand implements DiscordCommand {
     await interaction.deferReply();
 
     try {
-      const currentCycle = await this.getCycleStatusQuery.getCurrentCycle(
-        'dongueldonguel'
-      );
+      const currentCycle =
+        await this.getCycleStatusQuery.getCurrentCycle('dongueldonguel');
 
       if (!currentCycle) {
         await interaction.editReply({
@@ -225,15 +223,12 @@ export class CycleCommand implements DiscordCommand {
     generationName: string,
     organizationSlug: string
   ): Promise<Array<{ week: number; startDate: Date; endDate: Date }> | null> {
-    const { DrizzleCycleRepository } = await import(
-      '@/infrastructure/persistence/drizzle/cycle.repository.impl'
-    );
-    const { DrizzleGenerationRepository } = await import(
-      '@/infrastructure/persistence/drizzle/generation.repository.impl'
-    );
-    const { DrizzleOrganizationRepository } = await import(
-      '@/infrastructure/persistence/drizzle/organization.repository.impl'
-    );
+    const { DrizzleCycleRepository } =
+      await import('@/infrastructure/persistence/drizzle/cycle.repository.impl');
+    const { DrizzleGenerationRepository } =
+      await import('@/infrastructure/persistence/drizzle/generation.repository.impl');
+    const { DrizzleOrganizationRepository } =
+      await import('@/infrastructure/persistence/drizzle/organization.repository.impl');
 
     const cycleRepo = new DrizzleCycleRepository();
     const generationRepo = new DrizzleGenerationRepository();
