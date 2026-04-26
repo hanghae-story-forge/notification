@@ -53,4 +53,8 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["sh", "-c", "cd apps/server && node_modules/.bin/drizzle-kit migrate --config drizzle.config.ts && cd /app && node apps/server/.pylon/index.js"]
+# NOTE: Do not run drizzle-kit migrate automatically at web service startup.
+# The production database predates Drizzle's migration journal, so applying the
+# generated baseline migration during deploy can fail against existing objects
+# before the web server binds a port. Run migrations as a separate controlled job.
+CMD ["node", "apps/server/.pylon/index.js"]
