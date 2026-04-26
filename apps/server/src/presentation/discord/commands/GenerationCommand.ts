@@ -360,6 +360,14 @@ export class GenerationCommand implements DiscordCommand {
         true
       );
       const generationName = interaction.options.getString('name', true);
+      const requester = await this.memberRepo.findByDiscordId(interaction.user.id);
+      if (!requester) {
+        await interaction.editReply({
+          content: '❌ 조회자 회원 정보를 찾을 수 없습니다. 먼저 `/member create`를 실행해주세요.',
+        });
+        return;
+      }
+
       const generation = await this.findGenerationByOrganizationAndName(
         organizationSlug,
         generationName
@@ -373,6 +381,7 @@ export class GenerationCommand implements DiscordCommand {
 
       const applications = await this.listGenerationApplicationsQuery.execute({
         generationId: generation.id.value,
+        requesterMemberId: requester.id.value,
       });
 
       if (applications.length === 0) {

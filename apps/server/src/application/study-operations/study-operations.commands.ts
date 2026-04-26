@@ -113,6 +113,14 @@ export interface ApplyToGenerationRequest {
 
 export interface ListGenerationApplicationsRequest {
   generationId: number;
+  requesterMemberId: number;
+}
+
+function isGenerationOperator(participant: GenerationParticipant | null): boolean {
+  return (
+    participant?.status === 'APPROVED' &&
+    (participant.hasRole('OWNER') || participant.hasRole('MANAGER'))
+  );
 }
 
 export class ListGenerationApplicationsQuery {
@@ -123,6 +131,16 @@ export class ListGenerationApplicationsQuery {
   async execute(
     request: ListGenerationApplicationsRequest
   ): Promise<GenerationParticipant[]> {
+    const requester = await this.participantRepository.findByGenerationAndMember(
+      request.generationId,
+      request.requesterMemberId
+    );
+    if (!isGenerationOperator(requester)) {
+      throw new StudyOperationsDomainError(
+        'Requester must be an OWNER or MANAGER for this generation'
+      );
+    }
+
     return this.participantRepository.findByGenerationAndStatus(
       request.generationId,
       'APPLIED'
@@ -178,6 +196,16 @@ export class ApproveGenerationParticipantCommand {
     );
     if (!participant) {
       throw new StudyOperationsDomainError('Participant not found');
+    }
+
+    const approver = await this.participantRepository.findByGenerationAndMember(
+      participant.generationId,
+      request.approvedByMemberId
+    );
+    if (!isGenerationOperator(approver)) {
+      throw new StudyOperationsDomainError(
+        'Approver must be an OWNER or MANAGER for this generation'
+      );
     }
 
     participant.approve();

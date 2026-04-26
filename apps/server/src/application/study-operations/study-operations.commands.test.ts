@@ -136,12 +136,41 @@ describe('ScheduleStudyCycleCommand', () => {
 });
 
 describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () => {
-  it('creates an applied participant and later approves it', async () => {
+  it('returns the existing participant when the same member already applied', async () => {
+    const participants = new MemoryParticipantRepository();
+    const outbox = new MemoryOutbox();
+    const existing = GenerationParticipant.create({
+      id: 7,
+      generationId: 1,
+      memberId: 10,
+      status: 'APPLIED',
+      roles: ['PARTICIPANT'],
+    });
+    participants.participants.set(7, existing);
+
+    const apply = new ApplyToGenerationCommand(participants, outbox);
+    const result = await apply.execute({ generationId: 1, memberId: 10 });
+
+    expect(result).toBe(existing);
+    expect(outbox.events).toEqual([]);
+  });
+
+  it('creates an applied participant and later approves it when approver is an operator', async () => {
     const participants = new MemoryParticipantRepository();
     const outbox = new MemoryOutbox();
 
     const apply = new ApplyToGenerationCommand(participants, outbox);
     const applied = await apply.execute({ generationId: 1, memberId: 10 });
+    participants.participants.set(
+      99,
+      GenerationParticipant.create({
+        id: 99,
+        generationId: 1,
+        memberId: 99,
+        status: 'APPROVED',
+        roles: ['MANAGER'],
+      })
+    );
 
     expect(applied.status).toBe('APPLIED');
     expect(applied.roles).toContain('PARTICIPANT');
@@ -158,10 +187,53 @@ describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () 
       'GenerationParticipationApproved',
     ]);
   });
+
+  it('rejects approval when approver is not an owner or manager in the same generation', async () => {
+    const participants = new MemoryParticipantRepository();
+    const outbox = new MemoryOutbox();
+    participants.participants.set(
+      1,
+      GenerationParticipant.create({
+        id: 1,
+        generationId: 1,
+        memberId: 10,
+        status: 'APPLIED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+    participants.participants.set(
+      2,
+      GenerationParticipant.create({
+        id: 2,
+        generationId: 1,
+        memberId: 99,
+        status: 'APPROVED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+
+    const approve = new ApproveGenerationParticipantCommand(participants, outbox);
+
+    await expect(
+      approve.execute({ participantId: 1, approvedByMemberId: 99 })
+    ).rejects.toThrow('Approver must be an OWNER or MANAGER');
+    expect(participants.participants.get(1)?.status).toBe('APPLIED');
+    expect(outbox.events).toEqual([]);
+  });
+
+  it('rejects approval for a missing participant', async () => {
+    const participants = new MemoryParticipantRepository();
+    const outbox = new MemoryOutbox();
+    const approve = new ApproveGenerationParticipantCommand(participants, outbox);
+
+    await expect(
+      approve.execute({ participantId: 404, approvedByMemberId: 99 })
+    ).rejects.toThrow('Participant not found');
+  });
 });
 
 describe('ListGenerationApplicationsQuery', () => {
-  it('returns only applied participants for a generation', async () => {
+  it('returns only applied participants for a generation when requester is an operator', async () => {
     const participants = new MemoryParticipantRepository();
     participants.participants.set(
       1,
@@ -194,13 +266,54 @@ describe('ListGenerationApplicationsQuery', () => {
       })
     );
 
+    participants.participants.set(
+      99,
+      GenerationParticipant.create({
+        id: 99,
+        generationId: 1,
+        memberId: 99,
+        status: 'APPROVED',
+        roles: ['OWNER'],
+      })
+    );
+
     const query = new ListGenerationApplicationsQuery(participants);
-    const result = await query.execute({ generationId: 1 });
+    const result = await query.execute({ generationId: 1, requesterMemberId: 99 });
 
     expect(result).toHaveLength(1);
     expect(result[0]?.id).toBe(1);
     expect(result[0]?.memberId).toBe(10);
     expect(result[0]?.status).toBe('APPLIED');
+  });
+
+  it('rejects listing applications when requester is not an owner or manager', async () => {
+    const participants = new MemoryParticipantRepository();
+    participants.participants.set(
+      1,
+      GenerationParticipant.create({
+        id: 1,
+        generationId: 1,
+        memberId: 10,
+        status: 'APPLIED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+    participants.participants.set(
+      2,
+      GenerationParticipant.create({
+        id: 2,
+        generationId: 1,
+        memberId: 99,
+        status: 'APPROVED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+
+    const query = new ListGenerationApplicationsQuery(participants);
+
+    await expect(
+      query.execute({ generationId: 1, requesterMemberId: 99 })
+    ).rejects.toThrow('Requester must be an OWNER or MANAGER');
   });
 });
 
@@ -238,6 +351,44 @@ describe('CheckRecordSubmissionEligibilityCommand', () => {
     expect(result.canSubmit).toBe(true);
     expect(result.timingStatus).toBe('LATE_PENDING_APPROVAL');
   });
+
+  it('rejects eligibility check when participant is missing', async () => {
+    const participants = new MemoryParticipantRepository();
+    const cycles = new MemoryCycleRepository();
+    const command = new CheckRecordSubmissionEligibilityCommand(participants, cycles);
+
+    await expect(
+      command.execute({
+        participantId: 404,
+        cycleId: 1,
+        submittedAt: date('2026-01-16T00:00:00Z'),
+      })
+    ).rejects.toThrow('Participant not found');
+  });
+
+  it('rejects eligibility check when cycle is missing', async () => {
+    const participants = new MemoryParticipantRepository();
+    const cycles = new MemoryCycleRepository();
+    participants.participants.set(
+      1,
+      GenerationParticipant.create({
+        id: 1,
+        generationId: 1,
+        memberId: 1,
+        status: 'APPROVED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+    const command = new CheckRecordSubmissionEligibilityCommand(participants, cycles);
+
+    await expect(
+      command.execute({
+        participantId: 1,
+        cycleId: 404,
+        submittedAt: date('2026-01-16T00:00:00Z'),
+      })
+    ).rejects.toThrow('Cycle not found');
+  });
 });
 
 describe('HandleGithubManualChangeCommand', () => {
@@ -270,5 +421,20 @@ describe('HandleGithubManualChangeCommand', () => {
       'CycleClosed',
       'GithubDriftDetected',
     ]);
+  });
+
+  it('rejects GitHub issue close when cycle is missing', async () => {
+    const cycles = new MemoryCycleRepository();
+    const outbox = new MemoryOutbox();
+    const command = new HandleGithubManualChangeCommand(cycles, outbox);
+
+    await expect(
+      command.execute({
+        cycleId: 404,
+        changeType: 'ISSUE_CLOSED',
+        remoteSnapshot: {},
+      })
+    ).rejects.toThrow('Cycle not found');
+    expect(outbox.events).toEqual([]);
   });
 });
