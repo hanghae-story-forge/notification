@@ -29,6 +29,7 @@ import {
 import {
   ApplyToGenerationCommand,
   ApproveGenerationParticipantCommand,
+  ListGenerationApplicationsQuery,
 } from '@/application/study-operations';
 import { MemberService } from '@/domain/member/member.service';
 
@@ -77,6 +78,9 @@ const approveGenerationParticipantCommand =
     generationParticipantRepo,
     studyOperationsOutbox
   );
+const listGenerationApplicationsQuery = new ListGenerationApplicationsQuery(
+  generationParticipantRepo
+);
 
 const getCycleStatusQuery = new GetCycleStatusQuery(
   cycleRepo,
@@ -106,6 +110,7 @@ export const createCommands = (): DiscordCommand[] => {
       joinGenerationCommand,
       applyToGenerationCommand,
       approveGenerationParticipantCommand,
+      listGenerationApplicationsQuery,
       memberRepo,
       generationRepo,
       organizationRepo,

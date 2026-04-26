@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import {
   GenerationParticipant,
   GenerationParticipantProps,
@@ -172,6 +172,24 @@ export class DrizzleGenerationParticipantRepository
       .limit(1);
     if (!row) return null;
     return this.mapToDomain(row);
+  }
+
+  async findByGenerationAndStatus(
+    generationId: number,
+    status: GenerationParticipant['status']
+  ): Promise<GenerationParticipant[]> {
+    const rows = await db
+      .select()
+      .from(generationParticipants)
+      .where(
+        and(
+          eq(generationParticipants.generationId, generationId),
+          eq(generationParticipants.status, status)
+        )
+      )
+      .orderBy(asc(generationParticipants.appliedAt), asc(generationParticipants.id));
+
+    return Promise.all(rows.map((row) => this.mapToDomain(row)));
   }
 
   async save(

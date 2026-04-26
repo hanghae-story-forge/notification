@@ -12,6 +12,7 @@ import {
   CreateStudyGenerationCommand,
   GenerationParticipantRepository,
   HandleGithubManualChangeCommand,
+  ListGenerationApplicationsQuery,
   OutboxPort,
   ScheduleStudyCycleCommand,
   StudyCycleRepository,
@@ -81,6 +82,16 @@ class MemoryParticipantRepository implements GenerationParticipantRepository {
     );
   }
 
+  async findByGenerationAndStatus(
+    generationId: number,
+    status: GenerationParticipant['status']
+  ): Promise<GenerationParticipant[]> {
+    return Array.from(this.participants.values()).filter(
+      (participant) =>
+        participant.generationId === generationId && participant.status === status
+    );
+  }
+
   async save(participant: GenerationParticipant): Promise<GenerationParticipant> {
     this.participants.set(participant.id ?? 1, participant);
     return participant;
@@ -146,6 +157,50 @@ describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () 
       'GenerationParticipationApplied',
       'GenerationParticipationApproved',
     ]);
+  });
+});
+
+describe('ListGenerationApplicationsQuery', () => {
+  it('returns only applied participants for a generation', async () => {
+    const participants = new MemoryParticipantRepository();
+    participants.participants.set(
+      1,
+      GenerationParticipant.create({
+        id: 1,
+        generationId: 1,
+        memberId: 10,
+        status: 'APPLIED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+    participants.participants.set(
+      2,
+      GenerationParticipant.create({
+        id: 2,
+        generationId: 1,
+        memberId: 11,
+        status: 'APPROVED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+    participants.participants.set(
+      3,
+      GenerationParticipant.create({
+        id: 3,
+        generationId: 2,
+        memberId: 12,
+        status: 'APPLIED',
+        roles: ['PARTICIPANT'],
+      })
+    );
+
+    const query = new ListGenerationApplicationsQuery(participants);
+    const result = await query.execute({ generationId: 1 });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe(1);
+    expect(result[0]?.memberId).toBe(10);
+    expect(result[0]?.status).toBe('APPLIED');
   });
 });
 

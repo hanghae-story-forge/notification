@@ -3,8 +3,10 @@ import { JoinGenerationCommand as AppJoinGenerationCommand } from '@/application
 import {
   ApplyToGenerationCommand,
   ApproveGenerationParticipantCommand,
+  ListGenerationApplicationsQuery,
 } from '@/application/study-operations';
 import { MemberRepository } from '@/domain/member/member.repository';
+import { MemberId } from '@/domain/member/member.domain';
 import { GenerationRepository } from '@/domain/generation/generation.repository';
 import { OrganizationRepository } from '@/domain/organization/organization.repository';
 import { GenerationMemberRepository } from '@/domain/generation-member/generation-member.repository';
@@ -66,6 +68,25 @@ export class GenerationCommand implements DiscordCommand {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName('applications')
+        .setDescription('승인 대기 중인 기수 참여 신청 목록을 확인합니다')
+        .addStringOption((option) =>
+          option
+            .setName('organization')
+            .setDescription('조직')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('name')
+            .setDescription('기수 이름 (예: study-기수1기)')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName('current')
         .setDescription('현재 활성화된 기수 정보를 확인합니다')
         .addStringOption((option) =>
@@ -107,6 +128,7 @@ export class GenerationCommand implements DiscordCommand {
     private readonly joinGenerationCommand: AppJoinGenerationCommand,
     private readonly applyToGenerationCommand: ApplyToGenerationCommand,
     private readonly approveGenerationParticipantCommand: ApproveGenerationParticipantCommand,
+    private readonly listGenerationApplicationsQuery: ListGenerationApplicationsQuery,
     private readonly memberRepo: MemberRepository,
     private readonly generationRepo: GenerationRepository,
     private readonly organizationRepo: OrganizationRepository,
@@ -123,6 +145,8 @@ export class GenerationCommand implements DiscordCommand {
       await this.handleApply(interaction);
     } else if (subcommand === 'approve') {
       await this.handleApprove(interaction);
+    } else if (subcommand === 'applications') {
+      await this.handleApplications(interaction);
     } else if (subcommand === 'current') {
       await this.handleCurrent(interaction);
     } else if (subcommand === 'status') {
@@ -317,6 +341,75 @@ export class GenerationCommand implements DiscordCommand {
         error instanceof Error ? error.message : '알 수 없는 오류';
       await interaction.editReply({
         content: `❌ 기수 승인 중 오류가 발생했습니다: ${errorMessage}`,
+      });
+    }
+  }
+
+  private async handleApplications(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
+
+    try {
+      const organizationSlug = interaction.options.getString(
+        'organization',
+        true
+      );
+      const generationName = interaction.options.getString('name', true);
+      const generation = await this.findGenerationByOrganizationAndName(
+        organizationSlug,
+        generationName
+      );
+      if (!generation) {
+        await interaction.editReply({
+          content: `❌ "${organizationSlug}" 조직에서 "${generationName}" 기수를 찾을 수 없습니다.`,
+        });
+        return;
+      }
+
+      const applications = await this.listGenerationApplicationsQuery.execute({
+        generationId: generation.id.value,
+      });
+
+      if (applications.length === 0) {
+        await interaction.editReply({
+          content:
+            `📭 **${generation.name}** 승인 대기 신청이 없습니다.\n\n` +
+            '`/generation apply`로 신청이 접수되면 여기에 표시됩니다.',
+        });
+        return;
+      }
+
+      const rows = await Promise.all(
+        applications.map(async (application) => {
+          const member = await this.memberRepo.findById(
+            MemberId.create(application.memberId)
+          );
+          const memberName = member?.name.value ?? `member:${application.memberId}`;
+          const roles = application.roles.join(', ');
+          return (
+            `• **신청 ID ${application.id}** — ${memberName} ` +
+            `(memberId: ${application.memberId}, roles: ${roles || '없음'})`
+          );
+        })
+      );
+
+      await interaction.editReply({
+        content:
+          `📝 **${generation.name} 승인 대기 신청 목록** (${applications.length}건)\n\n` +
+          rows.join('\n') +
+          '\n\n승인: `/generation approve participant_id:<신청 ID>`',
+      });
+    } catch (error) {
+      console.error('Error handling generation applications:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : '알 수 없는 오류';
+      await interaction.editReply({
+        content: `❌ 기수 신청 목록 조회 중 오류가 발생했습니다: ${errorMessage}`,
       });
     }
   }

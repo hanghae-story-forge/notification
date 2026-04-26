@@ -25,6 +25,10 @@ export interface GenerationParticipantRepository {
     generationId: number,
     memberId: number
   ): Promise<GenerationParticipant | null>;
+  findByGenerationAndStatus(
+    generationId: number,
+    status: GenerationParticipant['status']
+  ): Promise<GenerationParticipant[]>;
   save(participant: GenerationParticipant): Promise<GenerationParticipant>;
 }
 
@@ -105,6 +109,25 @@ export interface RecordSubmissionEligibilityResult {
 export interface ApplyToGenerationRequest {
   generationId: number;
   memberId: number;
+}
+
+export interface ListGenerationApplicationsRequest {
+  generationId: number;
+}
+
+export class ListGenerationApplicationsQuery {
+  constructor(
+    private readonly participantRepository: GenerationParticipantRepository
+  ) {}
+
+  async execute(
+    request: ListGenerationApplicationsRequest
+  ): Promise<GenerationParticipant[]> {
+    return this.participantRepository.findByGenerationAndStatus(
+      request.generationId,
+      'APPLIED'
+    );
+  }
 }
 
 export class ApplyToGenerationCommand {
