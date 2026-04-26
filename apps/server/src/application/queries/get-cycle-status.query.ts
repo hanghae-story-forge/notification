@@ -94,23 +94,26 @@ export class GetCycleStatusQuery {
       return null;
     }
 
-    // 해당 조직의 활성화된 기수 찾기
-    const generation = await this.generationRepo.findActiveByOrganization(
-      organization.id.value
-    );
-    if (!generation) {
-      return null;
-    }
-
     // 진행 중인 사이클 찾기
-    const cycles = await this.cycleRepo.findActiveCyclesByGeneration(
-      generation.id.value
+    // Legacy production data can have more than one active generation for the
+    // same organization. Query active cycles at organization scope first so we
+    // do not miss a current cycle attached to another active generation.
+    const cycles = await this.cycleRepo.findActiveCyclesByOrganization(
+      organization.id.value
     );
     if (cycles.length === 0) {
       return null;
     }
 
     const cycle = cycles[0];
+
+    // 기수 조회
+    const generation = await this.generationRepo.findById(
+      GenerationId.create(cycle.generationId)
+    );
+    if (!generation) {
+      return null;
+    }
     const hoursRemaining = cycle.getHoursRemaining();
     const daysLeft = Math.floor(hoursRemaining / 24);
     const hoursLeft = Math.floor(hoursRemaining % 24);

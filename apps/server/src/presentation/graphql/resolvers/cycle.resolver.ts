@@ -164,7 +164,7 @@ export const cycleQueries = {
   activeCycle: async (): Promise<GqlCycle | null> => {
     const { getCycleStatusQuery } = getQueries();
     const currentCycle =
-      await getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+      await getCycleStatusQuery.getCurrentCycle('donguel-donguel');
     if (!currentCycle) return null;
 
     return createGqlCycle(currentCycle);
