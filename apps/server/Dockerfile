@@ -38,8 +38,11 @@ RUN apk add --no-cache libc6-compat curl && \
     addgroup --system --gid 1001 hono && \
     adduser --system --uid 1001 -G hono hono
 
-COPY --from=builder /app/apps/server/.pylon ./apps/server/.pylon
 COPY --from=installer /app/. .
+COPY --from=builder /app/apps/server/.pylon ./apps/server/.pylon
+COPY --from=builder /app/apps/server/drizzle ./apps/server/drizzle
+COPY --from=builder /app/apps/server/drizzle.config.ts ./apps/server/drizzle.config.ts
+COPY --from=builder /app/apps/server/src ./apps/server/src
 
 RUN chown -R hono:hono /app
 
@@ -50,4 +53,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["sh", "-c", "node_modules/.bin/drizzle-kit migrate --config apps/server/drizzle.config.ts && node apps/server/.pylon/index.js"]
+CMD ["sh", "-c", "cd apps/server && node_modules/.bin/drizzle-kit migrate --config drizzle.config.ts && cd /app && node apps/server/.pylon/index.js"]
