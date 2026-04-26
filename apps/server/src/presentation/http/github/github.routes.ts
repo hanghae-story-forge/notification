@@ -42,7 +42,7 @@ const IssueCommentWebhookPayloadSchema = z.object({
 });
 
 const IssuesWebhookPayloadSchema = z.object({
-  action: z.literal('opened'),
+  action: z.enum(['opened', 'closed', 'edited']),
   issue: IssueSchema,
   repository: RepositorySchema,
 });

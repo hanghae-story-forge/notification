@@ -22,6 +22,15 @@ import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzl
 import { DrizzleMemberRepository } from '@/infrastructure/persistence/drizzle/member.repository.impl';
 import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
 import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistence/drizzle/organization-member.repository.impl';
+import {
+  DrizzleGenerationParticipantRepository,
+  DrizzleOutboxPort,
+} from '@/infrastructure/persistence/drizzle/study-operations.repository.impl';
+import {
+  ApplyToGenerationCommand,
+  ApproveGenerationParticipantCommand,
+  ListGenerationApplicationsQuery,
+} from '@/application/study-operations';
 import { MemberService } from '@/domain/member/member.service';
 
 // Repository instances
@@ -32,6 +41,8 @@ const submissionRepo = new DrizzleSubmissionRepository();
 const memberRepo = new DrizzleMemberRepository();
 const organizationRepo = new DrizzleOrganizationRepository();
 const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
+const generationParticipantRepo = new DrizzleGenerationParticipantRepository();
+const studyOperationsOutbox = new DrizzleOutboxPort();
 
 // Application layer instances
 const memberService = new MemberService(memberRepo);
@@ -57,6 +68,18 @@ const joinGenerationCommand = new AppJoinGenerationCommand(
   organizationRepo,
   organizationMemberRepo,
   generationMemberRepo
+);
+const applyToGenerationCommand = new ApplyToGenerationCommand(
+  generationParticipantRepo,
+  studyOperationsOutbox
+);
+const approveGenerationParticipantCommand =
+  new ApproveGenerationParticipantCommand(
+    generationParticipantRepo,
+    studyOperationsOutbox
+  );
+const listGenerationApplicationsQuery = new ListGenerationApplicationsQuery(
+  generationParticipantRepo
 );
 
 const getCycleStatusQuery = new GetCycleStatusQuery(
@@ -85,6 +108,9 @@ export const createCommands = (): DiscordCommand[] => {
     ),
     new GenerationCommand(
       joinGenerationCommand,
+      applyToGenerationCommand,
+      approveGenerationParticipantCommand,
+      listGenerationApplicationsQuery,
       memberRepo,
       generationRepo,
       organizationRepo,
