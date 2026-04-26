@@ -10,5 +10,4 @@ coverage
 .idea
 *.md
 !README.md
-apps/server/drizzle
 .turbo
