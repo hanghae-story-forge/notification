@@ -81,9 +81,21 @@ async function loadGenerationWithOrganization(
 
 export const generationQueries = {
   // 기수 전체 조회
-  generations: async (): Promise<GqlGeneration[]> => {
-    const { getAllGenerationsQuery, organizationRepo } = getQueries();
-    const generations = await getAllGenerationsQuery.execute();
+  generations: async (organizationSlug?: string): Promise<GqlGeneration[]> => {
+    const { getAllGenerationsQuery, generationRepo, organizationRepo } =
+      getQueries();
+    let generations;
+
+    if (organizationSlug) {
+      const organization = await organizationRepo!.findBySlug(organizationSlug);
+      if (!organization) return [];
+      generations = await generationRepo!.findByOrganization(
+        organization.id.value
+      );
+    } else {
+      generations = await getAllGenerationsQuery.execute();
+    }
+
     const results = await Promise.all(
       generations.map(async (gen) => {
         const organization = await organizationRepo!.findById(
@@ -106,9 +118,20 @@ export const generationQueries = {
   },
 
   // 활성화된 기수 조회
-  activeGeneration: async (): Promise<GqlGeneration | null> => {
-    const { generationRepo } = getQueries();
-    const generation = await generationRepo!.findActive();
+  activeGeneration: async (
+    organizationSlug?: string
+  ): Promise<GqlGeneration | null> => {
+    const { generationRepo, organizationRepo } = getQueries();
+    const generation = organizationSlug
+      ? await (async () => {
+          const organization =
+            await organizationRepo!.findBySlug(organizationSlug);
+          if (!organization) return null;
+          return generationRepo!.findActiveByOrganization(
+            organization.id.value
+          );
+        })()
+      : await generationRepo!.findActive();
     return loadGenerationWithOrganization(generation);
   },
 };

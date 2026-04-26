@@ -4,8 +4,15 @@ import {
   container,
   MEMBER_REPO_TOKEN,
   MEMBER_SERVICE_TOKEN,
+  ORGANIZATION_MEMBER_REPO_TOKEN,
+  ORGANIZATION_REPO_TOKEN,
 } from '@/shared/di';
-import type { MemberRepository, MemberService } from '@/domain';
+import type {
+  MemberRepository,
+  MemberService,
+  OrganizationMemberRepository,
+  OrganizationRepository,
+} from '@/domain';
 import {
   GetAllMembersQuery,
   GetMemberByGithubQuery,
@@ -23,18 +30,34 @@ import { domainToGraphqlMember } from '../mappers';
 let getAllMembersQuery: GetAllMembersQuery | null = null;
 let getMemberByGithubQuery: GetMemberByGithubQuery | null = null;
 let createMemberCommand: CreateMemberCommand | null = null;
+let memberRepo: MemberRepository | null = null;
+let organizationRepo: OrganizationRepository | null = null;
+let organizationMemberRepo: OrganizationMemberRepository | null = null;
 
 const getQueries = () => {
   if (!getAllMembersQuery || !getMemberByGithubQuery || !createMemberCommand) {
-    const memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
+    memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
     const memberService =
       container.resolve<MemberService>(MEMBER_SERVICE_TOKEN);
+    organizationRepo = container.resolve<OrganizationRepository>(
+      ORGANIZATION_REPO_TOKEN
+    );
+    organizationMemberRepo = container.resolve<OrganizationMemberRepository>(
+      ORGANIZATION_MEMBER_REPO_TOKEN
+    );
 
     getAllMembersQuery = new GetAllMembersQuery(memberRepo);
     getMemberByGithubQuery = new GetMemberByGithubQuery(memberRepo);
     createMemberCommand = new CreateMemberCommand(memberRepo, memberService);
   }
-  return { getAllMembersQuery, getMemberByGithubQuery, createMemberCommand };
+  return {
+    getAllMembersQuery,
+    getMemberByGithubQuery,
+    createMemberCommand,
+    memberRepo,
+    organizationRepo,
+    organizationMemberRepo,
+  };
 };
 
 // ========================================
@@ -43,8 +66,28 @@ const getQueries = () => {
 
 export const memberQueries = {
   // 멤버 전체 조회
-  members: async (): Promise<GqlMember[]> => {
-    const { getAllMembersQuery } = getQueries();
+  members: async (organizationSlug?: string): Promise<GqlMember[]> => {
+    const {
+      getAllMembersQuery,
+      memberRepo,
+      organizationRepo,
+      organizationMemberRepo,
+    } = getQueries();
+
+    if (organizationSlug) {
+      const organization = await organizationRepo!.findBySlug(organizationSlug);
+      if (!organization) return [];
+      const orgMembers = await organizationMemberRepo!.findActiveByOrganization(
+        organization.id
+      );
+      const members = await Promise.all(
+        orgMembers.map((orgMember) => memberRepo!.findById(orgMember.memberId))
+      );
+      return members
+        .filter((member) => member !== null)
+        .map(domainToGraphqlMember);
+    }
+
     const members = await getAllMembersQuery.execute();
     return members.map(domainToGraphqlMember);
   },
