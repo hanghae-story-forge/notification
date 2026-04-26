@@ -51,7 +51,9 @@ export class CreateStudyGenerationCommand {
     private readonly outbox: OutboxPort
   ) {}
 
-  async execute(request: CreateStudyGenerationRequest): Promise<StudyGeneration> {
+  async execute(
+    request: CreateStudyGenerationRequest
+  ): Promise<StudyGeneration> {
     const generation = StudyGeneration.create(request);
     const saved = await this.generationRepository.save(generation);
     await this.outbox.publish('GenerationCreated', {
@@ -116,7 +118,9 @@ export interface ListGenerationApplicationsRequest {
   requesterMemberId: number;
 }
 
-function isGenerationOperator(participant: GenerationParticipant | null): boolean {
+function isGenerationOperator(
+  participant: GenerationParticipant | null
+): boolean {
   return (
     participant?.status === 'APPROVED' &&
     (participant.hasRole('OWNER') || participant.hasRole('MANAGER'))
@@ -131,10 +135,11 @@ export class ListGenerationApplicationsQuery {
   async execute(
     request: ListGenerationApplicationsRequest
   ): Promise<GenerationParticipant[]> {
-    const requester = await this.participantRepository.findByGenerationAndMember(
-      request.generationId,
-      request.requesterMemberId
-    );
+    const requester =
+      await this.participantRepository.findByGenerationAndMember(
+        request.generationId,
+        request.requesterMemberId
+      );
     if (!isGenerationOperator(requester)) {
       throw new StudyOperationsDomainError(
         'Requester must be an OWNER or MANAGER for this generation'
@@ -154,7 +159,9 @@ export class ApplyToGenerationCommand {
     private readonly outbox: OutboxPort
   ) {}
 
-  async execute(request: ApplyToGenerationRequest): Promise<GenerationParticipant> {
+  async execute(
+    request: ApplyToGenerationRequest
+  ): Promise<GenerationParticipant> {
     const existing = await this.participantRepository.findByGenerationAndMember(
       request.generationId,
       request.memberId

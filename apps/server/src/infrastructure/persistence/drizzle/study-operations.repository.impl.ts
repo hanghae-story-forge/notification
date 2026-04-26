@@ -21,9 +21,7 @@ import {
   outboxMessages,
 } from '../drizzle-db/schema';
 
-export class DrizzleStudyGenerationRepository
-  implements StudyGenerationRepository
-{
+export class DrizzleStudyGenerationRepository implements StudyGenerationRepository {
   async save(generation: StudyGeneration): Promise<StudyGeneration> {
     if (!generation.id) {
       const [row] = await db
@@ -90,7 +88,11 @@ export class DrizzleStudyCycleRepository implements StudyCycleRepository {
   }
 
   async findById(id: number): Promise<StudyCycle | null> {
-    const [row] = await db.select().from(cycles).where(eq(cycles.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(cycles)
+      .where(eq(cycles.id, id))
+      .limit(1);
     if (!row) return null;
     return StudyCycle.create({
       id: row.id,
@@ -143,9 +145,7 @@ export class DrizzleStudyCycleRepository implements StudyCycleRepository {
   }
 }
 
-export class DrizzleGenerationParticipantRepository
-  implements GenerationParticipantRepository
-{
+export class DrizzleGenerationParticipantRepository implements GenerationParticipantRepository {
   async findById(id: number): Promise<GenerationParticipant | null> {
     const [row] = await db
       .select()
@@ -187,7 +187,10 @@ export class DrizzleGenerationParticipantRepository
           eq(generationParticipants.status, status)
         )
       )
-      .orderBy(asc(generationParticipants.appliedAt), asc(generationParticipants.id));
+      .orderBy(
+        asc(generationParticipants.appliedAt),
+        asc(generationParticipants.id)
+      );
 
     return Promise.all(rows.map((row) => this.mapToDomain(row)));
   }
@@ -281,7 +284,12 @@ export class DrizzleOutboxPort implements OutboxPort {
     await db.insert(outboxMessages).values({
       eventType,
       aggregateType: String(payload.aggregateType ?? 'study-operations'),
-      aggregateId: String(payload.aggregateId ?? payload.cycleId ?? payload.generationId ?? 'unknown'),
+      aggregateId: String(
+        payload.aggregateId ??
+          payload.cycleId ??
+          payload.generationId ??
+          'unknown'
+      ),
       payload,
     });
   }

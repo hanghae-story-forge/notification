@@ -314,11 +314,17 @@ export class GenerationCommand implements DiscordCommand {
     }
 
     try {
-      const participantId = interaction.options.getInteger('participant_id', true);
-      const approver = await this.memberRepo.findByDiscordId(interaction.user.id);
+      const participantId = interaction.options.getInteger(
+        'participant_id',
+        true
+      );
+      const approver = await this.memberRepo.findByDiscordId(
+        interaction.user.id
+      );
       if (!approver) {
         await interaction.editReply({
-          content: '❌ 승인자 회원 정보를 찾을 수 없습니다. 먼저 `/member create`를 실행해주세요.',
+          content:
+            '❌ 승인자 회원 정보를 찾을 수 없습니다. 먼저 `/member create`를 실행해주세요.',
         });
         return;
       }
@@ -360,10 +366,13 @@ export class GenerationCommand implements DiscordCommand {
         true
       );
       const generationName = interaction.options.getString('name', true);
-      const requester = await this.memberRepo.findByDiscordId(interaction.user.id);
+      const requester = await this.memberRepo.findByDiscordId(
+        interaction.user.id
+      );
       if (!requester) {
         await interaction.editReply({
-          content: '❌ 조회자 회원 정보를 찾을 수 없습니다. 먼저 `/member create`를 실행해주세요.',
+          content:
+            '❌ 조회자 회원 정보를 찾을 수 없습니다. 먼저 `/member create`를 실행해주세요.',
         });
         return;
       }
@@ -398,7 +407,8 @@ export class GenerationCommand implements DiscordCommand {
           const member = await this.memberRepo.findById(
             MemberId.create(application.memberId)
           );
-          const memberName = member?.name.value ?? `member:${application.memberId}`;
+          const memberName =
+            member?.name.value ?? `member:${application.memberId}`;
           const roles = application.roles.join(', ');
           return (
             `• **신청 ID ${application.id}** — ${memberName} ` +
@@ -427,13 +437,17 @@ export class GenerationCommand implements DiscordCommand {
     organizationSlug: string,
     generationName: string
   ) {
-    const organization = await this.organizationRepo.findBySlug(organizationSlug);
+    const organization =
+      await this.organizationRepo.findBySlug(organizationSlug);
     if (!organization) return null;
 
     const generations = await this.generationRepo.findByOrganization(
       organization.id.value
     );
-    return generations.find((generation) => generation.name === generationName) ?? null;
+    return (
+      generations.find((generation) => generation.name === generationName) ??
+      null
+    );
   }
 
   private async handleCurrent(

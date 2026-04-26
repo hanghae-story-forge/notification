@@ -22,9 +22,15 @@ import {
 const date = (value: string) => new Date(value);
 
 class MemoryOutbox implements OutboxPort {
-  readonly events: Array<{ eventType: string; payload: Record<string, unknown> }> = [];
+  readonly events: Array<{
+    eventType: string;
+    payload: Record<string, unknown>;
+  }> = [];
 
-  async publish(eventType: string, payload: Record<string, unknown>): Promise<void> {
+  async publish(
+    eventType: string,
+    payload: Record<string, unknown>
+  ): Promise<void> {
     this.events.push({ eventType, payload });
   }
 }
@@ -77,7 +83,8 @@ class MemoryParticipantRepository implements GenerationParticipantRepository {
     return (
       Array.from(this.participants.values()).find(
         (participant) =>
-          participant.generationId === generationId && participant.memberId === memberId
+          participant.generationId === generationId &&
+          participant.memberId === memberId
       ) ?? null
     );
   }
@@ -88,11 +95,14 @@ class MemoryParticipantRepository implements GenerationParticipantRepository {
   ): Promise<GenerationParticipant[]> {
     return Array.from(this.participants.values()).filter(
       (participant) =>
-        participant.generationId === generationId && participant.status === status
+        participant.generationId === generationId &&
+        participant.status === status
     );
   }
 
-  async save(participant: GenerationParticipant): Promise<GenerationParticipant> {
+  async save(
+    participant: GenerationParticipant
+  ): Promise<GenerationParticipant> {
     this.participants.set(participant.id ?? 1, participant);
     return participant;
   }
@@ -175,7 +185,10 @@ describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () 
     expect(applied.status).toBe('APPLIED');
     expect(applied.roles).toContain('PARTICIPANT');
 
-    const approve = new ApproveGenerationParticipantCommand(participants, outbox);
+    const approve = new ApproveGenerationParticipantCommand(
+      participants,
+      outbox
+    );
     const approved = await approve.execute({
       participantId: 1,
       approvedByMemberId: 99,
@@ -212,7 +225,10 @@ describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () 
       })
     );
 
-    const approve = new ApproveGenerationParticipantCommand(participants, outbox);
+    const approve = new ApproveGenerationParticipantCommand(
+      participants,
+      outbox
+    );
 
     await expect(
       approve.execute({ participantId: 1, approvedByMemberId: 99 })
@@ -224,7 +240,10 @@ describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () 
   it('rejects approval for a missing participant', async () => {
     const participants = new MemoryParticipantRepository();
     const outbox = new MemoryOutbox();
-    const approve = new ApproveGenerationParticipantCommand(participants, outbox);
+    const approve = new ApproveGenerationParticipantCommand(
+      participants,
+      outbox
+    );
 
     await expect(
       approve.execute({ participantId: 404, approvedByMemberId: 99 })
@@ -278,7 +297,10 @@ describe('ListGenerationApplicationsQuery', () => {
     );
 
     const query = new ListGenerationApplicationsQuery(participants);
-    const result = await query.execute({ generationId: 1, requesterMemberId: 99 });
+    const result = await query.execute({
+      generationId: 1,
+      requesterMemberId: 99,
+    });
 
     expect(result).toHaveLength(1);
     expect(result[0]?.id).toBe(1);
@@ -333,7 +355,10 @@ describe('CheckRecordSubmissionEligibilityCommand', () => {
       id: 1,
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
     cycle.schedule();
     cycle.open(date('2026-01-01T00:00:00Z'));
@@ -341,7 +366,10 @@ describe('CheckRecordSubmissionEligibilityCommand', () => {
     participants.participants.set(1, participant);
     cycles.cycles.set(1, cycle);
 
-    const command = new CheckRecordSubmissionEligibilityCommand(participants, cycles);
+    const command = new CheckRecordSubmissionEligibilityCommand(
+      participants,
+      cycles
+    );
     const result = await command.execute({
       participantId: 1,
       cycleId: 1,
@@ -355,7 +383,10 @@ describe('CheckRecordSubmissionEligibilityCommand', () => {
   it('rejects eligibility check when participant is missing', async () => {
     const participants = new MemoryParticipantRepository();
     const cycles = new MemoryCycleRepository();
-    const command = new CheckRecordSubmissionEligibilityCommand(participants, cycles);
+    const command = new CheckRecordSubmissionEligibilityCommand(
+      participants,
+      cycles
+    );
 
     await expect(
       command.execute({
@@ -379,7 +410,10 @@ describe('CheckRecordSubmissionEligibilityCommand', () => {
         roles: ['PARTICIPANT'],
       })
     );
-    const command = new CheckRecordSubmissionEligibilityCommand(participants, cycles);
+    const command = new CheckRecordSubmissionEligibilityCommand(
+      participants,
+      cycles
+    );
 
     await expect(
       command.execute({
@@ -399,7 +433,10 @@ describe('HandleGithubManualChangeCommand', () => {
       id: 1,
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
     cycle.schedule();
     cycles.cycles.set(1, cycle);

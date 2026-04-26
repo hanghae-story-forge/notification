@@ -74,14 +74,18 @@ describe('StudyGeneration', () => {
       ordinal: 1,
       displayName: 'study-기수1기',
     });
-    expect(() => draft.activate()).toThrow('Only PLANNED generation can be activated');
+    expect(() => draft.activate()).toThrow(
+      'Only PLANNED generation can be activated'
+    );
     expect(() => draft.complete()).toThrow(
       'Only PLANNED or ACTIVE generation can be completed'
     );
     draft.assertMutable();
     draft.cancel();
     expect(draft.status).toBe('CANCELLED');
-    expect(() => draft.assertMutable()).toThrow('Frozen generation cannot be modified');
+    expect(() => draft.assertMutable()).toThrow(
+      'Frozen generation cannot be modified'
+    );
 
     const planned = StudyGeneration.create({
       studyId: 1,
@@ -90,7 +94,9 @@ describe('StudyGeneration', () => {
       displayName: 'study-기수2기',
     });
     planned.plan();
-    expect(() => planned.plan()).toThrow('Only DRAFT generation can be planned');
+    expect(() => planned.plan()).toThrow(
+      'Only DRAFT generation can be planned'
+    );
     planned.complete();
     expect(planned.status).toBe('COMPLETED');
   });
@@ -99,7 +105,10 @@ describe('StudyGeneration', () => {
 describe('CyclePeriod', () => {
   it('requires startAt before endAt and exposes duration/containment helpers', () => {
     expect(() =>
-      CyclePeriod.create(date('2026-01-15T00:00:00Z'), date('2026-01-15T00:00:00Z'))
+      CyclePeriod.create(
+        date('2026-01-15T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      )
     ).toThrow('Cycle startAt must be before endAt');
 
     const period = CyclePeriod.create(
@@ -120,7 +129,10 @@ describe('StudyCycle', () => {
       StudyCycle.create({
         generationId: 1,
         sequence: 0,
-        period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+        period: CyclePeriod.create(
+          date('2026-01-01T00:00:00Z'),
+          date('2026-01-15T00:00:00Z')
+        ),
       })
     ).toThrow('Cycle sequence must be positive');
   });
@@ -129,7 +141,10 @@ describe('StudyCycle', () => {
     const cycle = StudyCycle.create({
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
     const newPeriod = CyclePeriod.create(
       date('2026-01-02T00:00:00Z'),
@@ -139,21 +154,29 @@ describe('StudyCycle', () => {
     cycle.reschedule(newPeriod);
 
     expect(cycle.period).toBe(newPeriod);
-    expect(cycle.domainEvents.map((event) => event.type)).toContain('CycleRescheduled');
+    expect(cycle.domainEvents.map((event) => event.type)).toContain(
+      'CycleRescheduled'
+    );
   });
 
   it('does not allow period changes after scheduling', () => {
     const cycle = StudyCycle.create({
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
 
     cycle.schedule();
 
     expect(() =>
       cycle.reschedule(
-        CyclePeriod.create(date('2026-01-02T00:00:00Z'), date('2026-01-16T00:00:00Z'))
+        CyclePeriod.create(
+          date('2026-01-02T00:00:00Z'),
+          date('2026-01-16T00:00:00Z')
+        )
       )
     ).toThrow('Cycle period cannot be changed after scheduling');
   });
@@ -162,14 +185,21 @@ describe('StudyCycle', () => {
     const cycle = StudyCycle.create({
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
 
     expect(() => cycle.open(date('2026-01-01T00:00:00Z'))).toThrow(
       'Only SCHEDULED cycle can be opened'
     );
-    expect(() => cycle.close()).toThrow('Only SCHEDULED or OPEN cycle can be closed');
-    expect(() => cycle.complete()).toThrow('Only CLOSED cycle can be completed');
+    expect(() => cycle.close()).toThrow(
+      'Only SCHEDULED or OPEN cycle can be closed'
+    );
+    expect(() => cycle.complete()).toThrow(
+      'Only CLOSED cycle can be completed'
+    );
 
     cycle.schedule();
     expect(() => cycle.schedule()).toThrow('Only DRAFT cycle can be scheduled');
@@ -195,14 +225,19 @@ describe('StudyCycle', () => {
     const cycle = StudyCycle.create({
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
 
     cycle.schedule();
     cycle.close('GITHUB_ISSUE_CLOSED');
 
     expect(cycle.status).toBe('CLOSED');
-    expect(cycle.domainEvents.map((event) => event.type)).toContain('CycleClosedByGithubIssue');
+    expect(cycle.domainEvents.map((event) => event.type)).toContain(
+      'CycleClosedByGithubIssue'
+    );
   });
 });
 
@@ -244,16 +279,19 @@ describe('GenerationParticipant and SubmissionPolicy', () => {
     const cycle = StudyCycle.create({
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
 
     cycle.schedule();
     cycle.open(date('2026-01-01T00:00:00Z'));
 
     expect(SubmissionPolicy.canSubmit(participant, cycle)).toBe(true);
-    expect(SubmissionPolicy.classifyTiming(date('2026-01-15T00:00:00Z'), cycle)).toBe(
-      'ON_TIME'
-    );
+    expect(
+      SubmissionPolicy.classifyTiming(date('2026-01-15T00:00:00Z'), cycle)
+    ).toBe('ON_TIME');
   });
 
   it('resets missed count on submission and removes approved or inactive participants', () => {
@@ -326,10 +364,15 @@ describe('ReminderPolicy', () => {
     const cycle = StudyCycle.create({
       generationId: 1,
       sequence: 1,
-      period: CyclePeriod.create(date('2026-01-01T00:00:00Z'), date('2026-01-15T00:00:00Z')),
+      period: CyclePeriod.create(
+        date('2026-01-01T00:00:00Z'),
+        date('2026-01-15T00:00:00Z')
+      ),
     });
 
-    expect(ReminderPolicy.dueTimes(cycle).map((value) => value.toISOString())).toEqual([
+    expect(
+      ReminderPolicy.dueTimes(cycle).map((value) => value.toISOString())
+    ).toEqual([
       '2026-01-12T00:00:00.000Z',
       '2026-01-14T00:00:00.000Z',
       '2026-01-14T18:00:00.000Z',
@@ -340,7 +383,9 @@ describe('ReminderPolicy', () => {
 
 describe('GithubDriftPolicy', () => {
   it('treats issue close as a domain signal and other manual changes as drift', () => {
-    expect(GithubDriftPolicy.classify('ISSUE_CLOSED')).toEqual({ action: 'CLOSE_CYCLE' });
+    expect(GithubDriftPolicy.classify('ISSUE_CLOSED')).toEqual({
+      action: 'CLOSE_CYCLE',
+    });
     expect(GithubDriftPolicy.classify('ISSUE_TITLE_CHANGED')).toEqual({
       action: 'DRIFT',
       reason: 'ISSUE_TITLE_CHANGED',

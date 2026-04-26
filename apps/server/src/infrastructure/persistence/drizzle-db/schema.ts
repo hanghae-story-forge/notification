@@ -247,9 +247,7 @@ export const generations = pgTable(
     status: generationStatusEnum('status').default('ACTIVE').notNull(),
     plannedCycleCount: integer('planned_cycle_count').default(8).notNull(),
     cycleDurationDays: integer('cycle_duration_days').default(14).notNull(),
-    inactiveThresholdMissedCycles: integer(
-      'inactive_threshold_missed_cycles'
-    )
+    inactiveThresholdMissedCycles: integer('inactive_threshold_missed_cycles')
       .default(3)
       .notNull(),
     discordChannelId: text('discord_channel_id'),
@@ -559,10 +557,9 @@ export const cycleObligations = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
-    cycleParticipantIdx: uniqueIndex('cycle_obligations_cycle_participant_uidx').on(
-      table.cycleId,
-      table.generationParticipantId
-    ),
+    cycleParticipantIdx: uniqueIndex(
+      'cycle_obligations_cycle_participant_uidx'
+    ).on(table.cycleId, table.generationParticipantId),
   })
 );
 
@@ -609,7 +606,9 @@ export const cycleSubmissionStats = pgTable('cycle_submission_stats', {
   submittedParticipantCount: integer('submitted_participant_count')
     .default(0)
     .notNull(),
-  onTimeSubmittedParticipantCount: integer('on_time_submitted_participant_count')
+  onTimeSubmittedParticipantCount: integer(
+    'on_time_submitted_participant_count'
+  )
     .default(0)
     .notNull(),
   lateSubmittedParticipantCount: integer('late_submitted_participant_count')
@@ -640,7 +639,9 @@ export const participantActivityStats = pgTable('participant_activity_stats', {
   lastSubmittedCycleId: integer('last_submitted_cycle_id').references(
     () => cycles.id
   ),
-  lastMissedCycleId: integer('last_missed_cycle_id').references(() => cycles.id),
+  lastMissedCycleId: integer('last_missed_cycle_id').references(
+    () => cycles.id
+  ),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
@@ -750,7 +751,8 @@ export type NewCycle = typeof cycles.$inferInsert;
 export type GenerationMember = typeof generationMembers.$inferSelect;
 export type NewGenerationMember = typeof generationMembers.$inferInsert;
 export type GenerationParticipant = typeof generationParticipants.$inferSelect;
-export type NewGenerationParticipant = typeof generationParticipants.$inferInsert;
+export type NewGenerationParticipant =
+  typeof generationParticipants.$inferInsert;
 export type GenerationParticipantRole =
   typeof generationParticipantRoles.$inferSelect;
 export type NewGenerationParticipantRole =

@@ -205,7 +205,9 @@ export const handleIssues = async (c: AppContext) => {
   if (payload.action !== 'opened') {
     const { studyCycleRepository, githubManualChangeCommand } =
       getStudyOperationsDependencies();
-    const cycle = await studyCycleRepository.findByGithubIssueUrl(issue.html_url);
+    const cycle = await studyCycleRepository.findByGithubIssueUrl(
+      issue.html_url
+    );
 
     if (!cycle?.id) {
       return c.json(

@@ -60,7 +60,9 @@ export class CyclePeriod {
 
   static create(startAt: Date, endAt: Date): CyclePeriod {
     if (startAt.getTime() >= endAt.getTime()) {
-      throw new StudyOperationsDomainError('Cycle startAt must be before endAt');
+      throw new StudyOperationsDomainError(
+        'Cycle startAt must be before endAt'
+      );
     }
     return new CyclePeriod(new Date(startAt), new Date(endAt));
   }
@@ -101,7 +103,9 @@ export class StudyGeneration {
   readonly inactiveThresholdMissedCycles: number;
   private _status: GenerationStatus;
 
-  private constructor(props: Required<Omit<GenerationProps, 'id'>> & { id?: number }) {
+  private constructor(
+    props: Required<Omit<GenerationProps, 'id'>> & { id?: number }
+  ) {
     this.id = props.id;
     this.studyId = props.studyId;
     this.organizationId = props.organizationId;
@@ -115,10 +119,14 @@ export class StudyGeneration {
 
   static create(props: GenerationProps): StudyGeneration {
     if (props.ordinal < 1) {
-      throw new StudyOperationsDomainError('Generation ordinal must be positive');
+      throw new StudyOperationsDomainError(
+        'Generation ordinal must be positive'
+      );
     }
     if (props.displayName.trim().length === 0) {
-      throw new StudyOperationsDomainError('Generation displayName cannot be empty');
+      throw new StudyOperationsDomainError(
+        'Generation displayName cannot be empty'
+      );
     }
     const generation = new StudyGeneration({
       id: props.id,
@@ -129,8 +137,7 @@ export class StudyGeneration {
       status: props.status ?? 'DRAFT',
       plannedCycleCount: props.plannedCycleCount ?? 8,
       cycleDurationDays: props.cycleDurationDays ?? 14,
-      inactiveThresholdMissedCycles:
-        props.inactiveThresholdMissedCycles ?? 3,
+      inactiveThresholdMissedCycles: props.inactiveThresholdMissedCycles ?? 3,
     });
     generation.events.push(event('GenerationCreated'));
     return generation;
@@ -151,7 +158,9 @@ export class StudyGeneration {
   plan(): void {
     this.ensureNotFrozen();
     if (this._status !== 'DRAFT') {
-      throw new StudyOperationsDomainError('Only DRAFT generation can be planned');
+      throw new StudyOperationsDomainError(
+        'Only DRAFT generation can be planned'
+      );
     }
     this._status = 'PLANNED';
     this.events.push(event('GenerationPlanned'));
@@ -160,7 +169,9 @@ export class StudyGeneration {
   activate(): void {
     this.ensureNotFrozen();
     if (this._status !== 'PLANNED') {
-      throw new StudyOperationsDomainError('Only PLANNED generation can be activated');
+      throw new StudyOperationsDomainError(
+        'Only PLANNED generation can be activated'
+      );
     }
     this._status = 'ACTIVE';
     this.events.push(event('GenerationActivated'));
@@ -188,7 +199,9 @@ export class StudyGeneration {
 
   private ensureNotFrozen(): void {
     if (this.isFrozen()) {
-      throw new StudyOperationsDomainError('Frozen generation cannot be modified');
+      throw new StudyOperationsDomainError(
+        'Frozen generation cannot be modified'
+      );
     }
   }
 }
@@ -261,28 +274,42 @@ export class StudyCycle {
 
   open(now = new Date()): void {
     if (this._status !== 'SCHEDULED') {
-      throw new StudyOperationsDomainError('Only SCHEDULED cycle can be opened');
+      throw new StudyOperationsDomainError(
+        'Only SCHEDULED cycle can be opened'
+      );
     }
     if (now.getTime() < this._period.startAt.getTime()) {
-      throw new StudyOperationsDomainError('Cycle cannot be opened before startAt');
+      throw new StudyOperationsDomainError(
+        'Cycle cannot be opened before startAt'
+      );
     }
     this._status = 'OPEN';
     this.events.push(event('CycleOpened'));
   }
 
-  close(source: 'SYSTEM' | 'GITHUB_ISSUE_CLOSED' | 'OPERATOR' = 'SYSTEM'): void {
+  close(
+    source: 'SYSTEM' | 'GITHUB_ISSUE_CLOSED' | 'OPERATOR' = 'SYSTEM'
+  ): void {
     if (this._status !== 'OPEN' && this._status !== 'SCHEDULED') {
-      throw new StudyOperationsDomainError('Only SCHEDULED or OPEN cycle can be closed');
+      throw new StudyOperationsDomainError(
+        'Only SCHEDULED or OPEN cycle can be closed'
+      );
     }
     this._status = 'CLOSED';
     this.events.push(
-      event(source === 'GITHUB_ISSUE_CLOSED' ? 'CycleClosedByGithubIssue' : 'CycleClosed')
+      event(
+        source === 'GITHUB_ISSUE_CLOSED'
+          ? 'CycleClosedByGithubIssue'
+          : 'CycleClosed'
+      )
     );
   }
 
   complete(): void {
     if (this._status !== 'CLOSED') {
-      throw new StudyOperationsDomainError('Only CLOSED cycle can be completed');
+      throw new StudyOperationsDomainError(
+        'Only CLOSED cycle can be completed'
+      );
     }
     this._status = 'COMPLETED';
     this.events.push(event('CycleCompleted'));
@@ -347,7 +374,9 @@ export class GenerationParticipant {
 
   approve(): void {
     if (this._status !== 'APPLIED') {
-      throw new StudyOperationsDomainError('Only APPLIED participant can be approved');
+      throw new StudyOperationsDomainError(
+        'Only APPLIED participant can be approved'
+      );
     }
     this._status = 'APPROVED';
     this.events.push(event('GenerationParticipationApproved'));
@@ -370,7 +399,9 @@ export class GenerationParticipant {
 
   reactivateByOperator(): void {
     if (this._status !== 'INACTIVE') {
-      throw new StudyOperationsDomainError('Only INACTIVE participant can be reactivated');
+      throw new StudyOperationsDomainError(
+        'Only INACTIVE participant can be reactivated'
+      );
     }
     this._status = 'APPROVED';
     this._consecutiveMissedCycles = 0;
@@ -379,7 +410,9 @@ export class GenerationParticipant {
 
   removeByOperator(): void {
     if (this._status !== 'APPROVED' && this._status !== 'INACTIVE') {
-      throw new StudyOperationsDomainError('Only APPROVED or INACTIVE participant can be removed');
+      throw new StudyOperationsDomainError(
+        'Only APPROVED or INACTIVE participant can be removed'
+      );
     }
     this._status = 'REMOVED';
     this.events.push(event('GenerationParticipantRemoved'));
@@ -387,7 +420,10 @@ export class GenerationParticipant {
 }
 
 export class SubmissionPolicy {
-  static canSubmit(participant: GenerationParticipant, cycle: StudyCycle): boolean {
+  static canSubmit(
+    participant: GenerationParticipant,
+    cycle: StudyCycle
+  ): boolean {
     return (
       participant.status === 'APPROVED' &&
       participant.hasRole('PARTICIPANT') &&
@@ -417,7 +453,9 @@ export class ReminderPolicy {
 }
 
 export class GithubDriftPolicy {
-  static classify(change: GithubManualChangeType):
+  static classify(
+    change: GithubManualChangeType
+  ):
     | { action: 'CLOSE_CYCLE' }
     | { action: 'DRIFT'; reason: GithubManualChangeType } {
     if (change === 'ISSUE_CLOSED') {
