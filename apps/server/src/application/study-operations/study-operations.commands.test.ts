@@ -6,6 +6,8 @@ import {
   StudyGeneration,
 } from '../../domain/study-operations';
 import {
+  ApplyToGenerationCommand,
+  ApproveGenerationParticipantCommand,
   CheckRecordSubmissionEligibilityCommand,
   CreateStudyGenerationCommand,
   GenerationParticipantRepository,
@@ -67,6 +69,18 @@ class MemoryParticipantRepository implements GenerationParticipantRepository {
     return this.participants.get(id) ?? null;
   }
 
+  async findByGenerationAndMember(
+    generationId: number,
+    memberId: number
+  ): Promise<GenerationParticipant | null> {
+    return (
+      Array.from(this.participants.values()).find(
+        (participant) =>
+          participant.generationId === generationId && participant.memberId === memberId
+      ) ?? null
+    );
+  }
+
   async save(participant: GenerationParticipant): Promise<GenerationParticipant> {
     this.participants.set(participant.id ?? 1, participant);
     return participant;
@@ -107,6 +121,31 @@ describe('ScheduleStudyCycleCommand', () => {
 
     expect(cycle.status).toBe('SCHEDULED');
     expect(outbox.events[0]?.eventType).toBe('CycleScheduled');
+  });
+});
+
+describe('ApplyToGenerationCommand and ApproveGenerationParticipantCommand', () => {
+  it('creates an applied participant and later approves it', async () => {
+    const participants = new MemoryParticipantRepository();
+    const outbox = new MemoryOutbox();
+
+    const apply = new ApplyToGenerationCommand(participants, outbox);
+    const applied = await apply.execute({ generationId: 1, memberId: 10 });
+
+    expect(applied.status).toBe('APPLIED');
+    expect(applied.roles).toContain('PARTICIPANT');
+
+    const approve = new ApproveGenerationParticipantCommand(participants, outbox);
+    const approved = await approve.execute({
+      participantId: 1,
+      approvedByMemberId: 99,
+    });
+
+    expect(approved.status).toBe('APPROVED');
+    expect(outbox.events.map((event) => event.eventType)).toEqual([
+      'GenerationParticipationApplied',
+      'GenerationParticipationApproved',
+    ]);
   });
 });
 

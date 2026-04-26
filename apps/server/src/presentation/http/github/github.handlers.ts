@@ -23,6 +23,11 @@ import {
 import type { RecordSubmissionCommand } from '@/application/commands/record-submission.command';
 import type { CreateCycleCommand } from '@/application/commands/create-cycle.command';
 import type { IDiscordWebhookClient } from '@/infrastructure/external/discord';
+import { HandleGithubManualChangeCommand } from '@/application/study-operations';
+import {
+  DrizzleOutboxPort,
+  DrizzleStudyCycleRepository,
+} from '@/infrastructure/persistence/drizzle/study-operations.repository.impl';
 
 // ========================================
 // Lazy Dependency Resolution
@@ -33,6 +38,8 @@ import type { IDiscordWebhookClient } from '@/infrastructure/external/discord';
 let recordSubmissionCommand: RecordSubmissionCommand | null = null;
 let createCycleCommand: CreateCycleCommand | null = null;
 let discordClient: IDiscordWebhookClient | null = null;
+let studyCycleRepository: DrizzleStudyCycleRepository | null = null;
+let githubManualChangeCommand: HandleGithubManualChangeCommand | null = null;
 
 const getDependencies = () => {
   if (!recordSubmissionCommand || !createCycleCommand || !discordClient) {
@@ -47,6 +54,17 @@ const getDependencies = () => {
     );
   }
   return { recordSubmissionCommand, createCycleCommand, discordClient };
+};
+
+const getStudyOperationsDependencies = () => {
+  if (!studyCycleRepository || !githubManualChangeCommand) {
+    studyCycleRepository = new DrizzleStudyCycleRepository();
+    githubManualChangeCommand = new HandleGithubManualChangeCommand(
+      studyCycleRepository,
+      new DrizzleOutboxPort()
+    );
+  }
+  return { studyCycleRepository, githubManualChangeCommand };
 };
 
 // ========================================
@@ -183,6 +201,48 @@ export const handleIssues = async (c: AppContext) => {
     typeof IssuesWebhookPayloadSchema
   >;
   const { issue, repository } = payload;
+
+  if (payload.action !== 'opened') {
+    const { studyCycleRepository, githubManualChangeCommand } =
+      getStudyOperationsDependencies();
+    const cycle = await studyCycleRepository.findByGithubIssueUrl(issue.html_url);
+
+    if (!cycle?.id) {
+      return c.json(
+        {
+          message:
+            'No DB-backed cycle found for GitHub issue; manual change acknowledged but ignored',
+        },
+        HttpStatusCodes.OK
+      );
+    }
+
+    const changeType =
+      payload.action === 'closed' ? 'ISSUE_CLOSED' : 'ISSUE_BODY_CHANGED';
+
+    await githubManualChangeCommand.execute({
+      cycleId: cycle.id,
+      changeType,
+      remoteSnapshot: {
+        action: payload.action,
+        issueNumber: issue.number,
+        issueUrl: issue.html_url,
+        title: issue.title,
+        body: issue.body,
+        repository: `${repository.owner.login}/${repository.name}`,
+      },
+    });
+
+    return c.json(
+      {
+        message:
+          payload.action === 'closed'
+            ? 'Cycle close signal accepted from GitHub issue close'
+            : 'GitHub manual issue change recorded as drift',
+      },
+      HttpStatusCodes.OK
+    );
+  }
 
   // 이슈 제목에서 회차 번호 추출
   const week = parseWeekFromTitle(issue.title);

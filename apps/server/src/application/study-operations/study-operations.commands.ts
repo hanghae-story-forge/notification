@@ -21,6 +21,10 @@ export interface StudyCycleRepository {
 
 export interface GenerationParticipantRepository {
   findById(id: number): Promise<GenerationParticipant | null>;
+  findByGenerationAndMember(
+    generationId: number,
+    memberId: number
+  ): Promise<GenerationParticipant | null>;
   save(participant: GenerationParticipant): Promise<GenerationParticipant>;
 }
 
@@ -96,6 +100,72 @@ export interface RecordSubmissionEligibilityRequest {
 export interface RecordSubmissionEligibilityResult {
   canSubmit: boolean;
   timingStatus: SubmissionTimingStatus;
+}
+
+export interface ApplyToGenerationRequest {
+  generationId: number;
+  memberId: number;
+}
+
+export class ApplyToGenerationCommand {
+  constructor(
+    private readonly participantRepository: GenerationParticipantRepository,
+    private readonly outbox: OutboxPort
+  ) {}
+
+  async execute(request: ApplyToGenerationRequest): Promise<GenerationParticipant> {
+    const existing = await this.participantRepository.findByGenerationAndMember(
+      request.generationId,
+      request.memberId
+    );
+    if (existing) {
+      return existing;
+    }
+
+    const participant = GenerationParticipant.create({
+      generationId: request.generationId,
+      memberId: request.memberId,
+      roles: ['PARTICIPANT'],
+    });
+    const saved = await this.participantRepository.save(participant);
+    await this.outbox.publish('GenerationParticipationApplied', {
+      generationId: request.generationId,
+      memberId: request.memberId,
+    });
+    return saved;
+  }
+}
+
+export interface ApproveGenerationParticipantRequest {
+  participantId: number;
+  approvedByMemberId: number;
+}
+
+export class ApproveGenerationParticipantCommand {
+  constructor(
+    private readonly participantRepository: GenerationParticipantRepository,
+    private readonly outbox: OutboxPort
+  ) {}
+
+  async execute(
+    request: ApproveGenerationParticipantRequest
+  ): Promise<GenerationParticipant> {
+    const participant = await this.participantRepository.findById(
+      request.participantId
+    );
+    if (!participant) {
+      throw new StudyOperationsDomainError('Participant not found');
+    }
+
+    participant.approve();
+    participant.assignRole('PARTICIPANT');
+    const saved = await this.participantRepository.save(participant);
+    await this.outbox.publish('GenerationParticipationApproved', {
+      participantId: request.participantId,
+      approvedByMemberId: request.approvedByMemberId,
+    });
+    return saved;
+  }
 }
 
 export class CheckRecordSubmissionEligibilityCommand {

@@ -325,7 +325,7 @@ export class GenerationParticipant {
   }
 
   get roles(): ParticipantRole[] {
-    return [...this.roleSet];
+    return Array.from(this.roleSet);
   }
 
   get consecutiveMissedCycles(): number {
