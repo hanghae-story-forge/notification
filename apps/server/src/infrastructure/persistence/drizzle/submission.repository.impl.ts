@@ -11,6 +11,15 @@ import {
 } from '../../../domain/submission/submission.domain';
 import { SubmissionRepository } from '../../../domain/submission/submission.repository';
 
+const legacySubmissionSelect = {
+  id: submissions.id,
+  cycleId: submissions.cycleId,
+  memberId: submissions.memberId,
+  url: submissions.url,
+  submittedAt: submissions.submittedAt,
+  githubCommentId: submissions.githubCommentId,
+};
+
 /**
  * Drizzle ORM을 사용한 SubmissionRepository 구현
  */
@@ -40,7 +49,7 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
 
   async findById(id: SubmissionId): Promise<Submission | null> {
     const result = await db
-      .select()
+      .select(legacySubmissionSelect)
       .from(submissions)
       .where(eq(submissions.id, id.value))
       .limit(1);
@@ -57,7 +66,7 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
     memberId: MemberId
   ): Promise<Submission | null> {
     const result = await db
-      .select()
+      .select(legacySubmissionSelect)
       .from(submissions)
       .where(
         and(
@@ -76,7 +85,7 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
 
   async findByGithubCommentId(commentId: string): Promise<Submission | null> {
     const result = await db
-      .select()
+      .select(legacySubmissionSelect)
       .from(submissions)
       .where(eq(submissions.githubCommentId, commentId))
       .limit(1);
@@ -90,7 +99,7 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
 
   async findByCycle(cycleId: CycleId): Promise<Submission[]> {
     const result = await db
-      .select()
+      .select(legacySubmissionSelect)
       .from(submissions)
       .where(eq(submissions.cycleId, cycleId.value));
 
@@ -103,7 +112,7 @@ export class DrizzleSubmissionRepository implements SubmissionRepository {
 
   async findByMember(memberId: MemberId): Promise<Submission[]> {
     const result = await db
-      .select()
+      .select(legacySubmissionSelect)
       .from(submissions)
       .where(eq(submissions.memberId, memberId.value));
 

@@ -9,6 +9,15 @@ import {
 } from '../../../domain/generation/generation.domain';
 import { GenerationRepository } from '../../../domain/generation/generation.repository';
 
+const legacyGenerationSelect = {
+  id: generations.id,
+  organizationId: generations.organizationId,
+  name: generations.name,
+  startedAt: generations.startedAt,
+  isActive: generations.isActive,
+  createdAt: generations.createdAt,
+};
+
 export class DrizzleGenerationRepository implements GenerationRepository {
   async save(generation: Generation): Promise<Generation> {
     const dto = generation.toDTO();
@@ -45,7 +54,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
 
   async findById(id: GenerationId): Promise<Generation | null> {
     const result = await db
-      .select()
+      .select(legacyGenerationSelect)
       .from(generations)
       .where(eq(generations.id, id.value))
       .limit(1);
@@ -59,7 +68,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
 
   async findActive(): Promise<Generation | null> {
     const result = await db
-      .select()
+      .select(legacyGenerationSelect)
       .from(generations)
       .where(eq(generations.isActive, true))
       .orderBy(generations.createdAt)
@@ -76,7 +85,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
     organizationId: number
   ): Promise<Generation | null> {
     const result = await db
-      .select()
+      .select(legacyGenerationSelect)
       .from(generations)
       .where(
         and(
@@ -96,7 +105,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
 
   async findByOrganization(organizationId: number): Promise<Generation[]> {
     const result = await db
-      .select()
+      .select(legacyGenerationSelect)
       .from(generations)
       .where(eq(generations.organizationId, organizationId))
       .orderBy(generations.createdAt);
@@ -105,7 +114,7 @@ export class DrizzleGenerationRepository implements GenerationRepository {
   }
 
   async findAll(): Promise<Generation[]> {
-    const result = await db.select().from(generations);
+    const result = await db.select(legacyGenerationSelect).from(generations);
     return result.map((row) => this.mapToEntity(row));
   }
 

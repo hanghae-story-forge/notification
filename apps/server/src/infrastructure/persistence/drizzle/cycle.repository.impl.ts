@@ -6,6 +6,16 @@ import { cycles, generations } from '../drizzle-db/schema';
 import { Cycle, CycleId } from '../../../domain/cycle/cycle.domain';
 import { CycleRepository } from '../../../domain/cycle/cycle.repository';
 
+const legacyCycleSelect = {
+  id: cycles.id,
+  generationId: cycles.generationId,
+  week: cycles.week,
+  startDate: cycles.startDate,
+  endDate: cycles.endDate,
+  githubIssueUrl: cycles.githubIssueUrl,
+  createdAt: cycles.createdAt,
+};
+
 export class DrizzleCycleRepository implements CycleRepository {
   async save(cycle: Cycle): Promise<void> {
     const dto = cycle.toDTO();
@@ -35,7 +45,7 @@ export class DrizzleCycleRepository implements CycleRepository {
 
   async findById(id: CycleId): Promise<Cycle | null> {
     const result = await db
-      .select()
+      .select(legacyCycleSelect)
       .from(cycles)
       .where(eq(cycles.id, id.value))
       .limit(1);
@@ -49,7 +59,7 @@ export class DrizzleCycleRepository implements CycleRepository {
 
   async findByIssueUrl(issueUrl: string): Promise<Cycle | null> {
     const result = await db
-      .select()
+      .select(legacyCycleSelect)
       .from(cycles)
       .where(eq(cycles.githubIssueUrl, issueUrl))
       .limit(1);
@@ -66,7 +76,7 @@ export class DrizzleCycleRepository implements CycleRepository {
     week: number
   ): Promise<Cycle | null> {
     const result = await db
-      .select()
+      .select(legacyCycleSelect)
       .from(cycles)
       .where(and(eq(cycles.generationId, generationId), eq(cycles.week, week)))
       .limit(1);
@@ -80,7 +90,7 @@ export class DrizzleCycleRepository implements CycleRepository {
 
   async findByGeneration(generationId: number): Promise<Cycle[]> {
     const result = await db
-      .select()
+      .select(legacyCycleSelect)
       .from(cycles)
       .where(eq(cycles.generationId, generationId));
 
@@ -91,7 +101,7 @@ export class DrizzleCycleRepository implements CycleRepository {
     const now = new Date();
 
     const result = await db
-      .select()
+      .select(legacyCycleSelect)
       .from(cycles)
       .where(
         and(
@@ -110,7 +120,7 @@ export class DrizzleCycleRepository implements CycleRepository {
     endTime: Date
   ): Promise<Cycle[]> {
     const result = await db
-      .select()
+      .select(legacyCycleSelect)
       .from(cycles)
       .where(
         and(

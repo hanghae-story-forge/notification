@@ -6,6 +6,16 @@ import { members } from '../drizzle-db/schema';
 import { Member, MemberId } from '../../../domain/member/member.domain';
 import { MemberRepository } from '../../../domain/member/member.repository';
 
+const legacyMemberSelect = {
+  id: members.id,
+  discordId: members.discordId,
+  discordUsername: members.discordUsername,
+  discordAvatar: members.discordAvatar,
+  githubUsername: members.githubUsername,
+  name: members.name,
+  createdAt: members.createdAt,
+};
+
 export class DrizzleMemberRepository implements MemberRepository {
   async save(member: Member): Promise<void> {
     const dto = member.toDTO();
@@ -36,7 +46,7 @@ export class DrizzleMemberRepository implements MemberRepository {
 
   async findById(id: MemberId): Promise<Member | null> {
     const result = await db
-      .select()
+      .select(legacyMemberSelect)
       .from(members)
       .where(eq(members.id, id.value))
       .limit(1);
@@ -50,7 +60,7 @@ export class DrizzleMemberRepository implements MemberRepository {
 
   async findByDiscordId(discordId: string): Promise<Member | null> {
     const result = await db
-      .select()
+      .select(legacyMemberSelect)
       .from(members)
       .where(eq(members.discordId, discordId))
       .limit(1);
@@ -64,7 +74,7 @@ export class DrizzleMemberRepository implements MemberRepository {
 
   async findByGithubUsername(githubUsername: string): Promise<Member | null> {
     const result = await db
-      .select()
+      .select(legacyMemberSelect)
       .from(members)
       .where(eq(members.githubUsername, githubUsername))
       .limit(1);
@@ -77,7 +87,7 @@ export class DrizzleMemberRepository implements MemberRepository {
   }
 
   async findAll(): Promise<Member[]> {
-    const result = await db.select().from(members);
+    const result = await db.select(legacyMemberSelect).from(members);
     return result.map((row) => this.mapToEntity(row));
   }
 
