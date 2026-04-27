@@ -167,10 +167,21 @@ if (env.APP_ENV === 'production') {
         await import('./presentation/discord/commands');
       const commands = createCommands();
 
-      logger.discord.info('Registering slash commands...', {
-        count: commands.length,
-      });
-      await registerSlashCommands(commands);
+      if (env.DISCORD_COMMAND_SYNC_POLICY === 'on') {
+        logger.discord.info('Registering slash commands...', {
+          count: commands.length,
+        });
+        void registerSlashCommands(commands).catch((error) => {
+          logger.discord.error('Failed to register slash commands', error, {
+            commandCount: commands.length,
+          });
+        });
+      } else {
+        logger.discord.info('Skipping slash command registration', {
+          policy: env.DISCORD_COMMAND_SYNC_POLICY,
+          count: commands.length,
+        });
+      }
 
       const discordBot = createDiscordBot();
       logger.discord.info('Logging in to Discord...');

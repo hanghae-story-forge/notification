@@ -24,6 +24,7 @@ export const env = createEnv({
     DISCORD_GUILD_ID: z
       .string()
       .min(1, { message: 'DISCORD_GUILD_ID is required' }),
+    DISCORD_COMMAND_SYNC_POLICY: z.enum(['on', 'off']).default('off'),
     APP_ID: z.string().min(1, { message: 'APP_ID is required' }).optional(),
     APP_PRIVATE_KEY: z
       .string()
@@ -80,6 +81,7 @@ export const env = createEnv({
     DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_GUILD_ID: process.env.DISCORD_GUILD_ID,
+    DISCORD_COMMAND_SYNC_POLICY: process.env.DISCORD_COMMAND_SYNC_POLICY,
     APP_ID: process.env.APP_ID,
     APP_PRIVATE_KEY: process.env.APP_PRIVATE_KEY,
     APP_INSTALLATION_ID: process.env.APP_INSTALLATION_ID,
