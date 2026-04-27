@@ -197,6 +197,7 @@ export const cycleMutations = {
   ): Promise<GqlCycle> => {
     const { createCycleCommand } = getQueries();
     const result = await createCycleCommand.execute({
+      generationId,
       week,
       startDate: new Date(startDate),
       endDate: new Date(endDate),

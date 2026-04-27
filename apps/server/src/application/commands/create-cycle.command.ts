@@ -2,6 +2,7 @@
 
 import { Cycle } from '../../domain/cycle/cycle.domain';
 import { CycleRepository } from '../../domain/cycle/cycle.repository';
+import { GenerationId } from '../../domain/generation/generation.domain';
 import { GenerationRepository } from '../../domain/generation/generation.repository';
 import { OrganizationRepository } from '../../domain/organization/organization.repository';
 import { ConflictError } from '../../domain/common/errors';
@@ -11,6 +12,7 @@ import { ConflictError } from '../../domain/common/errors';
  */
 export interface CreateCycleRequest {
   organizationSlug: string; // 조직 식별
+  generationId?: number; // 명시되면 해당 기수에 생성
   week: number;
   startDate?: Date;
   endDate?: Date;
@@ -52,14 +54,31 @@ export class CreateCycleCommand {
       );
     }
 
-    // 2. 해당 조직의 활성화된 기수 찾기
-    const generation = await this.generationRepo.findActiveByOrganization(
-      organization.id.value
-    );
+    // 2. 기수 찾기: 명시된 기수가 있으면 그것을 우선하고, 없으면 기존처럼 활성 기수를 사용한다.
+    const generation = request.generationId
+      ? await this.generationRepo.findById(
+          GenerationId.create(request.generationId)
+        )
+      : await this.generationRepo.findActiveByOrganization(
+          organization.id.value
+        );
+
     if (!generation) {
       throw new ConflictError(
-        `No active generation found for organization "${request.organizationSlug}"`
+        request.generationId
+          ? `Generation ${request.generationId} not found`
+          : `No active generation found for organization "${request.organizationSlug}"`
       );
+    }
+
+    if (generation.organizationId !== organization.id.value) {
+      throw new ConflictError(
+        `Generation ${generation.id.value} does not belong to organization "${request.organizationSlug}"`
+      );
+    }
+
+    if (!generation.isActive) {
+      throw new ConflictError(`Generation ${generation.name} is not active`);
     }
 
     // 3. 이미 동일한 주차가 있는지 확인
