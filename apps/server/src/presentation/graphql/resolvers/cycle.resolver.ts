@@ -8,6 +8,7 @@ import {
   SUBMISSION_REPO_TOKEN,
   ORGANIZATION_MEMBER_REPO_TOKEN,
   MEMBER_REPO_TOKEN,
+  CREATE_CYCLE_COMMAND_TOKEN,
 } from '@/shared/di';
 import type {
   CycleRepository,
@@ -82,10 +83,8 @@ const getQueries = () => {
       memberRepo
     );
 
-    createCycleCommand = new CreateCycleCommand(
-      cycleRepo,
-      generationRepo,
-      organizationRepo
+    createCycleCommand = container.resolve<CreateCycleCommand>(
+      CREATE_CYCLE_COMMAND_TOKEN
     );
   }
   return {

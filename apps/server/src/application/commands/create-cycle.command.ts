@@ -27,6 +27,18 @@ export interface CreateCycleResult {
   generationName: string;
 }
 
+export interface GithubProjectCycleSyncPort {
+  syncCycle(request: {
+    organizationSlug: string;
+    organizationName: string;
+    generationName: string;
+    week: number;
+    startDate: Date;
+    endDate: Date;
+    githubIssueUrl: string;
+  }): Promise<void>;
+}
+
 /**
  * 사이클 생성 Command (Use Case)
  *
@@ -40,7 +52,8 @@ export class CreateCycleCommand {
   constructor(
     private readonly cycleRepo: CycleRepository,
     private readonly generationRepo: GenerationRepository,
-    private readonly organizationRepo: OrganizationRepository
+    private readonly organizationRepo: OrganizationRepository,
+    private readonly githubProjectSync?: GithubProjectCycleSyncPort
   ) {}
 
   async execute(request: CreateCycleRequest): Promise<CreateCycleResult> {
@@ -109,6 +122,22 @@ export class CreateCycleCommand {
 
     // 6. 저장
     await this.cycleRepo.save(cycle);
+
+    if (this.githubProjectSync) {
+      try {
+        await this.githubProjectSync.syncCycle({
+          organizationSlug: request.organizationSlug,
+          organizationName: organization.name.value,
+          generationName: generation.name,
+          week: request.week,
+          startDate,
+          endDate,
+          githubIssueUrl: request.githubIssueUrl,
+        });
+      } catch (error) {
+        console.error('Failed to sync cycle to GitHub Project:', error);
+      }
+    }
 
     return {
       cycle,

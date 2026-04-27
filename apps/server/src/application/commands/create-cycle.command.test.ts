@@ -81,4 +81,51 @@ describe('CreateCycleCommand', () => {
     expect(savedCycle.week.toNumber()).toBe(7);
     expect(result.generationName).toBe('똥글똥글 2기');
   });
+
+  it('projects a created cycle to the linked GitHub Project item', async () => {
+    const generation = makeGeneration(1, '똥글똥글 2기');
+    const organization = makeOrganization();
+    const organizationRepo = {
+      findBySlug: vi.fn().mockResolvedValue(organization),
+    } as unknown as OrganizationRepository;
+    const generationRepo = {
+      findActiveByOrganization: vi.fn().mockResolvedValue(generation),
+      findById: vi.fn().mockResolvedValue(generation),
+    } as unknown as GenerationRepository;
+    const cycleRepo = {
+      findByGenerationAndWeek: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+    } as unknown as CycleRepository;
+    const githubProjectSync = {
+      syncCycle: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const command = new CreateCycleCommand(
+      cycleRepo,
+      generationRepo,
+      organizationRepo,
+      githubProjectSync
+    );
+
+    await command.execute({
+      organizationSlug: 'donguel-donguel',
+      generationId: 1,
+      week: 7,
+      startDate: new Date('2026-04-26T15:00:00.000Z'),
+      endDate: new Date('2026-05-10T14:59:59.000Z'),
+      githubIssueUrl:
+        'https://github.com/hanghae-story-forge/archive/issues/16',
+    });
+
+    expect(githubProjectSync.syncCycle).toHaveBeenCalledWith({
+      organizationSlug: 'donguel-donguel',
+      organizationName: '똥글똥글',
+      generationName: '똥글똥글 2기',
+      week: 7,
+      startDate: new Date('2026-04-26T15:00:00.000Z'),
+      endDate: new Date('2026-05-10T14:59:59.000Z'),
+      githubIssueUrl:
+        'https://github.com/hanghae-story-forge/archive/issues/16',
+    });
+  });
 });

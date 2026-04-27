@@ -24,6 +24,7 @@ import {
 import { IDiscordWebhookClient } from '@/infrastructure/external/discord';
 import { RecordSubmissionCommand } from '@/application/commands/record-submission.command';
 import { CreateCycleCommand } from '@/application/commands/create-cycle.command';
+import type { GithubProjectCycleSyncPort } from '@/application/commands/create-cycle.command';
 import { GetCycleStatusQuery } from '@/application/queries/get-cycle-status.query';
 import { GetReminderTargetsQuery } from '@/application/queries/get-reminder-targets.query';
 import { OrganizationAutocomplete } from '@/presentation/discord/autocompletions/OrganizationAutocomplete';
@@ -37,6 +38,7 @@ import { DrizzleOrganizationMemberRepository } from '@/infrastructure/persistenc
 import { DrizzleOrganizationRepository } from '@/infrastructure/persistence/drizzle/organization.repository.impl';
 import { DrizzleSubmissionRepository } from '@/infrastructure/persistence/drizzle/submission.repository.impl';
 import { DiscordWebhookClient } from '@/infrastructure/external/discord/discord.webhook';
+import { GitHubProjectsCycleSync } from '@/infrastructure/external/github';
 import { MemberService as MemberServiceImpl } from '@/domain/member/member.service';
 
 // ========================================
@@ -73,6 +75,8 @@ export const MEMBER_SERVICE_TOKEN = createToken<MemberService>('MemberService');
 export const DISCORD_WEBHOOK_CLIENT_TOKEN = createToken<IDiscordWebhookClient>(
   'DiscordWebhookClient'
 );
+export const GITHUB_PROJECT_CYCLE_SYNC_TOKEN =
+  createToken<GithubProjectCycleSyncPort>('GithubProjectCycleSync');
 
 // ========================================
 // Application Layer Tokens (only for HTTP handlers & Discord bot)
@@ -163,6 +167,12 @@ export function registerDependencies(): void {
     'singleton'
   );
 
+  container.register(
+    GITHUB_PROJECT_CYCLE_SYNC_TOKEN,
+    () => new GitHubProjectsCycleSync(),
+    'singleton'
+  );
+
   // ========================================
   // Application Commands (Singletons)
   // ========================================
@@ -187,7 +197,8 @@ export function registerDependencies(): void {
       new CreateCycleCommand(
         container.resolve(CYCLE_REPO_TOKEN),
         container.resolve(GENERATION_REPO_TOKEN),
-        container.resolve(ORGANIZATION_REPO_TOKEN)
+        container.resolve(ORGANIZATION_REPO_TOKEN),
+        container.resolve(GITHUB_PROJECT_CYCLE_SYNC_TOKEN)
       ),
     'singleton'
   );
