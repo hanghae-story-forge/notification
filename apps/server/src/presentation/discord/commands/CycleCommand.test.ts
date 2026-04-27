@@ -44,6 +44,51 @@ describe('CycleCommand', () => {
     );
   });
 
+  it('shows the current cycle as an action-oriented guide with the issue link', async () => {
+    const issueUrl = 'https://github.com/hanghae-story-forge/archive/issues/16';
+    const getCurrentCycle = vi.fn().mockResolvedValue({
+      id: 1,
+      week: 7,
+      generationName: '똥글똥글 2기',
+      startDate: '2026-04-26T15:00:00.000Z',
+      endDate: '2026-05-10T14:59:59.000Z',
+      githubIssueUrl: issueUrl,
+      daysLeft: 13,
+      hoursLeft: 3,
+    });
+    const command = new CycleCommand({ getCurrentCycle } as never);
+    const interaction = createInteraction('current');
+
+    await command.execute(interaction as never);
+
+    expect(interaction.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('다음 행동'),
+        components: expect.any(Array),
+      })
+    );
+    const reply = interaction.editReply.mock.calls.at(-1)?.[0] as {
+      content: string;
+    };
+    expect(reply.content).toContain('마감까지 13일 3시간');
+    expect(reply.content).toContain(issueUrl);
+    expect(reply.content).toContain('/me info');
+  });
+
+  it('explains what to check when there is no active cycle', async () => {
+    const getCurrentCycle = vi.fn().mockResolvedValue(null);
+    const command = new CycleCommand({ getCurrentCycle } as never);
+    const interaction = createInteraction('current');
+
+    await command.execute(interaction as never);
+
+    expect(interaction.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('운영자라면'),
+      })
+    );
+  });
+
   it('uses the canonical donguel-donguel organization slug when looking up cycle status', async () => {
     const getCurrentCycle = vi.fn().mockResolvedValue({
       id: 1,

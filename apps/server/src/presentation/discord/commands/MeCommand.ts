@@ -1,8 +1,43 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  ChatInputCommandInteraction,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  MessageFlags,
+} from 'discord.js';
+import { GetCycleStatusQuery } from '@/application/queries';
 import { MemberRepository } from '@/domain/member/member.repository';
 import { OrganizationMemberRepository } from '@/domain/organization-member/organization-member.repository';
 import { GenerationMemberRepository } from '@/domain/generation-member/generation-member.repository';
 import { DiscordCommand } from './types';
+
+const DEFAULT_ORGANIZATION_SLUG = 'donguel-donguel';
+
+function formatRemainingTime(daysLeft: number, hoursLeft?: number): string {
+  if (daysLeft <= 0 && (!hoursLeft || hoursLeft <= 0)) {
+    return '오늘 마감';
+  }
+
+  if (typeof hoursLeft === 'number') {
+    return `마감까지 ${daysLeft}일 ${hoursLeft}시간`;
+  }
+
+  return daysLeft > 0 ? `마감까지 ${daysLeft}일` : '오늘 마감';
+}
+
+function createIssueButton(issueUrl?: string | null) {
+  if (!issueUrl) return [];
+
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setLabel('이번 주차 이슈 열기')
+        .setStyle(ButtonStyle.Link)
+        .setURL(issueUrl)
+    ),
+  ];
+}
 
 export class MeCommand implements DiscordCommand {
   readonly definition = new SlashCommandBuilder()
@@ -25,7 +60,8 @@ export class MeCommand implements DiscordCommand {
   constructor(
     private readonly memberRepo: MemberRepository,
     private readonly organizationMemberRepo: OrganizationMemberRepository,
-    private readonly generationMemberRepo: GenerationMemberRepository
+    private readonly generationMemberRepo: GenerationMemberRepository,
+    private readonly getCycleStatusQuery?: GetCycleStatusQuery
   ) {}
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -44,7 +80,7 @@ export class MeCommand implements DiscordCommand {
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     } catch {
       return;
     }
@@ -61,7 +97,12 @@ export class MeCommand implements DiscordCommand {
       if (!member) {
         await interaction.editReply({
           content:
-            '❌ 회원 정보를 찾을 수 없습니다. `/member create` 명령어로 먼저 회원 등록을 해주세요.',
+            '👋 **아직 회원 등록이 필요해요.**\n\n' +
+            '스터디 봇이 제출 상태를 확인하려면 Discord 계정과 GitHub 계정이 연결된 회원 정보가 필요해요.\n\n' +
+            '**다음 행동**\n' +
+            '1. `/member create`로 회원을 먼저 등록해 주세요.\n' +
+            '2. 등록할 때 GitHub 계정을 정확히 입력해 주세요.\n' +
+            '3. 등록 후 `/me info`를 다시 실행해 주세요.',
         });
         return;
       }
@@ -78,14 +119,41 @@ export class MeCommand implements DiscordCommand {
         member.id
       );
 
+      const currentCycle = this.getCycleStatusQuery
+        ? await this.getCycleStatusQuery.getCurrentCycle(
+            DEFAULT_ORGANIZATION_SLUG
+          )
+        : null;
+
+      const currentCycleMessage = currentCycle
+        ? `🎯 **현재 주차**: ${currentCycle.generationName} ${currentCycle.week}주차\n` +
+          `⏰ **${formatRemainingTime(currentCycle.daysLeft, currentCycle.hoursLeft)}**\n` +
+          `🔗 이슈: ${currentCycle.githubIssueUrl ?? '아직 연결된 이슈가 없어요.'}\n`
+        : '🎯 **현재 주차**: 진행 중인 주차를 찾지 못했어요. `/cycle current`로 다시 확인해 주세요.\n';
+
+      const githubStatus = member.githubUsername
+        ? `✅ GitHub 연결됨: ${member.githubUsername.value}`
+        : '⚠️ GitHub 계정이 아직 연결되지 않았어요.';
+
+      const nextActions = member.githubUsername
+        ? '1. 이번 주차 글을 작성해 주세요.\n' +
+          '2. GitHub 이슈에 제출 링크를 댓글로 남겨 주세요.\n' +
+          '3. `/cycle status`로 전체 제출 현황을 확인해 주세요.'
+        : '1. GitHub 계정을 먼저 연결해 주세요.\n' +
+          '2. 연결 후 `/me info`로 상태를 다시 확인해 주세요.';
+
       await interaction.editReply({
         content:
-          `👤 **내 정보**\n\n` +
+          `👤 **내 스터디 대시보드**\n\n` +
           `**이름**: ${member.name.value}\n` +
-          `**Discord**: ${member.discordUsername || '미설정'}\n` +
-          `**GitHub**: ${member.githubUsername || '미연결'}\n` +
-          `**소속 조직**: ${approvedOrganizations}개\n` +
-          `**참여 기수**: ${generationMembers.length}개`,
+          `**Discord**: ${member.discordUsername?.value ?? '미설정'}\n` +
+          `${githubStatus}\n` +
+          `**승인된 조직**: ${approvedOrganizations}개\n` +
+          `**참여 기수**: ${generationMembers.length}개\n\n` +
+          `${currentCycleMessage}\n` +
+          '**다음 행동**\n' +
+          nextActions,
+        components: createIssueButton(currentCycle?.githubIssueUrl),
       });
     } catch (error) {
       console.error('Error handling me info:', error);
@@ -103,7 +171,7 @@ export class MeCommand implements DiscordCommand {
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     } catch {
       return;
     }
@@ -174,7 +242,7 @@ export class MeCommand implements DiscordCommand {
     interaction: ChatInputCommandInteraction
   ): Promise<void> {
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     } catch {
       return;
     }

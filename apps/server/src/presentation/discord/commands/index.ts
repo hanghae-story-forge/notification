@@ -94,7 +94,12 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
 // Command instances
 export const createCommands = (): DiscordCommand[] => {
   return [
-    new MeCommand(memberRepo, organizationMemberRepo, generationMemberRepo),
+    new MeCommand(
+      memberRepo,
+      organizationMemberRepo,
+      generationMemberRepo,
+      getCycleStatusQuery
+    ),
     new MemberCommand(
       createMemberCommand,
       updateMemberStatusCommand,

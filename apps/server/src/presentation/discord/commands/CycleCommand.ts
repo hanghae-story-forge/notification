@@ -2,6 +2,9 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   DiscordAPIError,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } from 'discord.js';
 import { GetCycleStatusQuery } from '@/application/queries';
 import { createStatusMessage } from '@/infrastructure/external/discord';
@@ -21,6 +24,31 @@ function isIgnorableDiscordError(error: unknown): boolean {
 }
 
 const DEFAULT_ORGANIZATION_SLUG = 'donguel-donguel';
+
+function formatRemainingTime(daysLeft: number, hoursLeft?: number): string {
+  if (daysLeft <= 0 && (!hoursLeft || hoursLeft <= 0)) {
+    return '오늘 마감';
+  }
+
+  if (typeof hoursLeft === 'number') {
+    return `마감까지 ${daysLeft}일 ${hoursLeft}시간`;
+  }
+
+  return daysLeft > 0 ? `마감까지 ${daysLeft}일` : '오늘 마감';
+}
+
+function createIssueButton(issueUrl?: string | null) {
+  if (!issueUrl) return [];
+
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setLabel('이번 주차 이슈 열기')
+        .setStyle(ButtonStyle.Link)
+        .setURL(issueUrl)
+    ),
+  ];
+}
 
 export class CycleCommand implements DiscordCommand {
   readonly definition = new SlashCommandBuilder()
@@ -89,21 +117,36 @@ export class CycleCommand implements DiscordCommand {
 
       if (!currentCycle) {
         await interaction.editReply({
-          content: '❌ 현재 진행 중인 주차가 없습니다.',
+          content:
+            '🗓️ **현재 진행 중인 주차를 찾지 못했어요.**\n\n' +
+            '가능한 원인\n' +
+            '1. 아직 이번 주차가 생성되지 않았어요.\n' +
+            '2. 스터디 운영 설정이 아직 반영되지 않았을 수 있어요.\n' +
+            '3. 잠시 후 다시 시도해 주세요.\n\n' +
+            '운영자라면 `/cycle list`로 등록된 주차를 확인해 주세요.',
         });
         return;
       }
 
-      const daysUntilDeadline = currentCycle.daysLeft;
+      const remainingTime = formatRemainingTime(
+        currentCycle.daysLeft,
+        currentCycle.hoursLeft
+      );
 
       await interaction.editReply({
-        content: `📅 **현재 주차 정보**\n\n**기수**: ${
-          currentCycle.generationName
-        }\n**주차**: ${currentCycle.week}주차\n**마감일**: ${new Date(
-          currentCycle.endDate
-        ).toLocaleDateString('ko-KR')} (${
-          daysUntilDeadline > 0 ? `D-${daysUntilDeadline}` : '오늘 마감'
-        })\n\n이슈 링크: ${currentCycle.githubIssueUrl}`,
+        content:
+          `📅 **${currentCycle.generationName} ${currentCycle.week}주차가 진행 중이에요**\n\n` +
+          `⏰ **${remainingTime}**\n` +
+          `마감일: ${new Date(currentCycle.endDate).toLocaleString('ko-KR', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          })}\n` +
+          `이슈 링크: ${currentCycle.githubIssueUrl}\n\n` +
+          '**다음 행동**\n' +
+          '1. 이번 주차 글을 작성해 주세요.\n' +
+          '2. GitHub 이슈에 제출 링크를 댓글로 남겨 주세요.\n' +
+          '3. 제출 후 `/me info`로 내 상태를 다시 확인해 주세요.',
+        components: createIssueButton(currentCycle.githubIssueUrl),
       });
     } catch (error) {
       console.error('❌ Error handling cycle current:', error);
