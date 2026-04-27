@@ -176,26 +176,33 @@ export class GetCycleStatusQuery {
       );
     const submittedIds = new Set(submissions.map((s) => s.memberId.value));
 
-    const submitted = submissions
-      .filter((s) => submittedIds.has(s.memberId.value))
-      .map((s) => {
-        const member = orgMembers.find(
-          (m) => m.memberId.value === s.memberId.value
-        );
-        return {
-          name: member ? 'Member' : 'Unknown', // 실제 멤버 정보 필요 시 조회
-          github: 'github', // 임시값
-          url: s.url.value,
-          submittedAt: s.submittedAt.toISOString(),
-        };
-      });
+    const orgMemberIds = new Set(orgMembers.map((m) => m.memberId.value));
 
-    const notSubmitted = orgMembers
-      .filter((m) => !submittedIds.has(m.memberId.value))
-      .map(() => ({
-        name: 'Member', // 실제 멤버 정보 필요 시 조회
-        github: 'github', // 임시값
-      }));
+    const submitted = await Promise.all(
+      submissions
+        .filter((s) => orgMemberIds.has(s.memberId.value))
+        .map(async (s) => {
+          const member = await this.memberRepo.findById(s.memberId);
+          return {
+            name: member?.name.value ?? 'Unknown',
+            github: member?.githubUsername?.value ?? '',
+            url: s.url.value,
+            submittedAt: s.submittedAt.toISOString(),
+          };
+        })
+    );
+
+    const notSubmitted = await Promise.all(
+      orgMembers
+        .filter((m) => !submittedIds.has(m.memberId.value))
+        .map(async (m) => {
+          const member = await this.memberRepo.findById(m.memberId);
+          return {
+            name: member?.name.value ?? 'Unknown',
+            github: member?.githubUsername?.value ?? '',
+          };
+        })
+    );
 
     return {
       cycle: {
