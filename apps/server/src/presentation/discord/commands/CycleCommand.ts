@@ -20,6 +20,8 @@ function isIgnorableDiscordError(error: unknown): boolean {
   return false;
 }
 
+const DEFAULT_ORGANIZATION_SLUG = 'donguel-donguel';
+
 export class CycleCommand implements DiscordCommand {
   readonly definition = new SlashCommandBuilder()
     .setName('cycle')
@@ -81,8 +83,9 @@ export class CycleCommand implements DiscordCommand {
     }
 
     try {
-      const currentCycle =
-        await this.getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+      const currentCycle = await this.getCycleStatusQuery.getCurrentCycle(
+        DEFAULT_ORGANIZATION_SLUG
+      );
 
       if (!currentCycle) {
         await interaction.editReply({
@@ -120,8 +123,9 @@ export class CycleCommand implements DiscordCommand {
     await interaction.deferReply();
 
     try {
-      const currentCycle =
-        await this.getCycleStatusQuery.getCurrentCycle('dongueldonguel');
+      const currentCycle = await this.getCycleStatusQuery.getCurrentCycle(
+        DEFAULT_ORGANIZATION_SLUG
+      );
 
       if (!currentCycle) {
         await interaction.editReply({
@@ -133,7 +137,7 @@ export class CycleCommand implements DiscordCommand {
       const participantNames =
         await this.getCycleStatusQuery.getCycleParticipantNames(
           currentCycle.id,
-          'dongueldonguel'
+          DEFAULT_ORGANIZATION_SLUG
         );
 
       if (!participantNames) {
