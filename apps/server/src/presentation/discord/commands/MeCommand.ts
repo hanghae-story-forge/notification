@@ -145,7 +145,9 @@ export class MeCommand implements DiscordCommand {
 
         if (!participantNames) {
           submissionStatusMessage = '📌 **내 제출 상태: 확인 불가**\n';
-        } else if (participantNames.submittedNames.includes(member.name.value)) {
+        } else if (
+          participantNames.submittedNames.includes(member.name.value)
+        ) {
           submissionStatusMessage = '📌 **내 제출 상태: ✅ 제출 완료**\n';
         } else {
           submissionStatusMessage = '📌 **내 제출 상태: ⏳ 아직 제출 전**\n';

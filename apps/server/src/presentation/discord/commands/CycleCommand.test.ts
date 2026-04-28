@@ -101,7 +101,8 @@ describe('CycleCommand', () => {
       generationName: '똥글똥글 2기',
       startDate: '2026-04-26T15:00:00.000Z',
       endDate: '2026-05-10T14:59:59.000Z',
-      githubIssueUrl: 'https://github.com/hanghae-story-forge/archive/issues/16',
+      githubIssueUrl:
+        'https://github.com/hanghae-story-forge/archive/issues/16',
       daysLeft: 0,
       hoursLeft: 0,
     });
@@ -125,7 +126,8 @@ describe('CycleCommand', () => {
       week: 7,
       generationName: '똥글똥글 2기',
       endDate: '2026-05-10T14:59:59.000Z',
-      githubIssueUrl: 'https://github.com/hanghae-story-forge/archive/issues/16',
+      githubIssueUrl:
+        'https://github.com/hanghae-story-forge/archive/issues/16',
       daysLeft: 0,
       hoursLeft: 1,
     });
@@ -159,7 +161,9 @@ describe('CycleCommand', () => {
       content: string;
       components?: unknown[];
     };
-    expect(reply.content).toContain('아직 이번 주차 GitHub 이슈가 연결되지 않았어요');
+    expect(reply.content).toContain(
+      '아직 이번 주차 GitHub 이슈가 연결되지 않았어요'
+    );
     expect(reply.content).toContain('참여자라면');
     expect(reply.content).toContain('운영자라면');
     expect(reply.components).toEqual([]);
@@ -172,7 +176,8 @@ describe('CycleCommand', () => {
       generationName: '똥글똥글 2기',
       startDate: '2026-04-26T15:00:00.000Z',
       endDate: '2026-05-10T14:59:59.000Z',
-      githubIssueUrl: 'https://github.com/hanghae-story-forge/archive/issues/16',
+      githubIssueUrl:
+        'https://github.com/hanghae-story-forge/archive/issues/16',
       daysLeft: 13,
     });
     const getCycleParticipantNames = vi.fn().mockResolvedValue({
@@ -192,7 +197,9 @@ describe('CycleCommand', () => {
     const reply = interaction.editReply.mock.calls.at(-1)?.[0] as {
       embeds?: Array<{ description?: string }>;
     };
-    expect(reply.embeds?.[0]?.description).toContain('진행률: 2 / 3명 제출, 67%');
+    expect(reply.embeds?.[0]?.description).toContain(
+      '진행률: 2 / 3명 제출, 67%'
+    );
   });
 
   it('explains missing current cycle from status with a next command', async () => {
@@ -309,7 +316,9 @@ describe('CycleCommand', () => {
     const interaction = createInteraction('current');
     interaction.editReply.mockRejectedValue(new Error('reply failed'));
 
-    await expect(command.execute(interaction as never)).resolves.toBeUndefined();
+    await expect(
+      command.execute(interaction as never)
+    ).resolves.toBeUndefined();
   });
 
   it('lists cycles for a generation', async () => {
@@ -393,7 +402,9 @@ describe('CycleCommand', () => {
     });
     interaction.editReply.mockRejectedValue(new Error('reply failed'));
 
-    await expect(command.execute(interaction as never)).resolves.toBeUndefined();
+    await expect(
+      command.execute(interaction as never)
+    ).resolves.toBeUndefined();
   });
 
   it('stops when cycle list defer fails', async () => {
@@ -410,7 +421,14 @@ describe('CycleCommand', () => {
     const command = new CycleCommand({} as never);
     const interaction = createInteraction('list');
     interaction.deferReply.mockRejectedValue(
-      new DiscordAPIError({ message: 'Unknown interaction', code: 10062 } as never, 10062, 404, 'POST', '/interactions', {})
+      new DiscordAPIError(
+        { message: 'Unknown interaction', code: 10062 } as never,
+        10062,
+        404,
+        'POST',
+        '/interactions',
+        {}
+      )
     );
 
     await command.execute(interaction as never);
@@ -422,7 +440,14 @@ describe('CycleCommand', () => {
     const command = new CycleCommand({} as never);
     const interaction = createInteraction('list');
     interaction.deferReply.mockRejectedValue(
-      new DiscordAPIError({ message: 'Already acknowledged', code: 40060 } as never, 40060, 400, 'POST', '/interactions', {})
+      new DiscordAPIError(
+        { message: 'Already acknowledged', code: 40060 } as never,
+        40060,
+        400,
+        'POST',
+        '/interactions',
+        {}
+      )
     );
 
     await command.execute(interaction as never);

@@ -94,9 +94,12 @@ export function createStatusMessage(
     totalParticipants === 0
       ? 0
       : Math.round((submitted.length / totalParticipants) * 100);
-  const isEveryoneSubmitted = totalParticipants > 0 && notSubmitted.length === 0;
+  const isEveryoneSubmitted =
+    totalParticipants > 0 && notSubmitted.length === 0;
   const submittedValue =
-    submitted.length > 0 ? formatNamesAsList(submitted) : '아직 제출자가 없어요.';
+    submitted.length > 0
+      ? formatNamesAsList(submitted)
+      : '아직 제출자가 없어요.';
   const notSubmittedValue = isEveryoneSubmitted
     ? '이번 주차 모든 참여자가 제출을 완료했어요.'
     : formatNamesAsList(notSubmitted);
