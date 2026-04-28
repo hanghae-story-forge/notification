@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "donguel-donguel-notification-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_ENV": "staging",
+    "API_BASE_URL": "https://donguel-donguel-notification.onrender.com",
+    "DISCORD_COMMAND_SYNC_POLICY": "interactions"
+  }
+}

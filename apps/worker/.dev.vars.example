@@ -1,0 +1,8 @@
+# Local-only sample values. Do not commit real secrets.
+APP_ENV=local
+API_BASE_URL=https://donguel-donguel-notification.onrender.com
+DISCORD_COMMAND_SYNC_POLICY=interactions
+DISCORD_PUBLIC_KEY=replace-with-discord-application-public-key
+DISCORD_APPLICATION_ID=replace-with-discord-application-id
+DISCORD_BOT_TOKEN=replace-with-discord-bot-token
+GITHUB_WEBHOOK_SECRET=replace-with-github-webhook-secret
