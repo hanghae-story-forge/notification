@@ -1,0 +1,23 @@
+{
+  "name": "@hanghae-study/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Workers migration scaffold for 똥글똥글 Discord interactions and webhooks",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "hono": "^4.7.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260426.1",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.16",
+    "wrangler": "^4.13.2"
+  }
+}

@@ -23,7 +23,7 @@ function formatRemainingTime(daysLeft: number, hoursLeft?: number): string {
     return `마감까지 ${daysLeft}일 ${hoursLeft}시간`;
   }
 
-  return daysLeft > 0 ? `마감까지 ${daysLeft}일` : '오늘 마감';
+  return `마감까지 ${daysLeft}일`;
 }
 
 function createIssueButton(issueUrl?: string | null) {
@@ -113,6 +113,16 @@ export class MeCommand implements DiscordCommand {
       const approvedOrganizations = organizationMembers.filter(
         (om) => om.status.value === 'APPROVED'
       ).length;
+      const pendingOrganizations = organizationMembers.filter(
+        (om) => om.status.value === 'PENDING'
+      ).length;
+
+      const organizationGuidance =
+        approvedOrganizations > 0
+          ? ''
+          : pendingOrganizations > 0
+            ? '🏢 **조직 승인 대기 중이에요.** 운영진 승인 후 주차 참여와 제출 상태 확인이 가능해요. `/me organizations`로 신청 상태를 확인해 주세요.\n'
+            : '🏢 **조직 가입이 필요해요.** 먼저 `/organization join`으로 똥글똥글 조직에 가입 신청해 주세요. 신청 후 `/me organizations`로 상태를 확인할 수 있어요.\n';
 
       // 소속 기수 수 확인
       const generationMembers = await this.generationMemberRepo.findByMember(
@@ -125,22 +135,51 @@ export class MeCommand implements DiscordCommand {
           )
         : null;
 
+      let submissionStatusMessage = '';
+      if (currentCycle && this.getCycleStatusQuery) {
+        const participantNames =
+          await this.getCycleStatusQuery.getCycleParticipantNames(
+            currentCycle.id,
+            DEFAULT_ORGANIZATION_SLUG
+          );
+
+        if (!participantNames) {
+          submissionStatusMessage = '📌 **내 제출 상태: 확인 불가**\n';
+        } else if (
+          participantNames.submittedNames.includes(member.name.value)
+        ) {
+          submissionStatusMessage = '📌 **내 제출 상태: ✅ 제출 완료**\n';
+        } else {
+          submissionStatusMessage = '📌 **내 제출 상태: ⏳ 아직 제출 전**\n';
+        }
+      }
+
       const currentCycleMessage = currentCycle
         ? `🎯 **현재 주차**: ${currentCycle.generationName} ${currentCycle.week}주차\n` +
           `⏰ **${formatRemainingTime(currentCycle.daysLeft, currentCycle.hoursLeft)}**\n` +
-          `🔗 이슈: ${currentCycle.githubIssueUrl ?? '아직 연결된 이슈가 없어요.'}\n`
+          `🔗 이슈: ${currentCycle.githubIssueUrl ?? '아직 연결된 이슈가 없어요.'}\n` +
+          submissionStatusMessage
         : '🎯 **현재 주차**: 진행 중인 주차를 찾지 못했어요. `/cycle current`로 다시 확인해 주세요.\n';
 
       const githubStatus = member.githubUsername
         ? `✅ GitHub 연결됨: ${member.githubUsername.value}`
         : '⚠️ GitHub 계정이 아직 연결되지 않았어요.';
 
-      const nextActions = member.githubUsername
-        ? '1. 이번 주차 글을 작성해 주세요.\n' +
-          '2. GitHub 이슈에 제출 링크를 댓글로 남겨 주세요.\n' +
-          '3. `/cycle status`로 전체 제출 현황을 확인해 주세요.'
-        : '1. GitHub 계정을 먼저 연결해 주세요.\n' +
-          '2. 연결 후 `/me info`로 상태를 다시 확인해 주세요.';
+      const nextActions =
+        approvedOrganizations === 0
+          ? pendingOrganizations > 0
+            ? '1. 운영진 승인을 기다려 주세요.\n' +
+              '2. `/me organizations`로 조직 가입 신청 상태를 확인해 주세요.\n' +
+              '3. 승인 후 `/generation join`으로 참여 기수를 확인해 주세요.'
+            : '1. `/organization join`으로 똥글똥글 조직에 가입 신청해 주세요.\n' +
+              '2. `/me organizations`로 승인 상태를 확인해 주세요.\n' +
+              '3. 승인 후 `/generation join`으로 참여 기수를 확인해 주세요.'
+          : member.githubUsername
+            ? '1. 이번 주차 글을 작성해 주세요.\n' +
+              '2. GitHub 이슈에 제출 링크를 댓글로 남겨 주세요.\n' +
+              '3. `/cycle status`로 전체 제출 현황을 확인해 주세요.'
+            : '1. GitHub 계정을 먼저 연결해 주세요.\n' +
+              '2. 연결 후 `/me info`로 상태를 다시 확인해 주세요.';
 
       await interaction.editReply({
         content:
@@ -149,8 +188,9 @@ export class MeCommand implements DiscordCommand {
           `**Discord**: ${member.discordUsername?.value ?? '미설정'}\n` +
           `${githubStatus}\n` +
           `**승인된 조직**: ${approvedOrganizations}개\n` +
-          `**참여 기수**: ${generationMembers.length}개\n\n` +
-          `${currentCycleMessage}\n` +
+          `**참여 기수**: ${generationMembers.length}개\n` +
+          `${organizationGuidance ? `\n${organizationGuidance}` : '\n'}` +
+          `\n${currentCycleMessage}\n` +
           '**다음 행동**\n' +
           nextActions,
         components: createIssueButton(currentCycle?.githubIssueUrl),

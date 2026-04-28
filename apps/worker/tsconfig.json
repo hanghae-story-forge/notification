@@ -1,0 +1,12 @@
+{
+  "extends": "../../packages/config/typescript/base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "WebWorker"],
+    "types": ["@cloudflare/workers-types", "vitest"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "strict": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "worker-configuration.d.ts"]
+}

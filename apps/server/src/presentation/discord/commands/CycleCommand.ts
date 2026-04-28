@@ -34,7 +34,7 @@ function formatRemainingTime(daysLeft: number, hoursLeft?: number): string {
     return `마감까지 ${daysLeft}일 ${hoursLeft}시간`;
   }
 
-  return daysLeft > 0 ? `마감까지 ${daysLeft}일` : '오늘 마감';
+  return `마감까지 ${daysLeft}일`;
 }
 
 function createIssueButton(issueUrl?: string | null) {
@@ -133,6 +133,15 @@ export class CycleCommand implements DiscordCommand {
         currentCycle.hoursLeft
       );
 
+      const issueSection = currentCycle.githubIssueUrl
+        ? `🔗 이슈 링크: ${currentCycle.githubIssueUrl}\n\n`
+        : '⚠️ **아직 이번 주차 GitHub 이슈가 연결되지 않았어요.**\n\n' +
+          '**참여자라면**\n' +
+          '- 잠시 후 다시 확인해 주세요.\n\n' +
+          '**운영자라면**\n' +
+          '- GitHub 이슈가 생성되었는지 확인해 주세요.\n' +
+          '- 주차 데이터의 `githubIssueUrl`을 확인해 주세요.\n\n';
+
       await interaction.editReply({
         content:
           `📅 **${currentCycle.generationName} ${currentCycle.week}주차가 진행 중이에요**\n\n` +
@@ -141,11 +150,16 @@ export class CycleCommand implements DiscordCommand {
             dateStyle: 'medium',
             timeStyle: 'short',
           })}\n` +
-          `이슈 링크: ${currentCycle.githubIssueUrl}\n\n` +
+          issueSection +
+          '**제출 방법**\n' +
+          '1. 이번 주차 글을 작성합니다.\n' +
+          '2. 아래 버튼으로 이번 주차 GitHub 이슈를 엽니다.\n' +
+          '3. 댓글에 글 링크를 남깁니다.\n\n' +
+          '**댓글 예시**\n' +
+          '```\nhttps://my-blog.com/my-post\n```\n' +
           '**다음 행동**\n' +
-          '1. 이번 주차 글을 작성해 주세요.\n' +
-          '2. GitHub 이슈에 제출 링크를 댓글로 남겨 주세요.\n' +
-          '3. 제출 후 `/me info`로 내 상태를 다시 확인해 주세요.',
+          '1. 제출 후 `/me info`로 내 상태를 다시 확인해 주세요.\n' +
+          '2. 전체 현황은 `/cycle status`로 확인해 주세요.',
         components: createIssueButton(currentCycle.githubIssueUrl),
       });
     } catch (error) {
@@ -172,7 +186,10 @@ export class CycleCommand implements DiscordCommand {
 
       if (!currentCycle) {
         await interaction.editReply({
-          content: '❌ 현재 진행 중인 주차가 없습니다.',
+          content:
+            '🗓️ **현재 진행 중인 주차를 찾지 못했어요.**\n\n' +
+            '`/cycle current`로 현재 주차가 열려 있는지 먼저 확인해 주세요.\n' +
+            '운영자라면 `/cycle list`로 등록된 주차를 확인해 주세요.',
         });
         return;
       }
@@ -266,6 +283,7 @@ export class CycleCommand implements DiscordCommand {
     }
   }
 
+  /* v8 ignore start -- repository wiring is exercised by infrastructure tests; command UX tests stub this boundary. */
   private async findCyclesByGeneration(
     generationName: string,
     organizationSlug: string
@@ -297,4 +315,5 @@ export class CycleCommand implements DiscordCommand {
       endDate: c.endDate,
     }));
   }
+  /* v8 ignore stop */
 }
