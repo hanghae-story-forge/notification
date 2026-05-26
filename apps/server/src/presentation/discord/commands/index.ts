@@ -33,6 +33,17 @@ import {
   ListGenerationApplicationsQuery,
 } from '@/application/study-operations';
 import { MemberService } from '@/domain/member/member.service';
+import {
+  CompletePeerReviewAssignmentCommand,
+  CreatePeerReviewAssignmentsCommand,
+  GetMyPeerReviewAssignmentQuery,
+  GetPeerReviewStatusQuery,
+} from '@/application/peer-review';
+import {
+  DrizzlePeerReviewAssignmentDetailsLookup,
+  DrizzlePeerReviewAssignmentRepository,
+  DrizzlePeerReviewSubmissionLookup,
+} from '@/infrastructure/persistence/drizzle/peer-review.repository.impl';
 
 // Repository instances
 const cycleRepo = new DrizzleCycleRepository();
@@ -44,6 +55,10 @@ const organizationRepo = new DrizzleOrganizationRepository();
 const organizationMemberRepo = new DrizzleOrganizationMemberRepository();
 const generationParticipantRepo = new DrizzleGenerationParticipantRepository();
 const studyOperationsOutbox = new DrizzleOutboxPort();
+const peerReviewAssignmentRepo = new DrizzlePeerReviewAssignmentRepository();
+const peerReviewSubmissionLookup = new DrizzlePeerReviewSubmissionLookup();
+const peerReviewAssignmentDetailsLookup =
+  new DrizzlePeerReviewAssignmentDetailsLookup();
 
 // Application layer instances
 const memberService = new MemberService(memberRepo);
@@ -91,6 +106,42 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
   organizationMemberRepo,
   memberRepo
 );
+const createPeerReviewAssignmentsCommand =
+  new CreatePeerReviewAssignmentsCommand(
+    peerReviewSubmissionLookup,
+    peerReviewAssignmentRepo
+  );
+const getMyPeerReviewAssignmentQuery = new GetMyPeerReviewAssignmentQuery(
+  peerReviewAssignmentRepo
+);
+const completePeerReviewAssignmentCommand =
+  new CompletePeerReviewAssignmentCommand(peerReviewAssignmentRepo);
+const getPeerReviewStatusQuery = new GetPeerReviewStatusQuery(
+  peerReviewAssignmentRepo
+);
+
+const currentPeerReviewCycleQuery = {
+  async getCurrentCycle(organizationSlug: string) {
+    const organization = await organizationRepo.findBySlug(organizationSlug);
+    if (!organization) return null;
+
+    const activeCycles = await cycleRepo.findActiveCyclesByOrganization(
+      organization.id.value
+    );
+    const currentCycle = activeCycles[0];
+    if (!currentCycle) return null;
+
+    const generation = await generationRepo.findActiveByOrganization(
+      organization.id.value
+    );
+
+    return {
+      id: currentCycle.id.value,
+      week: currentCycle.week.toNumber(),
+      generationName: generation?.name ?? '똥글똥글',
+    };
+  },
+};
 
 // Command instances
 export const createCommands = (): DiscordCommand[] => {
@@ -124,7 +175,15 @@ export const createCommands = (): DiscordCommand[] => {
       cycleRepo
     ),
     new CycleCommand(getCycleStatusQuery),
-    new ReviewCommand(),
+    new ReviewCommand({
+      memberRepository: memberRepo,
+      cycleQuery: currentPeerReviewCycleQuery,
+      createAssignmentsCommand: createPeerReviewAssignmentsCommand,
+      getMyAssignmentQuery: getMyPeerReviewAssignmentQuery,
+      completeAssignmentCommand: completePeerReviewAssignmentCommand,
+      getStatusQuery: getPeerReviewStatusQuery,
+      assignmentDetailsLookup: peerReviewAssignmentDetailsLookup,
+    }),
   ];
 };
 
