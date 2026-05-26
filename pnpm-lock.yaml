@@ -30,6 +30,12 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
+  apps/dashboard:
+    devDependencies:
+      wrangler:
+        specifier: ^4.18.0
+        version: 4.94.0(@cloudflare/workers-types@4.20260526.1)
+
   apps/server:
     dependencies:
       '@getcronit/pylon':

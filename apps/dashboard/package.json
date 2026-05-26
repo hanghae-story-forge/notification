@@ -1,0 +1,14 @@
+{
+  "name": "@hanghae-study/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "deploy": "wrangler pages deploy public --project-name donguel-donguel-dashboard",
+    "deploy:dry-run": "wrangler pages deploy public --project-name donguel-donguel-dashboard --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.18.0"
+  }
+}

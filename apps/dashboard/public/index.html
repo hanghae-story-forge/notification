@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="description"
+      content="똥글똥글 스터디 기수와 회차별 글 제출 현황을 확인하는 대시보드"
+    />
+    <title>똥글똥글 스터디 현황판</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Donguel Donguel Study Operations</p>
+      <h1>똥글똥글 스터디 현황판</h1>
+      <p class="lede">
+        운영 중인 기수와 회차의 제출 현황을 빠르게 확인하고, 제출/미제출 멤버와 글 링크를 한 곳에서 봅니다.
+      </p>
+      <div class="hero-actions">
+        <a class="button ghost" href="https://donguel-donguel-notification.onrender.com/health" target="_blank" rel="noreferrer">
+          API 상태 확인
+        </a>
+        <a class="button ghost" href="https://discord.com/channels/1416659264038244455" target="_blank" rel="noreferrer">
+          Discord 열기
+        </a>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel controls" aria-labelledby="controls-title">
+        <div>
+          <p class="eyebrow">조회 조건</p>
+          <h2 id="controls-title">스터디와 회차 선택</h2>
+          <p class="muted">
+            현재 회차가 없으면 특정 회차 ID로 직접 조회할 수 있어요. 제출은 Discord에서 <code>/submit url:</code> 커맨드로 진행합니다.
+          </p>
+        </div>
+        <form id="statusForm" class="form-grid">
+          <label>
+            스터디 slug
+            <input id="organizationSlug" name="organizationSlug" value="donguel-donguel" autocomplete="off" />
+          </label>
+          <label>
+            회차 ID
+            <input id="cycleId" name="cycleId" value="11" inputmode="numeric" pattern="[0-9]*" />
+          </label>
+          <div class="button-row">
+            <button class="button" type="button" data-testid="load-current-cycle" id="loadCurrentCycle">
+              현재 회차 불러오기
+            </button>
+            <button class="button primary" type="submit" data-testid="load-cycle-status">
+              제출 현황 보기
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="status-strip" aria-live="polite">
+        <div>
+          <span class="label">API</span>
+          <strong id="apiState">확인 전</strong>
+        </div>
+        <div>
+          <span class="label">현재 조회</span>
+          <strong id="currentScope">-</strong>
+        </div>
+        <div>
+          <span class="label">업데이트</span>
+          <strong id="updatedAt">-</strong>
+        </div>
+      </section>
+
+      <section id="message" class="message" hidden></section>
+
+      <section id="dashboard" class="dashboard" hidden>
+        <article class="panel summary-card">
+          <p class="eyebrow">Cycle Summary</p>
+          <h2 id="cycleTitle">-</h2>
+          <p id="cyclePeriod" class="muted">-</p>
+          <div class="meter" aria-label="제출률">
+            <div id="meterFill" class="meter-fill"></div>
+          </div>
+          <div class="summary-grid">
+            <div>
+              <span class="label">제출률</span>
+              <strong id="submissionRate">-</strong>
+            </div>
+            <div>
+              <span class="label">제출</span>
+              <strong id="submittedCount">-</strong>
+            </div>
+            <div>
+              <span class="label">미제출</span>
+              <strong id="notSubmittedCount">-</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Submitted</p>
+              <h2>제출한 글</h2>
+            </div>
+            <span id="submittedBadge" class="badge">0</span>
+          </div>
+          <div id="submittedList" class="card-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Missing</p>
+              <h2>아직 미제출</h2>
+            </div>
+            <span id="notSubmittedBadge" class="badge warn">0</span>
+          </div>
+          <div id="notSubmittedList" class="card-list compact"></div>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      <span>똥글똥글 운영 현황판</span>
+      <span>읽기 전용 · noindex</span>
+    </footer>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
