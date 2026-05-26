@@ -387,9 +387,8 @@ pnpm build
 
 ## PR sequence
 
-1. `docs/chore`: full CF migration plan + remove proxy defaults from scaffold.
-2. `feat(worker-db)`: D1 schema, migrations, D1 binding, data migration runbook.
-3. `feat(worker-cycle-current)`: `/cycle current` D1-backed interaction.
-4. `feat(worker-github-webhook)`: native GitHub webhook verification + submission recording.
-5. `feat(worker-reminders)`: Cron Trigger reminder handling.
-6. `chore(cutover)`: Discord/GitHub endpoint switch docs and Render shutdown checklist.
+1. `docs/chore`: full CF migration plan + remove proxy defaults from scaffold. ✅ merged
+2. `feat(worker-d1-cycle-current)`: D1 schema, migrations, D1 binding, and `/cycle current` D1-backed interaction.
+3. `feat(worker-github-webhook)`: native GitHub webhook verification + submission recording.
+4. `feat(worker-reminders)`: Cron Trigger reminder handling.
+5. `chore(cutover)`: Discord/GitHub endpoint switch docs and Render shutdown checklist.

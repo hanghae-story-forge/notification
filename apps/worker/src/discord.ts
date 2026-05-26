@@ -9,6 +9,10 @@ export interface DiscordInteraction {
   type: number;
   data?: {
     name?: string;
+    options?: Array<{
+      type: number;
+      name: string;
+    }>;
   };
 }
 
@@ -89,11 +93,23 @@ export function createDiscordInteractionResponse(
       type: DISCORD_RESPONSE_CHANNEL_MESSAGE_WITH_SOURCE,
       data: {
         content:
-          "Cloudflare Worker 전환 준비가 완료되었어요. `/cycle current` 이식은 다음 단계에서 연결합니다.",
+          "Cloudflare Worker 전환 준비가 완료되었어요. 지원하지 않는 명령은 Cloudflare-native handler로 순차 이식합니다.",
         flags: DISCORD_EPHEMERAL_FLAG,
       },
     };
   }
 
   return null;
+}
+
+export function isCycleCurrentCommand(
+  interaction: DiscordInteraction,
+): boolean {
+  return (
+    interaction.type === DISCORD_APPLICATION_COMMAND &&
+    interaction.data?.name === "cycle" &&
+    interaction.data.options?.some(
+      (option) => option.type === 1 && option.name === "current",
+    ) === true
+  );
 }

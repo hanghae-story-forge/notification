@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import {
   createDiscordInteractionResponse,
+  isCycleCurrentCommand,
   verifyDiscordRequest,
   type DiscordInteraction,
 } from "./discord";
+import { createCycleCurrentResponse } from "./cycle-current";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -37,7 +39,9 @@ app.post("/discord/interactions", async (context) => {
     return context.text("invalid interaction payload", 400);
   }
 
-  const response = createDiscordInteractionResponse(interaction);
+  const response = isCycleCurrentCommand(interaction)
+    ? await createCycleCurrentResponse(context.env.DB)
+    : createDiscordInteractionResponse(interaction);
   if (!response) {
     return context.text("unsupported interaction type", 400);
   }

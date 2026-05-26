@@ -5,7 +5,46 @@ import {
 } from "../src/discord";
 import worker from "../src/index";
 
+class FakeD1Database {
+  constructor(
+    private readonly rows: Record<string, unknown[]> = {},
+    private readonly calls: string[] = [],
+  ) {}
+
+  prepare(query: string) {
+    this.calls.push(query);
+    return {
+      bind: (..._values: unknown[]) => ({
+        first: async <T = unknown>() =>
+          (this.rows.currentCycle?.[0] ?? null) as T | null,
+        all: async <T = unknown>() => ({
+          results: (query.includes("submitted_members")
+            ? (this.rows.submittedMembers ?? [])
+            : (this.rows.notSubmittedMembers ?? [])) as T[],
+        }),
+      }),
+    };
+  }
+
+  dump(): Promise<ArrayBuffer> {
+    throw new Error("not implemented");
+  }
+
+  batch<T = unknown>(): Promise<D1Result<T>[]> {
+    throw new Error("not implemented");
+  }
+
+  exec(): Promise<D1ExecResult> {
+    throw new Error("not implemented");
+  }
+
+  getQueries() {
+    return this.calls;
+  }
+}
+
 const env: Env = {
+  DB: new FakeD1Database() as unknown as D1Database,
   DISCORD_PUBLIC_KEY:
     "0000000000000000000000000000000000000000000000000000000000000000",
   DISCORD_APPLICATION_ID: "1457578741097042114",
@@ -67,17 +106,78 @@ describe("notification Cloudflare Worker", () => {
   it("returns a scaffold response for application commands", async () => {
     const response = createDiscordInteractionResponse({
       type: 2,
-      data: { name: "cycle" },
+      data: { name: "unknown" },
     });
 
     expect(response).toEqual({
       type: 4,
       data: {
         content:
-          "Cloudflare Worker 전환 준비가 완료되었어요. `/cycle current` 이식은 다음 단계에서 연결합니다.",
+          "Cloudflare Worker 전환 준비가 완료되었어요. 지원하지 않는 명령은 Cloudflare-native handler로 순차 이식합니다.",
         flags: 64,
       },
     });
+  });
+
+  it("handles /cycle current from D1 without calling Render", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const d1 = new FakeD1Database({
+      currentCycle: [
+        {
+          id: 7,
+          week: 7,
+          generation_name: "똥글똥글 2기",
+          organization_slug: "donguel-donguel",
+          start_date: "2026-05-12T00:00:00.000Z",
+          end_date: "2999-05-26T14:59:59.000Z",
+          github_issue_url:
+            "https://github.com/hanghae-story-forge/archive/issues/16",
+          required_count: 3,
+          submitted_count: 2,
+        },
+      ],
+      submittedMembers: [
+        {
+          name: "박준형",
+          github_username: "BBAK-jun",
+          url: "https://blog.dev/post",
+        },
+        {
+          name: "김항해",
+          github_username: "hanghae",
+          url: "https://blog.dev/2",
+        },
+      ],
+      notSubmittedMembers: [{ name: "미제출", github_username: "missing" }],
+    });
+    const response = await worker.fetch(
+      new Request("https://worker.example.test/discord/interactions", {
+        method: "POST",
+        headers: {
+          "x-signature-ed25519": "00".repeat(64),
+          "x-signature-timestamp": "1710000000",
+        },
+        body: JSON.stringify({
+          type: 2,
+          data: {
+            name: "cycle",
+            options: [{ type: 1, name: "current" }],
+          },
+        }),
+      }),
+      { ...env, DB: d1 as unknown as D1Database },
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      type: 4,
+      data: {
+        content: expect.stringContaining("똥글똥글 2기 7주차"),
+      },
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(d1.getQueries().join("\n")).toContain("FROM cycles");
   });
 
   it("does not proxy GitHub webhooks to Render", async () => {
