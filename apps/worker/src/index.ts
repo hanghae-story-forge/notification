@@ -45,12 +45,15 @@ app.post("/discord/interactions", async (context) => {
   return context.json(response);
 });
 
-app.post("/webhook/github", async (context) => {
-  const apiBaseUrl = context.env.API_BASE_URL.replace(/\/$/, "");
-  const targetUrl = `${apiBaseUrl}/webhook/github`;
-  const request = new Request(targetUrl, context.req.raw);
-
-  return fetch(request);
+app.post("/webhook/github", (context) => {
+  return context.json(
+    {
+      error: "github_webhook_native_handler_not_implemented",
+      message:
+        "GitHub webhook must be handled natively in Cloudflare Worker; Render proxy is disabled.",
+    },
+    501,
+  );
 });
 
 export default app;
