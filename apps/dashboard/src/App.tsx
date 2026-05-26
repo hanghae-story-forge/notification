@@ -1,5 +1,7 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BookOpenText, CheckCircle2, Clock3, Compass, LogIn, Search, Sparkles } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import { QueryClient, queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createRootRoute, createRoute, createRouter, useNavigate, useSearch } from '@tanstack/react-router';
+import { ArrowRight, ArrowUpRight, BookOpenText, Clock3, Compass, LogIn, Search, Sparkles } from 'lucide-react';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
@@ -7,6 +9,8 @@ import { Input } from './components/ui/input';
 import { Separator } from './components/ui/separator';
 
 const API_BASE_URL = '';
+const ONE_MINUTE = 1000 * 60;
+const FIVE_MINUTES = ONE_MINUTE * 5;
 
 type Study = {
   id: number;
@@ -72,7 +76,10 @@ type CycleStatus = {
   }>;
 };
 
-type ApiState = 'idle' | 'loading' | 'ready' | 'error';
+type PortalSearch = {
+  studySlug?: string;
+  searchQuery?: string;
+};
 
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -85,6 +92,51 @@ async function fetchJson<T>(path: string): Promise<T> {
   }
 
   return payload as T;
+}
+
+function portalQueryOptions() {
+  return queryOptions({
+    queryKey: ['study-portal'],
+    queryFn: async () => {
+      const [auth, publicStudies, myStudies] = await Promise.all([
+        fetchJson<AuthSession>('/api/auth/me'),
+        fetchJson<{ studies: Study[] }>('/api/studies'),
+        fetchJson<MyStudiesResponse>('/api/studies/me'),
+      ]);
+
+      return {
+        auth,
+        publicStudies: publicStudies.studies,
+        myStudies: myStudies.studies ?? [],
+        mySubmissionStatus: myStudies.mySubmissionStatus ?? [],
+        message: myStudies.message ?? '스터디를 불러왔습니다.',
+      };
+    },
+    staleTime: FIVE_MINUTES,
+  });
+}
+
+function cycleStatusQueryOptions(study: Study | null) {
+  return queryOptions({
+    queryKey: ['cycle-status', study?.slug, study?.currentCycle?.id],
+    queryFn: async () => {
+      if (!study?.currentCycle) return null;
+      const cycleId = study.currentCycle.id;
+      const status = await fetchJson<CycleStatus>(
+        `/api/status/${cycleId}?organizationSlug=${encodeURIComponent(study.slug)}`,
+      );
+
+      return {
+        ...status,
+        submitted: status.submitted.map((submission) => ({
+          ...submission,
+          title: submission.title ?? submission.url,
+        })),
+      };
+    },
+    enabled: Boolean(study?.currentCycle),
+    staleTime: 1000 * 60,
+  });
 }
 
 function formatDate(value?: string) {
@@ -115,88 +167,111 @@ function getStatusLabel(status?: MySubmissionStatus) {
   return '아직 제출 전';
 }
 
+function normalizeSearchValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const rootRoute = createRootRoute({
+  component: PortalPage,
+});
+
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  validateSearch: (search: Record<string, unknown>): PortalSearch => ({
+    studySlug: normalizeSearchValue(search.studySlug),
+    searchQuery: normalizeSearchValue(search.searchQuery),
+  }),
+});
+
+const routeTree = rootRoute.addChildren([indexRoute]);
+
+export const router = createRouter({
+  routeTree,
+  context: { queryClient },
+});
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
 export function App() {
-  const [query, setQuery] = useState('');
-  const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
-  const [publicStudies, setPublicStudies] = useState<Study[]>([]);
-  const [myStudies, setMyStudies] = useState<Study[]>([]);
-  const [mySubmissionStatus, setMySubmissionStatus] = useState<MySubmissionStatus[]>([]);
-  const [auth, setAuth] = useState<AuthSession>({ authenticated: false, user: null });
-  const [cycleStatus, setCycleStatus] = useState<CycleStatus | null>(null);
-  const [apiState, setApiState] = useState<ApiState>('idle');
-  const [message, setMessage] = useState('스터디를 불러오는 중입니다.');
+  return <PortalPage />;
+}
+
+function PortalPage() {
+  const navigate = useNavigate({ from: '/' });
+  const { studySlug, searchQuery = '' } = useSearch({ from: '/' });
+  const queryClient = useQueryClient();
+  const portalQuery = useQuery(portalQueryOptions());
+
+  const auth = portalQuery.data?.auth ?? { authenticated: false, user: null };
+  const publicStudies = portalQuery.data?.publicStudies ?? [];
+  const myStudies = portalQuery.data?.myStudies ?? [];
+  const mySubmissionStatus = portalQuery.data?.mySubmissionStatus ?? [];
+  const normalizedQuery = searchQuery.trim().toLowerCase();
 
   const visibleStudies = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return publicStudies;
+    if (!normalizedQuery) return publicStudies;
     return publicStudies.filter((study) =>
-      `${study.name} ${study.slug} ${study.description}`.toLowerCase().includes(normalized),
+      `${study.name} ${study.slug} ${study.description}`.toLowerCase().includes(normalizedQuery),
     );
-  }, [publicStudies, query]);
+  }, [normalizedQuery, publicStudies]);
 
-  async function loadPortal() {
-    setApiState('loading');
-    setMessage('스터디 탐색 정보를 불러오는 중입니다.');
+  const selectedStudy = useMemo(() => {
+    return (
+      publicStudies.find((study) => study.slug === studySlug) ??
+      myStudies[0] ??
+      visibleStudies[0] ??
+      publicStudies[0] ??
+      null
+    );
+  }, [myStudies, publicStudies, studySlug, visibleStudies]);
 
-    try {
-      const [authSession, studiesResponse, myResponse] = await Promise.all([
-        fetchJson<AuthSession>('/api/auth/me'),
-        fetchJson<{ studies: Study[] }>('/api/studies'),
-        fetchJson<MyStudiesResponse>('/api/studies/me'),
-      ]);
-
-      setAuth(authSession);
-      setPublicStudies(studiesResponse.studies);
-      setMyStudies(myResponse.studies ?? []);
-      setMySubmissionStatus(myResponse.mySubmissionStatus ?? []);
-      const initialStudy = myResponse.studies?.[0] ?? studiesResponse.studies[0] ?? null;
-      setSelectedStudy((current) => current ?? initialStudy);
-      setApiState('ready');
-      if (initialStudy?.currentCycle) {
-        void loadSubmissions(initialStudy);
-      } else {
-        setMessage(myResponse.message ?? '스터디를 불러왔습니다.');
-      }
-    } catch (error) {
-      setApiState('error');
-      setMessage(`스터디 정보를 불러오지 못했습니다: ${(error as Error).message}`);
-    }
-  }
-
-  async function loadSubmissions(study: Study) {
-    setSelectedStudy(study);
-    setCycleStatus(null);
-
-    if (!study.currentCycle) {
-      setMessage('이 스터디는 아직 진행 중인 회차가 없습니다.');
-      return;
-    }
-
-    try {
-      const cycleId = study.currentCycle.id;
-      const status = await fetchJson<CycleStatus>(`/api/status/${cycleId}?organizationSlug=${encodeURIComponent(study.slug)}`);
-      setCycleStatus({
-        ...status,
-        submitted: status.submitted.map((submission) => ({
-          ...submission,
-          title: submission.title ?? submission.url,
-        })),
-      });
-      setMessage('제출글 모아보기를 업데이트했습니다.');
-    } catch (error) {
-      setMessage(`제출글을 불러오지 못했습니다: ${(error as Error).message}`);
-    }
-  }
-
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-  }
+  const cycleStatusQuery = useQuery(cycleStatusQueryOptions(selectedStudy));
+  const isInvalidStudySlug = Boolean(studySlug && selectedStudy && studySlug !== selectedStudy.slug);
 
   useEffect(() => {
-    void loadPortal();
-  }, []);
+    if (isInvalidStudySlug && selectedStudy) {
+      navigateToSearch({ studySlug: selectedStudy.slug });
+    }
+  }, [isInvalidStudySlug, selectedStudy?.slug, studySlug]);
 
+  const cycleStatus = cycleStatusQuery.data;
   const selectedMyStatus = selectedStudy ? getMyStatus(mySubmissionStatus, selectedStudy) : undefined;
+
+  const selectedMessage = getPortalMessage({
+    selectedStudy,
+    portalQueryError: portalQuery.error,
+    portalQueryStatus: portalQuery.status,
+    cycleStatusError: cycleStatusQuery.error,
+    cycleStatusStatus: cycleStatusQuery.status,
+    fallbackMessage: portalQuery.data?.message,
+  });
+
+  function navigateToSearch(nextSearch: PortalSearch) {
+    void navigate({ search: (previous) => ({ ...previous, ...nextSearch }), replace: true });
+  }
+
+  function openStudy(study: Study) {
+    navigateToSearch({ studySlug: study.slug });
+  }
+
+  function prefetchStudy(study: Study) {
+    if (!study.currentCycle) return;
+    void queryClient.prefetchQuery(cycleStatusQueryOptions(study));
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -212,12 +287,12 @@ export function App() {
             </div>
           </div>
 
-          <form onSubmit={handleSearch} className="hidden flex-1 justify-center md:flex">
+          <form onSubmit={(event) => event.preventDefault()} className="hidden flex-1 justify-center md:flex">
             <div className="flex w-full max-w-xl items-center gap-3 rounded-full border border-border bg-white px-5 py-2 shadow-airbnb">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                value={searchQuery}
+                onChange={(event) => navigateToSearch({ searchQuery: event.target.value || undefined })}
                 className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
                 placeholder="스터디 이름이나 설명으로 검색"
               />
@@ -250,6 +325,7 @@ export function App() {
             누구나 공개 스터디와 제출글을 볼 수 있고, Discord로 로그인하면 내 스터디와 내 제출 상태가 먼저 보여요.
           </p>
           <div className="mt-6 flex flex-wrap gap-3 text-sm text-muted-foreground">
+            <Badge variant="secondary">TanStack Query 프리페칭</Badge>
             <Badge variant="secondary">Airbnb 참고 화이트 테마</Badge>
             <Badge variant="secondary">제출글 모아보기</Badge>
             <Badge variant="secondary">내 제출 상태</Badge>
@@ -276,7 +352,9 @@ export function App() {
                       key={study.slug}
                       study={study}
                       myStatus={getMyStatus(mySubmissionStatus, study)}
-                      onOpen={() => void loadSubmissions(study)}
+                      selected={selectedStudy?.slug === study.slug}
+                      onOpen={() => openStudy(study)}
+                      onPrefetch={() => prefetchStudy(study)}
                     />
                   ))}
                 </div>
@@ -302,12 +380,28 @@ export function App() {
             </section>
 
             <section>
-              <div className="mb-4 flex items-end justify-between gap-4">
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h3 className="text-2xl font-black">전체 공개 스터디</h3>
                   <p className="mt-1 text-sm text-muted-foreground">스터디 이름과 설명으로 검색하고 회차별 제출글을 볼 수 있습니다.</p>
                 </div>
-                <Badge variant={apiState === 'error' ? 'destructive' : 'secondary'}>{apiState}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={portalQuery.isError ? 'destructive' : 'secondary'}>
+                    {portalQuery.isFetching ? 'syncing' : portalQuery.status}
+                  </Badge>
+                  {searchQuery && <Badge variant="outline">검색 {visibleStudies.length}개</Badge>}
+                </div>
+              </div>
+              <div className="mb-4 flex md:hidden">
+                <div className="flex w-full items-center gap-3 rounded-full border border-border bg-white px-5 py-2 shadow-airbnb">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(event) => navigateToSearch({ searchQuery: event.target.value || undefined })}
+                    className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                    placeholder="스터디 검색"
+                  />
+                </div>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {visibleStudies.map((study) => (
@@ -315,10 +409,19 @@ export function App() {
                     key={study.slug}
                     study={study}
                     myStatus={getMyStatus(mySubmissionStatus, study)}
-                    onOpen={() => void loadSubmissions(study)}
+                    selected={selectedStudy?.slug === study.slug}
+                    onOpen={() => openStudy(study)}
+                    onPrefetch={() => prefetchStudy(study)}
                   />
                 ))}
               </div>
+              {!visibleStudies.length && (
+                <Card className="mt-4 border-dashed bg-secondary/40">
+                  <CardContent className="p-6 text-sm text-muted-foreground">
+                    검색 결과가 없습니다. 스터디 이름이나 설명을 다르게 입력해보세요.
+                  </CardContent>
+                </Card>
+              )}
             </section>
           </div>
 
@@ -354,7 +457,7 @@ export function App() {
                   )}
                 </div>
 
-                <p className="rounded-2xl bg-rose-50 p-4 text-sm leading-6 text-rose-700">{message}</p>
+                <p className="rounded-2xl bg-rose-50 p-4 text-sm leading-6 text-rose-700">{selectedMessage}</p>
               </CardContent>
             </Card>
 
@@ -364,7 +467,11 @@ export function App() {
                 <CardDescription>회차별 제출글을 공개 목록으로 보여줍니다.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {cycleStatus?.submitted.length ? (
+                {cycleStatusQuery.isFetching && selectedStudy?.currentCycle ? (
+                  <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                    프리페치된 제출글을 확인하는 중입니다.
+                  </div>
+                ) : cycleStatus?.submitted.length ? (
                   cycleStatus.submitted.map((submission) => (
                     <a key={`${submission.name}-${submission.url}`} href={submission.url} target="_blank" rel="noreferrer" className="block rounded-2xl border border-border p-4 transition hover:-translate-y-0.5 hover:shadow-airbnb">
                       <p className="font-bold">{getSubmissionTitle(submission)}</p>
@@ -385,9 +492,55 @@ export function App() {
   );
 }
 
-function StudyCard({ study, myStatus, onOpen }: { study: Study; myStatus?: MySubmissionStatus; onOpen: () => void }) {
+function getPortalMessage({
+  selectedStudy,
+  portalQueryError,
+  portalQueryStatus,
+  cycleStatusError,
+  cycleStatusStatus,
+  fallbackMessage,
+}: {
+  selectedStudy: Study | null;
+  portalQueryError: Error | null;
+  portalQueryStatus: 'error' | 'success' | 'pending';
+  cycleStatusError: Error | null;
+  cycleStatusStatus: 'error' | 'success' | 'pending';
+  fallbackMessage?: string;
+}) {
+  if (portalQueryError) return `스터디 정보를 불러오지 못했습니다: ${portalQueryError.message}`;
+  if (portalQueryStatus === 'pending') return '스터디 탐색 정보를 불러오는 중입니다.';
+  if (!selectedStudy) return fallbackMessage ?? '스터디를 불러왔습니다.';
+  if (!selectedStudy.currentCycle) return '이 스터디는 아직 진행 중인 회차가 없습니다.';
+  if (cycleStatusError) return `제출글을 불러오지 못했습니다: ${cycleStatusError.message}`;
+  if (cycleStatusStatus === 'pending') return '제출글을 미리 불러오는 중입니다.';
+  return '제출글 모아보기를 업데이트했습니다.';
+}
+
+function StudyCard({
+  study,
+  myStatus,
+  selected,
+  onOpen,
+  onPrefetch,
+}: {
+  study: Study;
+  myStatus?: MySubmissionStatus;
+  selected: boolean;
+  onOpen: () => void;
+  onPrefetch: () => void;
+}) {
   return (
-    <Card className="group cursor-pointer rounded-[1.75rem] transition hover:-translate-y-1 hover:shadow-airbnb" onClick={onOpen}>
+    <Card
+      className={`group cursor-pointer rounded-[1.75rem] transition hover:-translate-y-1 hover:shadow-airbnb ${
+        selected ? 'border-primary shadow-airbnb ring-2 ring-primary/10' : ''
+      }`}
+      onClick={onOpen}
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
+      tabIndex={0}
+      role="button"
+      aria-pressed={selected}
+    >
       <CardHeader>
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-primary">
           <BookOpenText className="h-6 w-6" />
