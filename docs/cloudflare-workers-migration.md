@@ -38,14 +38,15 @@ https://<worker-subdomain>.workers.dev/discord/interactions
 - `POST /discord/interactions`
   - Discord `x-signature-ed25519`, `x-signature-timestamp` 검증
   - Discord PING 요청에 `{ "type": 1 }` 응답
-  - application command에 임시 ephemeral scaffold 응답
+  - `/cycle current`는 즉시 deferred response `{ "type": 5 }`를 반환하고, Worker `waitUntil`에서 기존 Render API의 `/api/status/current?organizationSlug=donguel-donguel`를 조회한 뒤 Discord original interaction response를 `PATCH`한다.
+  - 아직 이식되지 않은 application command에는 임시 ephemeral scaffold 응답
 - `POST /webhook/github`
   - 단계적 이전을 위한 기존 Render API 프록시
 
 아직 하지 않은 것:
 
-- `/cycle current` 실제 비즈니스 로직 이식
 - DB 직접 연결 전략 확정
+- `/cycle status`, `/cycle list`, `/me`, `/generation`, `/review` 등 나머지 slash command 이식
 - Discord Developer Portal Interactions Endpoint 등록
 - Render Gateway bot 비활성화
 
@@ -92,12 +93,15 @@ SKIP_ENV_VALIDATION=true pnpm exec vitest run
 2. Worker 배포
 3. Discord Developer Portal에서 Interactions Endpoint URL을 Worker `/discord/interactions`로 등록
 4. Discord PING 검증 통과 확인
-5. `/cycle current`부터 Worker HTTP interaction 방식으로 이식
+5. `/cycle current` smoke test
+   - Discord는 3초 안에 deferred response를 받아야 한다.
+   - Worker가 background task에서 Render API를 깨운 뒤 original interaction response를 수정해야 한다.
 6. DB 접근 전략 결정
    - 단기: Worker가 기존 Render API 호출
    - 중기: Worker-compatible Postgres 접근
    - 장기: 필요하면 D1 등 Cloudflare-native 저장소 검토
-7. Worker command handler가 안정화된 뒤 Render의 Gateway bot 시작을 끄거나 제거
+7. `/cycle status`, `/cycle list` 등 나머지 slash command를 같은 방식으로 단계적 이식
+8. Worker command handler가 안정화된 뒤 Render의 Gateway bot 시작을 끄거나 제거
 
 ## 주의점
 

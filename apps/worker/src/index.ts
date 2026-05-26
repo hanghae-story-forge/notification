@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import {
   createDiscordInteractionResponse,
+  isCycleCurrentCommand,
+  updateCycleCurrentInteractionResponse,
   verifyDiscordRequest,
   type DiscordInteraction,
 } from "./discord";
@@ -40,6 +42,12 @@ app.post("/discord/interactions", async (context) => {
   const response = createDiscordInteractionResponse(interaction);
   if (!response) {
     return context.text("unsupported interaction type", 400);
+  }
+
+  if (isCycleCurrentCommand(interaction)) {
+    context.executionCtx.waitUntil(
+      updateCycleCurrentInteractionResponse(interaction, context.env),
+    );
   }
 
   return context.json(response);
