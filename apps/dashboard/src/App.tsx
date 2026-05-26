@@ -34,6 +34,7 @@ type AuthUser = {
 type AuthSession = {
   authenticated: boolean;
   user: AuthUser | null;
+  oauthConfigured?: boolean;
 };
 
 type MySubmissionStatus = {
@@ -230,6 +231,10 @@ export function App() {
             <Button variant="outline" asChild>
               <a href="/api/auth/logout">로그아웃</a>
             </Button>
+          ) : auth.oauthConfigured === false ? (
+            <Button variant="outline" disabled>
+              OAuth 설정 필요
+            </Button>
           ) : (
             <Button asChild>
               <a href="/api/auth/discord/login"><LogIn className="h-4 w-4" /> Discord로 로그인</a>
@@ -285,9 +290,15 @@ export function App() {
                       <p className="font-bold">Discord로 로그인하면 내 스터디와 내 제출 상태를 볼 수 있어요.</p>
                       <p className="mt-1 text-sm text-muted-foreground">등록되지 않은 경우 스터디봇에서 /member create를 먼저 진행하면 됩니다.</p>
                     </div>
-                    <Button asChild>
-                      <a href="/api/auth/discord/login">Discord로 로그인 <ArrowRight className="h-4 w-4" /></a>
-                    </Button>
+                    {auth.oauthConfigured === false ? (
+                      <Button disabled variant="outline">
+                        Discord OAuth 설정 필요
+                      </Button>
+                    ) : (
+                      <Button asChild>
+                        <a href="/api/auth/discord/login">Discord로 로그인 <ArrowRight className="h-4 w-4" /></a>
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )}
