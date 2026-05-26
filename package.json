@@ -23,7 +23,10 @@
     "github:assign": "turbo run github:assign",
     "github:fetch-comments": "turbo run github:fetch-comments",
     "github:poll-projects": "turbo run github:poll-projects",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "worker:dev": "pnpm --filter @hanghae-study/worker dev",
+    "worker:deploy": "pnpm --filter @hanghae-study/worker deploy",
+    "worker:deploy:dry-run": "pnpm --filter @hanghae-study/worker deploy:dry-run"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

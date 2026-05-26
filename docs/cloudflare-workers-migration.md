@@ -61,10 +61,16 @@ pnpm wrangler secret put DISCORD_BOT_TOKEN
 pnpm wrangler secret put GITHUB_WEBHOOK_SECRET
 ```
 
-일반 변수:
+일반 변수는 `apps/worker/wrangler.jsonc`에 들어 있다.
 
 ```txt
 API_BASE_URL=https://donguel-donguel-notification.onrender.com
+```
+
+로컬 개발용 예시는 `apps/worker/.dev.vars.example`을 복사해서 사용한다.
+
+```bash
+cp apps/worker/.dev.vars.example apps/worker/.dev.vars
 ```
 
 ## 로컬/CI 검증
@@ -76,7 +82,7 @@ export PATH="$HOME/.hermes/node/bin:$PATH"
 pnpm install
 pnpm --filter @hanghae-study/worker type-check
 pnpm --filter @hanghae-study/worker test
-pnpm --filter @hanghae-study/worker exec wrangler deploy --dry-run
+pnpm worker:deploy:dry-run
 ```
 
 기존 서버 회귀 검증:
@@ -86,18 +92,48 @@ cd apps/server
 SKIP_ENV_VALIDATION=true pnpm exec vitest run
 ```
 
+## 배포 절차
+
+Cloudflare 계정 인증은 로컬/CI 환경에서 한 번 필요하다.
+
+```bash
+cd apps/worker
+pnpm wrangler login
+pnpm wrangler whoami
+```
+
+secret 설정 후 repo root에서 dry-run과 실제 배포를 실행한다.
+
+```bash
+pnpm worker:deploy:dry-run
+pnpm worker:deploy
+```
+
+배포 후 Worker URL은 보통 다음 형태다.
+
+```txt
+https://donguel-donguel-notification-worker.<account-subdomain>.workers.dev
+```
+
+Discord Developer Portal에는 아래 URL을 Interactions Endpoint URL로 등록한다.
+
+```txt
+https://donguel-donguel-notification-worker.<account-subdomain>.workers.dev/discord/interactions
+```
+
 ## Cutover 순서
 
 1. Cloudflare Worker secrets 설정
-2. Worker 배포
-3. Discord Developer Portal에서 Interactions Endpoint URL을 Worker `/discord/interactions`로 등록
-4. Discord PING 검증 통과 확인
-5. `/cycle current`부터 Worker HTTP interaction 방식으로 이식
-6. DB 접근 전략 결정
+2. `pnpm worker:deploy:dry-run`으로 배포 번들 검증
+3. `pnpm worker:deploy`로 Worker 배포
+4. Discord Developer Portal에서 Interactions Endpoint URL을 Worker `/discord/interactions`로 등록
+5. Discord PING 검증 통과 확인
+6. `/cycle current`부터 Worker HTTP interaction 방식으로 이식
+7. DB 접근 전략 결정
    - 단기: Worker가 기존 Render API 호출
    - 중기: Worker-compatible Postgres 접근
    - 장기: 필요하면 D1 등 Cloudflare-native 저장소 검토
-7. Worker command handler가 안정화된 뒤 Render의 Gateway bot 시작을 끄거나 제거
+8. Worker command handler가 안정화된 뒤 Render의 Gateway bot 시작을 끄거나 제거
 
 ## 주의점
 
