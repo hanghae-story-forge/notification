@@ -7,6 +7,7 @@ import { MemberCommand } from './MemberCommand';
 import { OrganizationCommand } from './OrganizationCommand';
 import { GenerationCommand } from './GenerationCommand';
 import { MeCommand } from './MeCommand';
+import { ReviewCommand } from './ReviewCommand';
 import { GetCycleStatusQuery } from '@/application/queries';
 import {
   CreateMemberCommand as AppCreateMemberCommand,
@@ -123,6 +124,7 @@ export const createCommands = (): DiscordCommand[] => {
       cycleRepo
     ),
     new CycleCommand(getCycleStatusQuery),
+    new ReviewCommand(),
   ];
 };
 
