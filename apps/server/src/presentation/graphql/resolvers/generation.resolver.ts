@@ -3,17 +3,25 @@
 import {
   container,
   GENERATION_REPO_TOKEN,
+  MEMBER_REPO_TOKEN,
   ORGANIZATION_REPO_TOKEN,
 } from '@/shared/di';
-import type { GenerationRepository, OrganizationRepository } from '@/domain';
+import type {
+  GenerationRepository,
+  MemberRepository,
+  OrganizationRepository,
+} from '@/domain';
 import {
   CreateGenerationCommand,
   GetAllGenerationsQuery,
   GetGenerationByIdQuery,
 } from '@/application';
 import { OrganizationId } from '@/domain/organization/organization.domain';
+import { DrizzleGenerationMemberRepository } from '@/infrastructure/persistence/drizzle';
 import { domainToGraphqlOrganization } from '../mappers';
-import { GqlGeneration } from '../types';
+import { GqlGeneration, GqlGenerationMember, GqlMember } from '../types';
+import { GenerationMember } from '@/domain/generation-member/generation-member.domain';
+import type { GenerationMemberRepository } from '@/domain/generation-member/generation-member.repository';
 
 // ========================================
 // Lazy Dependency Resolution
@@ -26,6 +34,8 @@ let getGenerationByIdQuery: GetGenerationByIdQuery | null = null;
 let createGenerationCommand: CreateGenerationCommand | null = null;
 let generationRepo: GenerationRepository | null = null;
 let organizationRepo: OrganizationRepository | null = null;
+let generationMemberRepo: GenerationMemberRepository | null = null;
+let memberRepo: MemberRepository | null = null;
 
 const getQueries = () => {
   if (
@@ -39,6 +49,8 @@ const getQueries = () => {
     organizationRepo = container.resolve<OrganizationRepository>(
       ORGANIZATION_REPO_TOKEN
     );
+    generationMemberRepo = new DrizzleGenerationMemberRepository();
+    memberRepo = container.resolve<MemberRepository>(MEMBER_REPO_TOKEN);
 
     getAllGenerationsQuery = new GetAllGenerationsQuery(generationRepo);
     getGenerationByIdQuery = new GetGenerationByIdQuery(generationRepo);
@@ -51,8 +63,10 @@ const getQueries = () => {
     getAllGenerationsQuery,
     getGenerationByIdQuery,
     createGenerationCommand,
-    generationRepo,
-    organizationRepo,
+    generationRepo: generationRepo!,
+    organizationRepo: organizationRepo!,
+    generationMemberRepo: generationMemberRepo!,
+    memberRepo: memberRepo!,
   };
 };
 
@@ -60,18 +74,53 @@ const getQueries = () => {
 // Helper Functions
 // ========================================
 
-async function loadGenerationWithOrganization(
+// Helper 함수: GenerationMember를 GqlGenerationMember로 변환
+async function mapToGqlGenerationMember(
+  generationMember: GenerationMember,
+  memberRepo: MemberRepository
+): Promise<GqlGenerationMember> {
+  const member = await memberRepo.findById(generationMember.memberId);
+  if (!member) {
+    throw new Error(`Member ${generationMember.memberId.value} not found`);
+  }
+
+  return new GqlGenerationMember(generationMember, new GqlMember(member));
+}
+
+async function loadGenerationMembers(
+  generationMemberRepo: GenerationMemberRepository,
+  memberRepo: MemberRepository,
+  generationId: number
+): Promise<GqlGenerationMember[]> {
+  const generationMembers =
+    await generationMemberRepo.findByGeneration(generationId);
+  return Promise.all(
+    generationMembers.map((generationMember) =>
+      mapToGqlGenerationMember(generationMember, memberRepo)
+    )
+  );
+}
+
+async function loadGenerationWithOrganizationAndMembers(
   generation: Awaited<ReturnType<GetGenerationByIdQuery['execute']>>
 ): Promise<GqlGeneration | null> {
   if (!generation) return null;
 
-  const { organizationRepo } = getQueries();
-  const organization = await organizationRepo!.findById(
+  const { organizationRepo, generationMemberRepo, memberRepo } = getQueries();
+  const organization = await organizationRepo.findById(
     OrganizationId.create(generation.organizationId)
   );
+  const members = await loadGenerationMembers(
+    generationMemberRepo,
+    memberRepo,
+    generation.id.value
+  );
+
   return new GqlGeneration(
     generation,
-    organization ? domainToGraphqlOrganization(organization) : undefined
+    organization ? domainToGraphqlOrganization(organization) : undefined,
+    undefined,
+    members
   );
 }
 
@@ -82,39 +131,51 @@ async function loadGenerationWithOrganization(
 export const generationQueries = {
   // 기수 전체 조회
   generations: async (organizationSlug?: string): Promise<GqlGeneration[]> => {
-    const { getAllGenerationsQuery, generationRepo, organizationRepo } =
-      getQueries();
+    const {
+      getAllGenerationsQuery,
+      generationRepo,
+      organizationRepo,
+      generationMemberRepo,
+      memberRepo,
+    } = getQueries();
     let generations;
 
     if (organizationSlug) {
-      const organization = await organizationRepo!.findBySlug(organizationSlug);
+      const organization = await organizationRepo.findBySlug(organizationSlug);
       if (!organization) return [];
-      generations = await generationRepo!.findByOrganization(
+      generations = await generationRepo.findByOrganization(
         organization.id.value
       );
     } else {
       generations = await getAllGenerationsQuery.execute();
     }
 
-    const results = await Promise.all(
+    return Promise.all(
       generations.map(async (gen) => {
-        const organization = await organizationRepo!.findById(
+        const organization = await organizationRepo.findById(
           OrganizationId.create(gen.organizationId)
         );
+        const members = await loadGenerationMembers(
+          generationMemberRepo,
+          memberRepo,
+          gen.id.value
+        );
+
         return new GqlGeneration(
           gen,
-          organization ? domainToGraphqlOrganization(organization) : undefined
+          organization ? domainToGraphqlOrganization(organization) : undefined,
+          undefined,
+          members
         );
       })
     );
-    return results;
   },
 
   // 기수 단건 조회
   generation: async (id: number): Promise<GqlGeneration | null> => {
     const { getGenerationByIdQuery } = getQueries();
     const generation = await getGenerationByIdQuery.execute(id);
-    return loadGenerationWithOrganization(generation);
+    return loadGenerationWithOrganizationAndMembers(generation);
   },
 
   // 활성화된 기수 조회
@@ -125,14 +186,12 @@ export const generationQueries = {
     const generation = organizationSlug
       ? await (async () => {
           const organization =
-            await organizationRepo!.findBySlug(organizationSlug);
+            await organizationRepo.findBySlug(organizationSlug);
           if (!organization) return null;
-          return generationRepo!.findActiveByOrganization(
-            organization.id.value
-          );
+          return generationRepo.findActiveByOrganization(organization.id.value);
         })()
-      : await generationRepo!.findActive();
-    return loadGenerationWithOrganization(generation);
+      : await generationRepo.findActive();
+    return loadGenerationWithOrganizationAndMembers(generation);
   },
 };
 
@@ -143,18 +202,19 @@ export const generationMutations = {
     startedAt: string,
     organizationSlug: string
   ): Promise<GqlGeneration> => {
-    const { createGenerationCommand, organizationRepo } = getQueries();
+    const { createGenerationCommand } = getQueries();
     const result = await createGenerationCommand.execute({
       name,
       startedAt: new Date(startedAt),
       organizationSlug,
     });
-    const organization = await organizationRepo!.findById(
-      OrganizationId.create(result.generation.organizationId)
+
+    const generation = await loadGenerationWithOrganizationAndMembers(
+      result.generation
     );
-    return new GqlGeneration(
-      result.generation,
-      organization ? domainToGraphqlOrganization(organization) : undefined
-    );
+    if (!generation) {
+      throw new Error('Created generation could not be loaded');
+    }
+    return generation;
   },
 };
