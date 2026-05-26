@@ -6,8 +6,5 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
-  },
-  "vars": {
-    "API_BASE_URL": "https://donguel-donguel-notification.onrender.com"
   }
 }

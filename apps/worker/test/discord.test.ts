@@ -11,7 +11,6 @@ const env: Env = {
   DISCORD_APPLICATION_ID: "1457578741097042114",
   DISCORD_BOT_TOKEN: "test-token",
   GITHUB_WEBHOOK_SECRET: "test-secret",
-  API_BASE_URL: "https://api.example.test",
 };
 
 describe("notification Cloudflare Worker", () => {
@@ -79,6 +78,25 @@ describe("notification Cloudflare Worker", () => {
         flags: 64,
       },
     });
+  });
+
+  it("does not proxy GitHub webhooks to Render", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    const response = await worker.fetch(
+      new Request("https://worker.example.test/webhook/github", {
+        method: "POST",
+        body: JSON.stringify({ action: "created" }),
+      }),
+      env,
+      {} as ExecutionContext,
+    );
+
+    expect(response.status).toBe(501);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "github_webhook_native_handler_not_implemented",
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("verifies Discord signatures using timestamp plus raw body", async () => {
