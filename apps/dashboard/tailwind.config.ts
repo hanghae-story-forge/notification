@@ -6,35 +6,38 @@ const config = {
   theme: {
     extend: {
       colors: {
-        border: 'hsl(215 28% 17%)',
-        input: 'hsl(215 28% 17%)',
-        ring: 'hsl(188 95% 43%)',
-        background: 'hsl(222 47% 6%)',
-        foreground: 'hsl(210 40% 98%)',
+        border: 'hsl(24 10% 88%)',
+        input: 'hsl(24 10% 88%)',
+        ring: 'hsl(349 89% 60%)',
+        background: '#ffffff',
+        foreground: 'hsl(222 47% 11%)',
         primary: {
-          DEFAULT: 'hsl(262 83% 58%)',
-          foreground: 'hsl(210 40% 98%)',
+          DEFAULT: 'hsl(349 89% 60%)',
+          foreground: '#ffffff',
         },
         secondary: {
-          DEFAULT: 'hsl(217 33% 17%)',
-          foreground: 'hsl(210 40% 98%)',
+          DEFAULT: 'hsl(20 14% 96%)',
+          foreground: 'hsl(222 47% 11%)',
         },
         muted: {
-          DEFAULT: 'hsl(217 33% 14%)',
-          foreground: 'hsl(215 20% 65%)',
+          DEFAULT: 'hsl(20 14% 96%)',
+          foreground: 'hsl(215 16% 47%)',
         },
         destructive: {
-          DEFAULT: 'hsl(346 84% 61%)',
-          foreground: 'hsl(210 40% 98%)',
+          DEFAULT: 'hsl(0 84% 60%)',
+          foreground: '#ffffff',
         },
         card: {
-          DEFAULT: 'hsl(222 47% 8%)',
-          foreground: 'hsl(210 40% 98%)',
+          DEFAULT: '#ffffff',
+          foreground: 'hsl(222 47% 11%)',
         },
       },
       borderRadius: {
         xl: '1rem',
         '2xl': '1.25rem',
+      },
+      boxShadow: {
+        airbnb: '0 6px 24px rgba(0,0,0,0.08)',
       },
     },
   },

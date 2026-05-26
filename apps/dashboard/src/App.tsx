@@ -1,73 +1,77 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import {
-  AlertCircle,
-  ArrowUpRight,
-  CheckCircle2,
-  ClipboardList,
-  Gauge,
-  Megaphone,
-  RefreshCw,
-  Search,
-  UsersRound,
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpenText, CheckCircle2, Clock3, Compass, LogIn, Search, Sparkles } from 'lucide-react';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Input } from './components/ui/input';
-import { Progress } from './components/ui/progress';
 import { Separator } from './components/ui/separator';
 
 const API_BASE_URL = '';
 
-type Cycle = {
+type Study = {
   id: number;
-  week: number;
-  startDate: string;
-  endDate: string;
-  generationName: string;
+  name: string;
+  slug: string;
+  description: string;
+  isActive: boolean;
+  currentCycle: null | {
+    id: number;
+    week: number;
+    generationName: string;
+    startDate: string;
+    endDate: string;
+    submissionCount: number;
+  };
+};
+
+type AuthUser = {
+  id: string;
+  username?: string;
+  globalName?: string;
+  avatar?: string;
+};
+
+type AuthSession = {
+  authenticated: boolean;
+  user: AuthUser | null;
+};
+
+type MySubmissionStatus = {
   organizationSlug: string;
+  cycleId: number | null;
+  status: 'SUBMITTED' | 'NOT_SUBMITTED' | 'NO_CURRENT_CYCLE';
+  submission?: { title: string; url: string } | null;
 };
 
-type SubmittedMember = {
-  name: string;
-  github?: string;
-  url: string;
-  submittedAt?: string;
-};
-
-type MissingMember = {
-  name: string;
-  github?: string;
+type MyStudiesResponse = {
+  user: null | {
+    id: number;
+    name: string;
+    githubUsername?: string;
+    discordUsername?: string;
+  };
+  studies: Study[];
+  mySubmissionStatus?: MySubmissionStatus[];
+  message?: string;
 };
 
 type CycleStatus = {
-  cycle: Cycle;
-  summary: {
-    total: number;
-    submitted: number;
-    notSubmitted: number;
+  cycle: {
+    id: number;
+    week: number;
+    generationName: string;
+    organizationSlug: string;
   };
-  submitted: SubmittedMember[];
-  notSubmitted: MissingMember[];
+  submitted: Array<{
+    name: string;
+    github?: string;
+    title?: string;
+    url: string;
+    submittedAt?: string;
+  }>;
 };
 
-type CurrentCycle = Pick<Cycle, 'id' | 'week' | 'generationName' | 'organizationSlug'>;
-
-type ApiState = 'idle' | 'loading' | 'connected' | 'error';
-
-function formatDateTime(value?: string) {
-  if (!value) return '-';
-  return new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Seoul',
-  }).format(new Date(value));
-}
-
-function formatCycleLabel(cycle?: Pick<Cycle, 'generationName' | 'week'>) {
-  if (!cycle) return '조회 전';
-  return `${cycle.generationName} ${cycle.week}주차`;
-}
+type ApiState = 'idle' | 'loading' | 'ready' | 'error';
 
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -82,300 +86,328 @@ async function fetchJson<T>(path: string): Promise<T> {
   return payload as T;
 }
 
-function getRate(status?: CycleStatus) {
-  if (!status || status.summary.total === 0) return 0;
-  return Math.round((status.summary.submitted / status.summary.total) * 100);
+function formatDate(value?: string) {
+  if (!value) return '일정 미정';
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'Asia/Seoul',
+  }).format(new Date(value));
+}
+
+function formatAuthor(member: { name: string; github?: string }) {
+  return member.github ? `${member.name} @${member.github}` : member.name;
+}
+
+function getSubmissionTitle(submission: { title?: string; url: string }) {
+  return submission.title?.trim() || submission.url;
+}
+
+function getMyStatus(statuses: MySubmissionStatus[] | undefined, study: Study) {
+  return statuses?.find((status) => status.organizationSlug === study.slug);
+}
+
+function getStatusLabel(status?: MySubmissionStatus) {
+  if (!status) return '로그인하면 내 제출 상태 확인';
+  if (status.status === 'SUBMITTED') return '제출 완료';
+  if (status.status === 'NO_CURRENT_CYCLE') return '진행 중인 회차 없음';
+  return '아직 제출 전';
 }
 
 export function App() {
-  const [organizationSlug, setOrganizationSlug] = useState('donguel-donguel');
-  const [cycleId, setCycleId] = useState('11');
+  const [query, setQuery] = useState('');
+  const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
+  const [publicStudies, setPublicStudies] = useState<Study[]>([]);
+  const [myStudies, setMyStudies] = useState<Study[]>([]);
+  const [mySubmissionStatus, setMySubmissionStatus] = useState<MySubmissionStatus[]>([]);
+  const [auth, setAuth] = useState<AuthSession>({ authenticated: false, user: null });
+  const [cycleStatus, setCycleStatus] = useState<CycleStatus | null>(null);
   const [apiState, setApiState] = useState<ApiState>('idle');
-  const [status, setStatus] = useState<CycleStatus | null>(null);
-  const [message, setMessage] = useState('조회 전입니다. 먼저 현재 회차를 불러오거나 회차 ID로 제출 현황을 확인하세요.');
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [message, setMessage] = useState('스터디를 불러오는 중입니다.');
 
-  const submissionRate = getRate(status ?? undefined);
-  const hasMissing = (status?.summary.notSubmitted ?? 0) > 0;
-  const riskLabel = !status
-    ? '대기'
-    : hasMissing
-      ? `${status.summary.notSubmitted}명 리마인드 필요`
-      : '전원 제출 완료';
+  const visibleStudies = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return publicStudies;
+    return publicStudies.filter((study) =>
+      `${study.name} ${study.slug} ${study.description}`.toLowerCase().includes(normalized),
+    );
+  }, [publicStudies, query]);
 
-  const operatorFocus = useMemo(() => {
-    if (!status) {
-      return [
-        '현재 회차 불러오기 버튼으로 운영 중인 회차를 확인하세요.',
-        '회차 ID가 다르면 직접 입력 후 제출 현황 새로고침을 누르세요.',
-        'Discord /submit 안내를 스터디원에게 공유하세요.',
-      ];
-    }
+  async function loadPortal() {
+    setApiState('loading');
+    setMessage('스터디 탐색 정보를 불러오는 중입니다.');
 
-    if (hasMissing) {
-      return [
-        '미제출 먼저 확인: 오른쪽 목록에서 GitHub 미연결 여부를 같이 봅니다.',
-        '미제출자에게 리마인드: Discord에서 /submit url: 링크 제출을 안내합니다.',
-        '제출률 추이: 새로고침 후 제출률이 올라가는지 확인합니다.',
-      ];
-    }
+    try {
+      const [authSession, studiesResponse, myResponse] = await Promise.all([
+        fetchJson<AuthSession>('/api/auth/me'),
+        fetchJson<{ studies: Study[] }>('/api/studies'),
+        fetchJson<MyStudiesResponse>('/api/studies/me'),
+      ]);
 
-    return [
-      '모두 제출했습니다. 제출한 글 링크가 열리는지 샘플 확인하세요.',
-      '다음 회차가 열렸다면 현재 회차 불러오기로 운영 범위를 다시 확인하세요.',
-      '회고/리뷰 운영 액션이 있으면 Discord 공지로 이어가세요.',
-    ];
-  }, [hasMissing, status]);
-
-  async function loadCycleStatus(nextCycleId = cycleId) {
-    if (!/^\d+$/.test(nextCycleId.trim())) {
+      setAuth(authSession);
+      setPublicStudies(studiesResponse.studies);
+      setMyStudies(myResponse.studies ?? []);
+      setMySubmissionStatus(myResponse.mySubmissionStatus ?? []);
+      setSelectedStudy((current) => current ?? myResponse.studies?.[0] ?? studiesResponse.studies[0] ?? null);
+      setApiState('ready');
+      setMessage(myResponse.message ?? '스터디를 불러왔습니다.');
+    } catch (error) {
       setApiState('error');
-      setMessage('회차 ID는 숫자로 입력해주세요.');
+      setMessage(`스터디 정보를 불러오지 못했습니다: ${(error as Error).message}`);
+    }
+  }
+
+  async function loadSubmissions(study: Study) {
+    setSelectedStudy(study);
+    setCycleStatus(null);
+
+    if (!study.currentCycle) {
+      setMessage('이 스터디는 아직 진행 중인 회차가 없습니다.');
       return;
     }
 
-    setApiState('loading');
-    setMessage('제출 현황을 불러오는 중입니다.');
-
     try {
-      const encodedSlug = encodeURIComponent(organizationSlug.trim() || 'donguel-donguel');
-      const cycleStatus = await fetchJson<CycleStatus>(`/api/status/${nextCycleId.trim()}?organizationSlug=${encodedSlug}`);
-      setStatus(cycleStatus);
-      setCycleId(String(cycleStatus.cycle.id));
-      setApiState('connected');
-      setLastUpdatedAt(new Date().toISOString());
-      setMessage('제출 현황을 업데이트했습니다.');
+      const cycleId = study.currentCycle.id;
+      const status = await fetchJson<CycleStatus>(`/api/status/${cycleId}?organizationSlug=${encodeURIComponent(study.slug)}`);
+      setCycleStatus({
+        ...status,
+        submitted: status.submitted.map((submission) => ({
+          ...submission,
+          title: submission.title ?? submission.url,
+        })),
+      });
+      setMessage('제출글 모아보기를 업데이트했습니다.');
     } catch (error) {
-      setApiState('error');
-      setMessage(`제출 현황을 불러오지 못했습니다: ${(error as Error).message}`);
+      setMessage(`제출글을 불러오지 못했습니다: ${(error as Error).message}`);
     }
   }
 
-  async function loadCurrentCycle() {
-    setApiState('loading');
-    setMessage('현재 운영 회차를 확인하는 중입니다.');
-
-    try {
-      const encodedSlug = encodeURIComponent(organizationSlug.trim() || 'donguel-donguel');
-      const current = await fetchJson<CurrentCycle>(`/api/status/current?organizationSlug=${encodedSlug}`);
-      setCycleId(String(current.id));
-      await loadCycleStatus(String(current.id));
-    } catch (error) {
-      setApiState('error');
-      setMessage(`현재 회차를 불러오지 못했습니다: ${(error as Error).message}`);
-    }
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void loadCycleStatus();
   }
 
   useEffect(() => {
-    void loadCycleStatus('11');
-    // initial MVP default only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void loadPortal();
   }, []);
 
+  useEffect(() => {
+    if (selectedStudy?.currentCycle) {
+      void loadSubmissions(selectedStudy);
+    }
+    // selectedStudy is intentionally loaded once after portal bootstrap.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStudy?.slug]);
+
+  const selectedMyStatus = selectedStudy ? getMyStatus(mySubmissionStatus, selectedStudy) : undefined;
+
   return (
-    <div className="min-h-screen px-4 py-6 text-foreground lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="rounded-3xl border border-border bg-card/70 p-5 shadow-2xl backdrop-blur lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/20 text-primary">
-              <ClipboardList className="h-6 w-6" />
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-10 border-b border-border bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Compass className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">Study Admin</p>
-              <h1 className="text-xl font-black tracking-tight">똥글똥글 어드민</h1>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">Study Explorer</p>
+              <h1 className="text-lg font-black">스터디 탐색</h1>
             </div>
           </div>
 
-          <nav className="grid gap-2 text-sm text-muted-foreground">
-            <a className="rounded-xl bg-secondary px-3 py-2 font-semibold text-foreground" href="#overview">운영자가 지금 봐야 할 것</a>
-            <a className="rounded-xl px-3 py-2 hover:bg-secondary" href="#missing">미제출 먼저 확인</a>
-            <a className="rounded-xl px-3 py-2 hover:bg-secondary" href="#submissions">제출 글 링크</a>
-            <a className="rounded-xl px-3 py-2 hover:bg-secondary" href="#actions">운영 액션</a>
-          </nav>
+          <form onSubmit={handleSearch} className="hidden flex-1 justify-center md:flex">
+            <div className="flex w-full max-w-xl items-center gap-3 rounded-full border border-border bg-white px-5 py-2 shadow-airbnb">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                placeholder="스터디 이름이나 설명으로 검색"
+              />
+            </div>
+          </form>
 
-          <Separator className="my-6" />
+          {auth.authenticated ? (
+            <Button variant="outline" asChild>
+              <a href="/api/auth/logout">로그아웃</a>
+            </Button>
+          ) : (
+            <Button asChild>
+              <a href="/api/auth/discord/login"><LogIn className="h-4 w-4" /> Discord로 로그인</a>
+            </Button>
+          )}
+        </div>
+      </header>
 
-          <div className="space-y-3 rounded-2xl border border-border bg-background/40 p-4">
-            <p className="text-sm font-semibold text-muted-foreground">현재 조회</p>
-            <p className="text-lg font-bold">{formatCycleLabel(status?.cycle)}</p>
-            <Badge variant={apiState === 'connected' ? 'success' : apiState === 'error' ? 'destructive' : 'secondary'}>
-              API {apiState === 'loading' ? '불러오는 중' : apiState === 'connected' ? '연결됨' : apiState === 'error' ? '오류' : '대기'}
-            </Badge>
+      <main className="mx-auto max-w-7xl space-y-10 px-5 py-8">
+        <section className="rounded-[2rem] border border-border bg-gradient-to-br from-white to-rose-50 p-8 shadow-airbnb md:p-12">
+          <Badge variant="outline" className="border-primary/30 text-primary">공개 조회 + 로그인 개인화</Badge>
+          <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-tight md:text-6xl">
+            여러 스터디의 제출글을 한곳에서 모아보세요
+          </h2>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+            누구나 공개 스터디와 제출글을 볼 수 있고, Discord로 로그인하면 내 스터디와 내 제출 상태가 먼저 보여요.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3 text-sm text-muted-foreground">
+            <Badge variant="secondary">Airbnb 참고 화이트 테마</Badge>
+            <Badge variant="secondary">제출글 모아보기</Badge>
+            <Badge variant="secondary">내 제출 상태</Badge>
+            <Badge variant="secondary">제목이 없으면 URL</Badge>
+            <Badge variant="secondary">예: 박준형 @bbakjun</Badge>
           </div>
-        </aside>
+        </section>
 
-        <main className="space-y-6">
-          <section id="overview" className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <Card className="overflow-hidden bg-card/80 backdrop-blur">
-              <CardHeader className="pb-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <Badge variant="outline">운영자가 지금 봐야 할 것</Badge>
-                    <CardTitle className="mt-4 text-3xl font-black tracking-tight md:text-5xl">
-                      무엇을 봐야 하는지 바로 보이게 정리했습니다
-                    </CardTitle>
-                    <CardDescription className="mt-3 text-base">
-                      제출률, 미제출자, 다음 운영 액션을 한 화면에서 먼저 보여주는 shadcn 기반 어드민 서비스입니다.
-                    </CardDescription>
-                  </div>
-                  <Badge variant={hasMissing ? 'warning' : 'success'} className="text-sm">
-                    {riskLabel}
-                  </Badge>
+        <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-8">
+            <section>
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-black">내 스터디</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">로그인한 유저에게는 내가 참여 중인 스터디를 먼저 보여줍니다.</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <MetricCard label="제출률 추이" value={`${submissionRate}%`} icon={<Gauge className="h-5 w-5" />} />
-                  <MetricCard label="제출" value={`${status?.summary.submitted ?? 0} / ${status?.summary.total ?? 0}`} icon={<CheckCircle2 className="h-5 w-5" />} />
-                  <MetricCard label="미제출" value={`${status?.summary.notSubmitted ?? 0}명`} icon={<UsersRound className="h-5 w-5" />} tone="warning" />
-                </div>
-                <div className="mt-6">
-                  <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
-                    <span>{formatCycleLabel(status?.cycle)}</span>
-                    <span>{lastUpdatedAt ? formatDateTime(lastUpdatedAt) : '업데이트 전'}</span>
-                  </div>
-                  <Progress value={submissionRate} />
-                </div>
-              </CardContent>
-            </Card>
+                {!auth.authenticated && <Badge variant="outline">로그인하면 내 제출 상태 표시</Badge>}
+              </div>
 
-            <Card className="bg-card/80 backdrop-blur">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Search className="h-5 w-5" /> 조회 조건</CardTitle>
-                <CardDescription>현재 회차를 먼저 불러오고, 필요하면 회차 ID로 직접 조회하세요.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                  <label className="grid gap-2 text-sm font-semibold text-muted-foreground">
-                    스터디 slug
-                    <Input value={organizationSlug} onChange={(event) => setOrganizationSlug(event.target.value)} />
-                  </label>
-                  <label className="grid gap-2 text-sm font-semibold text-muted-foreground">
-                    회차 ID
-                    <Input value={cycleId} inputMode="numeric" onChange={(event) => setCycleId(event.target.value)} />
-                  </label>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button type="button" variant="secondary" onClick={() => void loadCurrentCycle()}>
-                      <RefreshCw className="h-4 w-4" /> 현재 회차 불러오기
-                    </Button>
-                    <Button type="submit">
-                      <RefreshCw className="h-4 w-4" /> 제출 현황 새로고침
-                    </Button>
-                  </div>
-                </form>
-                <p className="mt-4 rounded-xl border border-border bg-background/50 p-3 text-sm text-muted-foreground">{message}</p>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <Card id="missing" className="bg-card/80 backdrop-blur">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <CardTitle>미제출 먼저 확인</CardTitle>
-                    <CardDescription>운영자가 가장 먼저 봐야 하는 리스크 목록입니다.</CardDescription>
-                  </div>
-                  <Badge variant={hasMissing ? 'warning' : 'success'}>{status?.summary.notSubmitted ?? 0}명</Badge>
+              {auth.authenticated && myStudies.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {myStudies.map((study) => (
+                    <StudyCard
+                      key={study.slug}
+                      study={study}
+                      myStatus={getMyStatus(mySubmissionStatus, study)}
+                      onOpen={() => void loadSubmissions(study)}
+                    />
+                  ))}
                 </div>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                {status?.notSubmitted.length ? (
-                  status.notSubmitted.map((member) => (
-                    <div key={`${member.name}-${member.github}`} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background/40 p-4">
-                      <div>
-                        <p className="font-bold">{member.name}</p>
-                        <p className="text-sm text-muted-foreground">@{member.github || 'github 미연결'}</p>
-                      </div>
-                      <Badge variant={member.github ? 'warning' : 'destructive'}>{member.github ? '리마인드' : 'GitHub 확인'}</Badge>
+              ) : (
+                <Card className="border-dashed bg-secondary/50">
+                  <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="font-bold">Discord로 로그인하면 내 스터디와 내 제출 상태를 볼 수 있어요.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">등록되지 않은 경우 스터디봇에서 /member create를 먼저 진행하면 됩니다.</p>
                     </div>
+                    <Button asChild>
+                      <a href="/api/auth/discord/login">Discord로 로그인 <ArrowRight className="h-4 w-4" /></a>
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
+
+            <section>
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-black">전체 공개 스터디</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">스터디 이름과 설명으로 검색하고 회차별 제출글을 볼 수 있습니다.</p>
+                </div>
+                <Badge variant={apiState === 'error' ? 'destructive' : 'secondary'}>{apiState}</Badge>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {visibleStudies.map((study) => (
+                  <StudyCard
+                    key={study.slug}
+                    study={study}
+                    myStatus={getMyStatus(mySubmissionStatus, study)}
+                    onOpen={() => void loadSubmissions(study)}
+                  />
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+            <Card className="shadow-airbnb">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> 내 제출 상태</CardTitle>
+                <CardDescription>현재 선택한 스터디의 현재 회차 기준입니다.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-2xl bg-secondary p-4">
+                  <p className="text-sm text-muted-foreground">선택한 스터디</p>
+                  <p className="mt-1 text-xl font-black">{selectedStudy?.name ?? '스터디 선택 전'}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {selectedStudy?.currentCycle
+                      ? `${selectedStudy.currentCycle.generationName} ${selectedStudy.currentCycle.week}주차`
+                      : '진행 중인 회차 없음'}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-border p-4">
+                  <Badge variant={selectedMyStatus?.status === 'SUBMITTED' ? 'success' : 'warning'}>
+                    {getStatusLabel(selectedMyStatus)}
+                  </Badge>
+                  {selectedMyStatus?.status === 'SUBMITTED' && selectedMyStatus.submission ? (
+                    <a className="mt-3 block font-bold hover:underline" href={selectedMyStatus.submission.url} target="_blank" rel="noreferrer">
+                      {selectedMyStatus.submission.title} <ArrowUpRight className="inline h-4 w-4" />
+                    </a>
+                  ) : (
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      제출은 우선 Discord에서 <code className="rounded bg-secondary px-1 py-0.5">/submit url:https://your-blog.com/post</code> 로 진행해주세요.
+                    </p>
+                  )}
+                </div>
+
+                <p className="rounded-2xl bg-rose-50 p-4 text-sm leading-6 text-rose-700">{message}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><BookOpenText className="h-5 w-5" /> 제출글 모아보기</CardTitle>
+                <CardDescription>회차별 제출글을 공개 목록으로 보여줍니다.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {cycleStatus?.submitted.length ? (
+                  cycleStatus.submitted.map((submission) => (
+                    <a key={`${submission.name}-${submission.url}`} href={submission.url} target="_blank" rel="noreferrer" className="block rounded-2xl border border-border p-4 transition hover:-translate-y-0.5 hover:shadow-airbnb">
+                      <p className="font-bold">{getSubmissionTitle(submission)}</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{formatAuthor(submission)}</p>
+                    </a>
                   ))
                 ) : (
-                  <EmptyState title="미제출자가 없습니다" description="모두 제출 완료했어요." />
+                  <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                    아직 제출된 글이 없거나 스터디를 선택하지 않았습니다.
+                  </div>
                 )}
               </CardContent>
             </Card>
-
-            <Card id="actions" className="bg-card/80 backdrop-blur">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Megaphone className="h-5 w-5" /> 운영 액션</CardTitle>
-                <CardDescription>다음 행동을 고민하지 않게 순서대로 보여줍니다.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {operatorFocus.map((item, index) => (
-                  <div key={item} className="flex gap-3 rounded-2xl border border-border bg-background/40 p-4">
-                    <Badge variant="secondary">{index + 1}</Badge>
-                    <p className="text-sm leading-6 text-muted-foreground">{item}</p>
-                  </div>
-                ))}
-                <Separator />
-                <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-                  <p className="font-bold text-cyan-100">Discord /submit 안내</p>
-                  <p className="mt-2 text-sm text-cyan-100/80">스터디원은 Discord에서 <code className="rounded bg-background/70 px-1 py-0.5">/submit url:블로그주소</code> 로 제출합니다.</p>
-                </div>
-                <Button variant="outline" className="w-full" asChild>
-                  <a href="https://discord.com/channels/1416659264038244455" target="_blank" rel="noreferrer">
-                    Discord 열기 <ArrowUpRight className="h-4 w-4" />
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
-          </section>
-
-          <Card id="submissions" className="bg-card/80 backdrop-blur">
-            <CardHeader>
-              <CardTitle>제출한 글</CardTitle>
-              <CardDescription>글 링크와 제출 시간을 바로 확인합니다.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
-              {status?.submitted.length ? (
-                status.submitted.map((member) => (
-                  <a key={`${member.name}-${member.url}`} href={member.url} target="_blank" rel="noreferrer" className="rounded-2xl border border-border bg-background/40 p-4 transition hover:border-cyan-300/60">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-bold">{member.name}</p>
-                        <p className="text-sm text-muted-foreground">@{member.github || 'github 미연결'}</p>
-                      </div>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <p className="mt-3 truncate text-sm text-cyan-100">{member.url}</p>
-                    <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(member.submittedAt)}</p>
-                  </a>
-                ))
-              ) : (
-                <div className="md:col-span-2">
-                  <EmptyState title="아직 제출된 글이 없습니다" description="미제출자에게 /submit url: 제출을 안내하세요." />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+          </aside>
+        </section>
+      </main>
     </div>
   );
 }
 
-function MetricCard({ label, value, icon, tone = 'default' }: { label: string; value: string; icon: React.ReactNode; tone?: 'default' | 'warning' }) {
+function StudyCard({ study, myStatus, onOpen }: { study: Study; myStatus?: MySubmissionStatus; onOpen: () => void }) {
   return (
-    <div className="rounded-2xl border border-border bg-background/40 p-4">
-      <div className={tone === 'warning' ? 'text-amber-200' : 'text-cyan-200'}>{icon}</div>
-      <p className="mt-3 text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-black tracking-tight">{value}</p>
-    </div>
-  );
-}
-
-function EmptyState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-border bg-background/30 p-6 text-center">
-      <AlertCircle className="mx-auto h-6 w-6 text-muted-foreground" />
-      <p className="mt-3 font-bold">{title}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-    </div>
+    <Card className="group cursor-pointer rounded-[1.75rem] transition hover:-translate-y-1 hover:shadow-airbnb" onClick={onOpen}>
+      <CardHeader>
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-primary">
+          <BookOpenText className="h-6 w-6" />
+        </div>
+        <CardTitle>{study.name}</CardTitle>
+        <CardDescription>{study.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="secondary">
+            <Clock3 className="mr-1 h-3 w-3" />
+            {study.currentCycle ? `${study.currentCycle.generationName} ${study.currentCycle.week}주차` : '회차 준비 중'}
+          </Badge>
+          <Badge variant={myStatus?.status === 'SUBMITTED' ? 'success' : 'outline'}>{getStatusLabel(myStatus)}</Badge>
+        </div>
+        <Separator />
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">이번 회차 제출글</span>
+          <span className="font-bold">{study.currentCycle?.submissionCount ?? 0}개</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">일정</span>
+          <span className="font-bold">{formatDate(study.currentCycle?.startDate)} - {formatDate(study.currentCycle?.endDate)}</span>
+        </div>
+        <Button className="w-full rounded-full" variant="outline" type="button">
+          제출글 보기 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

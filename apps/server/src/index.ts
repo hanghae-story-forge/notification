@@ -62,6 +62,12 @@ import {
   getStatus,
   getStatusDiscord,
 } from './presentation/http/status/status.handlers';
+import {
+  getMyStudies,
+  getPublicStudies,
+  getStudyCycleSubmissions,
+  getStudyDetail,
+} from './presentation/http/studies/studies.handlers';
 
 // ========================================
 // Logging Middleware
@@ -140,6 +146,15 @@ app.post('/webhook/github', async (c) => {
 app.get('/api/reminder', getReminderCycles);
 app.get('/api/reminder/:cycleId/not-submitted', getNotSubmittedMembers);
 app.post('/api/reminder/send-reminders', sendReminderNotifications);
+
+// Study Portal API
+app.get('/api/studies', getPublicStudies);
+app.get('/api/studies/me', getMyStudies);
+app.get('/api/studies/:slug', getStudyDetail);
+app.get(
+  '/api/studies/:slug/cycles/:cycleId/submissions',
+  getStudyCycleSubmissions
+);
 
 // Status API
 app.get('/api/status/current', getCurrentCycle);
