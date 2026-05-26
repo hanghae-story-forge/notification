@@ -341,25 +341,70 @@ export interface CurrentCycleRepository {
 
 ## Phase 5: Cutover checklist
 
-1. Create Cloudflare D1 database.
-2. Fill `database_id` in `apps/worker/wrangler.jsonc` or environment-specific config.
-3. Apply D1 migrations locally and remotely.
-4. Export current Postgres data using secure local env; import to D1.
-5. Validate row counts and spot-check current cycle/submission status.
-6. Deploy Worker.
-7. Register Discord Interactions Endpoint URL:
+### Cloudflare resources and secrets
+
+1. Create the Cloudflare D1 database.
+2. Replace the zero UUID placeholder in `apps/worker/wrangler.jsonc` with the real D1 `database_id`.
+3. Apply migrations:
+
+```bash
+export PATH="$HOME/.hermes/node/bin:$PATH"
+pnpm --filter @hanghae-study/worker exec wrangler d1 migrations apply donguel-donguel-notification --remote
+```
+
+4. Set Worker secrets. Do not commit or print real values.
+
+```bash
+pnpm --filter @hanghae-study/worker exec wrangler secret put DISCORD_PUBLIC_KEY
+pnpm --filter @hanghae-study/worker exec wrangler secret put DISCORD_APPLICATION_ID
+pnpm --filter @hanghae-study/worker exec wrangler secret put DISCORD_BOT_TOKEN
+pnpm --filter @hanghae-study/worker exec wrangler secret put DISCORD_WEBHOOK_URL
+pnpm --filter @hanghae-study/worker exec wrangler secret put GITHUB_WEBHOOK_SECRET
+```
+
+5. Export current Postgres data using secure local env; import to D1.
+6. Validate row counts and spot-check:
+   - organizations / generations / cycles
+   - members / generation_participants / organization_members
+   - submissions / notification_logs
+
+### Endpoint switch
+
+7. Deploy Worker:
+
+```bash
+pnpm --filter @hanghae-study/worker exec wrangler deploy
+```
+
+8. Register Discord Developer Portal Interactions Endpoint URL:
 
 ```txt
 https://<worker-domain>/discord/interactions
 ```
 
-8. Update GitHub webhook URL to Worker `/webhook/github`.
-9. Run Discord smoke tests:
-   - `/cycle current`
-   - submission comment → D1 row + Discord notification
-   - reminder scheduled dry-run/manual endpoint if present
-10. Disable Render Gateway bot start.
-11. Turn Render service read-only/stop after one full cycle passes.
+9. Update GitHub webhook URL to:
+
+```txt
+https://<worker-domain>/webhook/github
+```
+
+Use the same `GITHUB_WEBHOOK_SECRET` value configured in Cloudflare.
+
+### Smoke verification
+
+10. Run smoke tests:
+    - Discord `/cycle current` returns current D1-backed status.
+    - GitHub issue comment with a blog URL creates/updates a D1 `submissions` row.
+    - GitHub issue comment with invalid signature returns `401`.
+    - Worker Cron sends a Discord reminder and writes `notification_logs`.
+    - No Worker request hits `*.onrender.com`.
+
+### Render decommission
+
+11. Disable Render Gateway bot start only after the Worker endpoint is active.
+12. Keep Render service available for one full cycle as rollback only; do not route Worker traffic to it.
+13. After one full cycle passes, stop/decommission the Render service and remove obsolete Render env vars/webhook references.
+14. Keep DB migration backups until D1 data is validated against production behavior.
 
 ---
 
@@ -387,9 +432,5 @@ pnpm build
 
 ## PR sequence
 
-1. `docs/chore`: full CF migration plan + remove proxy defaults from scaffold.
-2. `feat(worker-db)`: D1 schema, migrations, D1 binding, data migration runbook.
-3. `feat(worker-cycle-current)`: `/cycle current` D1-backed interaction.
-4. `feat(worker-github-webhook)`: native GitHub webhook verification + submission recording.
-5. `feat(worker-reminders)`: Cron Trigger reminder handling.
-6. `chore(cutover)`: Discord/GitHub endpoint switch docs and Render shutdown checklist.
+1. `docs/chore`: full CF migration plan + remove proxy defaults from scaffold. ✅ merged
+2. `feat(worker-native-core)`: D1 schema/migrations/binding, `/cycle current`, native GitHub webhook submission recording, Cron Trigger reminders, and cutover docs.

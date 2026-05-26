@@ -1,9 +1,16 @@
 import { Hono } from "hono";
 import {
   createDiscordInteractionResponse,
+  isCycleCurrentCommand,
   verifyDiscordRequest,
   type DiscordInteraction,
 } from "./discord";
+import { createCycleCurrentResponse } from "./cycle-current";
+import {
+  handleGithubWebhook,
+  verifyGithubWebhookSignature,
+} from "./github-webhook";
+import { runDeadlineReminders } from "./scheduled-reminders";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -37,7 +44,9 @@ app.post("/discord/interactions", async (context) => {
     return context.text("invalid interaction payload", 400);
   }
 
-  const response = createDiscordInteractionResponse(interaction);
+  const response = isCycleCurrentCommand(interaction)
+    ? await createCycleCurrentResponse(context.env.DB)
+    : createDiscordInteractionResponse(interaction);
   if (!response) {
     return context.text("unsupported interaction type", 400);
   }
@@ -45,15 +54,35 @@ app.post("/discord/interactions", async (context) => {
   return context.json(response);
 });
 
-app.post("/webhook/github", (context) => {
-  return context.json(
-    {
-      error: "github_webhook_native_handler_not_implemented",
-      message:
-        "GitHub webhook must be handled natively in Cloudflare Worker; Render proxy is disabled.",
-    },
-    501,
-  );
+app.post("/webhook/github", async (context) => {
+  const body = await context.req.text();
+  const signature = context.req.header("x-hub-signature-256") ?? null;
+  const verified = await verifyGithubWebhookSignature({
+    body,
+    secret: context.env.GITHUB_WEBHOOK_SECRET,
+    signature,
+  });
+
+  if (!verified) {
+    return context.text("invalid GitHub webhook signature", 401);
+  }
+
+  const result = await handleGithubWebhook({
+    db: context.env.DB,
+    event: context.req.header("x-github-event") ?? null,
+    body,
+  });
+
+  return context.json(result.body, result.status as 200);
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  async scheduled(
+    _event: ScheduledController,
+    env: Env,
+    _context: ExecutionContext,
+  ): Promise<void> {
+    await runDeadlineReminders(env);
+  },
+};
