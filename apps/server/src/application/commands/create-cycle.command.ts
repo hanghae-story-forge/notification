@@ -16,7 +16,7 @@ export interface CreateCycleRequest {
   week: number;
   startDate?: Date;
   endDate?: Date;
-  githubIssueUrl: string;
+  githubIssueUrl?: string;
 }
 
 /**
@@ -35,7 +35,7 @@ export interface GithubProjectCycleSyncPort {
     week: number;
     startDate: Date;
     endDate: Date;
-    githubIssueUrl: string;
+    githubIssueUrl?: string;
   }): Promise<void>;
 }
 
@@ -90,7 +90,7 @@ export class CreateCycleCommand {
       );
     }
 
-    if (!generation.isActive) {
+    if (!request.generationId && !generation.isActive) {
       throw new ConflictError(`Generation ${generation.name} is not active`);
     }
 
@@ -123,7 +123,7 @@ export class CreateCycleCommand {
     // 6. 저장
     await this.cycleRepo.save(cycle);
 
-    if (this.githubProjectSync) {
+    if (this.githubProjectSync && request.githubIssueUrl) {
       try {
         await this.githubProjectSync.syncCycle({
           organizationSlug: request.organizationSlug,

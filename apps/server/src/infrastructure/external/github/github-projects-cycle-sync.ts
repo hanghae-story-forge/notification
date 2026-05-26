@@ -149,6 +149,11 @@ export class GitHubProjectsCycleSync implements GithubProjectCycleSyncPort {
   async syncCycle(
     request: Parameters<GithubProjectCycleSyncPort['syncCycle']>[0]
   ) {
+    if (!request.githubIssueUrl) {
+      console.warn('Skipping GitHub Project sync: issue URL is not set');
+      return;
+    }
+
     const issueRef = parseGitHubIssueUrl(request.githubIssueUrl);
     if (!issueRef) {
       console.warn(

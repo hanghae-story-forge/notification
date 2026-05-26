@@ -1,5 +1,8 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
-import { JoinGenerationCommand as AppJoinGenerationCommand } from '@/application/commands';
+import {
+  CreateGenerationCommand as AppCreateGenerationCommand,
+  JoinGenerationCommand as AppJoinGenerationCommand,
+} from '@/application/commands';
 import {
   ApplyToGenerationCommand,
   ApproveGenerationParticipantCommand,
@@ -120,6 +123,36 @@ export class GenerationCommand implements DiscordCommand {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName('create')
+        .setDescription('운영자가 새 기수를 생성합니다')
+        .addStringOption((option) =>
+          option
+            .setName('organization')
+            .setDescription('조직 slug (예: donguel-donguel)')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('name')
+            .setDescription('기수 이름 (예: 똥글똥글 3기)')
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('start_date')
+            .setDescription('시작일 (YYYY-MM-DD)')
+            .setRequired(true)
+        )
+        .addBooleanOption((option) =>
+          option
+            .setName('active')
+            .setDescription('생성 즉시 활성 기수로 설정할지 여부')
+            .setRequired(false)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName('list')
         .setDescription('등록된 모든 기수 목록을 확인합니다')
     );
@@ -133,7 +166,8 @@ export class GenerationCommand implements DiscordCommand {
     private readonly generationRepo: GenerationRepository,
     private readonly organizationRepo: OrganizationRepository,
     private readonly generationMemberRepo: GenerationMemberRepository,
-    private readonly cycleRepo: CycleRepository
+    private readonly cycleRepo: CycleRepository,
+    private readonly createGenerationCommand?: AppCreateGenerationCommand
   ) {}
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -151,8 +185,77 @@ export class GenerationCommand implements DiscordCommand {
       await this.handleCurrent(interaction);
     } else if (subcommand === 'status') {
       await this.handleStatus(interaction);
+    } else if (subcommand === 'create') {
+      await this.handleCreate(interaction);
     } else if (subcommand === 'list') {
       await this.handleList(interaction);
+    }
+  }
+
+  private parseDateOption(value: string): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== value
+      ? null
+      : date;
+  }
+
+  private async handleCreate(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
+
+    if (!this.createGenerationCommand) {
+      await interaction.editReply({
+        content: '❌ 기수 생성 기능이 아직 연결되지 않았습니다.',
+      });
+      return;
+    }
+
+    const organizationSlug = interaction.options.getString(
+      'organization',
+      true
+    );
+    const name = interaction.options.getString('name', true);
+    const startDateValue = interaction.options.getString('start_date', true);
+    const startedAt = this.parseDateOption(startDateValue);
+
+    if (!startedAt) {
+      await interaction.editReply({
+        content:
+          '❌ 시작일은 `YYYY-MM-DD` 형식으로 입력해 주세요. 예: `2026-06-01`',
+      });
+      return;
+    }
+
+    try {
+      const isActive = interaction.options.getBoolean('active') ?? false;
+      const result = await this.createGenerationCommand.execute({
+        organizationSlug,
+        name,
+        startedAt,
+        isActive,
+      });
+
+      await interaction.editReply({
+        content:
+          `✅ **${result.generation.name}** 기수를 생성했습니다.\n\n` +
+          `**조직**: ${organizationSlug}\n` +
+          `**시작일**: ${startedAt.toISOString().slice(0, 10)}\n` +
+          `**상태**: ${isActive ? 'ACTIVE' : 'PLANNED'}\n\n` +
+          '다음 단계: `/cycle create`로 1주차부터 회차를 생성해 주세요.',
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : '알 수 없는 오류';
+      await interaction.editReply({
+        content: `❌ 기수 생성 중 오류가 발생했습니다: ${errorMessage}`,
+      });
     }
   }
 
