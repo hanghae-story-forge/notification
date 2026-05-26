@@ -149,9 +149,14 @@ export function App() {
       setPublicStudies(studiesResponse.studies);
       setMyStudies(myResponse.studies ?? []);
       setMySubmissionStatus(myResponse.mySubmissionStatus ?? []);
-      setSelectedStudy((current) => current ?? myResponse.studies?.[0] ?? studiesResponse.studies[0] ?? null);
+      const initialStudy = myResponse.studies?.[0] ?? studiesResponse.studies[0] ?? null;
+      setSelectedStudy((current) => current ?? initialStudy);
       setApiState('ready');
-      setMessage(myResponse.message ?? '스터디를 불러왔습니다.');
+      if (initialStudy?.currentCycle) {
+        void loadSubmissions(initialStudy);
+      } else {
+        setMessage(myResponse.message ?? '스터디를 불러왔습니다.');
+      }
     } catch (error) {
       setApiState('error');
       setMessage(`스터디 정보를 불러오지 못했습니다: ${(error as Error).message}`);
@@ -190,14 +195,6 @@ export function App() {
   useEffect(() => {
     void loadPortal();
   }, []);
-
-  useEffect(() => {
-    if (selectedStudy?.currentCycle) {
-      void loadSubmissions(selectedStudy);
-    }
-    // selectedStudy is intentionally loaded once after portal bootstrap.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStudy?.slug]);
 
   const selectedMyStatus = selectedStudy ? getMyStatus(mySubmissionStatus, selectedStudy) : undefined;
 
