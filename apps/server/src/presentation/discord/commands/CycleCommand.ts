@@ -6,6 +6,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from 'discord.js';
+import { CreateCycleCommand as AppCreateCycleCommand } from '@/application/commands';
 import { GetCycleStatusQuery } from '@/application/queries';
 import { createStatusMessage } from '@/infrastructure/external/discord';
 import { DiscordCommand } from './types';
@@ -24,6 +25,13 @@ function isIgnorableDiscordError(error: unknown): boolean {
 }
 
 const DEFAULT_ORGANIZATION_SLUG = 'donguel-donguel';
+
+interface CycleGenerationLookup {
+  findGenerationByOrganizationAndName(
+    organizationSlug: string,
+    generationName: string
+  ): Promise<{ id: number } | null>;
+}
 
 function formatRemainingTime(daysLeft: number, hoursLeft?: number): string {
   if (daysLeft <= 0 && (!hoursLeft || hoursLeft <= 0)) {
@@ -66,6 +74,50 @@ export class CycleCommand implements DiscordCommand {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName('create')
+        .setDescription('운영자가 특정 기수의 주차를 생성합니다')
+        .addStringOption((option) =>
+          option
+            .setName('organization')
+            .setDescription('조직 slug (예: donguel-donguel)')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('generation')
+            .setDescription('기수 이름 (예: 똥글똥글 3기)')
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('week')
+            .setDescription('주차 번호')
+            .setRequired(true)
+            .setMinValue(1)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('start_date')
+            .setDescription('시작일 (YYYY-MM-DD)')
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('end_date')
+            .setDescription('마감일 (YYYY-MM-DD)')
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('github_issue_url')
+            .setDescription('연결할 GitHub Issue URL (선택)')
+            .setRequired(false)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName('list')
         .setDescription('특정 기수의 주차 목록을 확인합니다')
         .addStringOption((option) =>
@@ -84,7 +136,11 @@ export class CycleCommand implements DiscordCommand {
         )
     );
 
-  constructor(private readonly getCycleStatusQuery: GetCycleStatusQuery) {}
+  constructor(
+    private readonly getCycleStatusQuery: GetCycleStatusQuery,
+    private readonly createCycleCommand?: AppCreateCycleCommand,
+    private readonly generationLookup?: CycleGenerationLookup
+  ) {}
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const subcommand = interaction.options.getSubcommand(true);
@@ -93,8 +149,95 @@ export class CycleCommand implements DiscordCommand {
       await this.handleCurrent(interaction);
     } else if (subcommand === 'status') {
       await this.handleStatus(interaction);
+    } else if (subcommand === 'create') {
+      await this.handleCreate(interaction);
     } else if (subcommand === 'list') {
       await this.handleList(interaction);
+    }
+  }
+
+  private parseDateOption(value: string, endOfDay = false): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const suffix = endOfDay ? 'T23:59:59.000Z' : 'T00:00:00.000Z';
+    const date = new Date(`${value}${suffix}`);
+    return Number.isNaN(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== value
+      ? null
+      : date;
+  }
+
+  private async handleCreate(
+    interaction: ChatInputCommandInteraction
+  ): Promise<void> {
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch {
+      return;
+    }
+
+    if (!this.createCycleCommand || !this.generationLookup) {
+      await interaction.editReply({
+        content: '❌ 주차 생성 기능이 아직 연결되지 않았습니다.',
+      });
+      return;
+    }
+
+    const organizationSlug = interaction.options.getString(
+      'organization',
+      true
+    );
+    const generationName = interaction.options.getString('generation', true);
+    const week = interaction.options.getInteger('week', true);
+    const startDateValue = interaction.options.getString('start_date', true);
+    const endDateValue = interaction.options.getString('end_date', true);
+    const githubIssueUrl =
+      interaction.options.getString('github_issue_url', false) ?? undefined;
+    const startDate = this.parseDateOption(startDateValue);
+    const endDate = this.parseDateOption(endDateValue, true);
+
+    if (!startDate || !endDate) {
+      await interaction.editReply({
+        content:
+          '❌ 시작일/마감일은 `YYYY-MM-DD` 형식으로 입력해 주세요. 예: `2026-06-01`',
+      });
+      return;
+    }
+
+    try {
+      const generation =
+        await this.generationLookup.findGenerationByOrganizationAndName(
+          organizationSlug,
+          generationName
+        );
+      if (!generation) {
+        await interaction.editReply({
+          content: `❌ "${organizationSlug}" 조직에서 "${generationName}" 기수를 찾을 수 없습니다.`,
+        });
+        return;
+      }
+
+      const result = await this.createCycleCommand.execute({
+        organizationSlug,
+        generationId: generation.id,
+        week,
+        startDate,
+        endDate,
+        githubIssueUrl,
+      });
+
+      await interaction.editReply({
+        content:
+          `✅ **${result.generationName} ${result.cycle.week.toNumber()}주차**를 생성했습니다.\n\n` +
+          `**기간**: ${startDate.toISOString().slice(0, 10)} ~ ${endDate.toISOString().slice(0, 10)}\n` +
+          `**GitHub Issue**: ${githubIssueUrl ?? '나중에 연결'}\n\n` +
+          `확인: \`/cycle list organization:${organizationSlug} generation:${generationName}\``,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : '알 수 없는 오류';
+      await interaction.editReply({
+        content: `❌ 주차 생성 중 오류가 발생했습니다: ${errorMessage}`,
+      });
     }
   }
 

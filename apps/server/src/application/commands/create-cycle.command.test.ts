@@ -128,4 +128,43 @@ describe('CreateCycleCommand', () => {
         'https://github.com/hanghae-story-forge/archive/issues/16',
     });
   });
+
+  it('creates a cycle on a planned generation when the generation is explicitly requested', async () => {
+    const requestedGeneration = Generation.reconstitute({
+      id: 3,
+      organizationId: 2,
+      name: '똥글똥글 3기',
+      startedAt: new Date('2026-06-01T00:00:00.000Z'),
+      isActive: false,
+      createdAt: new Date('2026-05-26T00:00:00.000Z'),
+    });
+    const organizationRepo = {
+      findBySlug: vi.fn().mockResolvedValue(makeOrganization()),
+    } as unknown as OrganizationRepository;
+    const generationRepo = {
+      findActiveByOrganization: vi.fn(),
+      findById: vi.fn().mockResolvedValue(requestedGeneration),
+    } as unknown as GenerationRepository;
+    const cycleRepo = {
+      findByGenerationAndWeek: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+    } as unknown as CycleRepository;
+    const command = new CreateCycleCommand(
+      cycleRepo,
+      generationRepo,
+      organizationRepo
+    );
+
+    await command.execute({
+      organizationSlug: 'donguel-donguel',
+      generationId: 3,
+      week: 1,
+      startDate: new Date('2026-06-01T00:00:00.000Z'),
+      endDate: new Date('2026-06-14T23:59:59.000Z'),
+    });
+
+    expect(cycleRepo.save).toHaveBeenCalledOnce();
+    const savedCycle = vi.mocked(cycleRepo.save).mock.calls[0][0] as Cycle;
+    expect(savedCycle.generationId).toBe(3);
+  });
 });

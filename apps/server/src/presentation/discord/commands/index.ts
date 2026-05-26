@@ -10,6 +10,8 @@ import { MeCommand } from './MeCommand';
 import { ReviewCommand } from './ReviewCommand';
 import { GetCycleStatusQuery } from '@/application/queries';
 import {
+  CreateGenerationCommand as AppCreateGenerationCommand,
+  CreateCycleCommand as AppCreateCycleCommand,
   CreateMemberCommand as AppCreateMemberCommand,
   CreateOrganizationCommand as AppCreateOrganizationCommand,
   JoinOrganizationCommand as AppJoinOrganizationCommand,
@@ -69,6 +71,15 @@ const createMemberCommand = new AppCreateMemberCommand(
 const createOrganizationCommand = new AppCreateOrganizationCommand(
   organizationRepo
 );
+const createGenerationCommand = new AppCreateGenerationCommand(
+  generationRepo,
+  organizationRepo
+);
+const createCycleCommand = new AppCreateCycleCommand(
+  cycleRepo,
+  generationRepo,
+  organizationRepo
+);
 const joinOrganizationCommand = new AppJoinOrganizationCommand(
   organizationRepo,
   memberRepo,
@@ -119,6 +130,25 @@ const completePeerReviewAssignmentCommand =
 const getPeerReviewStatusQuery = new GetPeerReviewStatusQuery(
   peerReviewAssignmentRepo
 );
+
+const generationLookup = {
+  async findGenerationByOrganizationAndName(
+    organizationSlug: string,
+    generationName: string
+  ) {
+    const organization = await organizationRepo.findBySlug(organizationSlug);
+    if (!organization) return null;
+
+    const generations = await generationRepo.findByOrganization(
+      organization.id.value
+    );
+    const generation =
+      generations.find((item) => item.name === generationName) ?? null;
+    if (!generation) return null;
+
+    return { id: generation.id.value };
+  },
+};
 
 const currentPeerReviewCycleQuery = {
   async getCurrentCycle(organizationSlug: string) {
@@ -172,9 +202,10 @@ export const createCommands = (): DiscordCommand[] => {
       generationRepo,
       organizationRepo,
       generationMemberRepo,
-      cycleRepo
+      cycleRepo,
+      createGenerationCommand
     ),
-    new CycleCommand(getCycleStatusQuery),
+    new CycleCommand(getCycleStatusQuery, createCycleCommand, generationLookup),
     new ReviewCommand({
       memberRepository: memberRepo,
       cycleQuery: currentPeerReviewCycleQuery,
