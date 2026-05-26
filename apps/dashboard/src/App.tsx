@@ -282,8 +282,8 @@ function PortalPage() {
               <Compass className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">Study Explorer</p>
-              <h1 className="text-lg font-black">스터디 탐색</h1>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">스터디 포털</p>
+              <h1 className="text-lg font-black">제출 현황</h1>
             </div>
           </div>
 
@@ -305,7 +305,7 @@ function PortalPage() {
             </Button>
           ) : auth.oauthConfigured === false ? (
             <Button variant="outline" disabled>
-              OAuth 설정 필요
+              로그인 준비 중
             </Button>
           ) : (
             <Button asChild>
@@ -317,20 +317,18 @@ function PortalPage() {
 
       <main className="mx-auto max-w-7xl space-y-10 px-5 py-8">
         <section className="rounded-[2rem] border border-border bg-gradient-to-br from-white to-rose-50 p-8 shadow-airbnb md:p-12">
-          <Badge variant="outline" className="border-primary/30 text-primary">공개 조회 + 로그인 개인화</Badge>
+          <Badge variant="outline" className="border-primary/30 text-primary">블로그 글을 제출하고 함께 읽는 공간</Badge>
           <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-tight md:text-6xl">
             여러 스터디의 제출글을 한곳에서 모아보세요
           </h2>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
-            누구나 공개 스터디와 제출글을 볼 수 있고, Discord로 로그인하면 내 스터디와 내 제출 상태가 먼저 보여요.
+            현재 진행 중인 회차와 제출된 글을 누구나 확인할 수 있고, Discord로 로그인하면 내 스터디와 내 제출 상태가 먼저 보여요.
           </p>
           <div className="mt-6 flex flex-wrap gap-3 text-sm text-muted-foreground">
-            <Badge variant="secondary">TanStack Query 프리페칭</Badge>
-            <Badge variant="secondary">Airbnb 참고 화이트 테마</Badge>
-            <Badge variant="secondary">제출글 모아보기</Badge>
-            <Badge variant="secondary">내 제출 상태</Badge>
-            <Badge variant="secondary">제목이 없으면 URL</Badge>
-            <Badge variant="secondary">예: 박준형 @bbakjun</Badge>
+            <Badge variant="secondary">현재 진행 중인 회차</Badge>
+            <Badge variant="secondary">스터디별 제출 현황</Badge>
+            <Badge variant="secondary">함께 읽을 글 모아보기</Badge>
+            <Badge variant="secondary">내 제출 상태 확인</Badge>
           </div>
         </section>
 
@@ -340,7 +338,7 @@ function PortalPage() {
               <div className="mb-4 flex items-end justify-between gap-4">
                 <div>
                   <h3 className="text-2xl font-black">내 스터디</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">로그인한 유저에게는 내가 참여 중인 스터디를 먼저 보여줍니다.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">로그인한 멤버에게는 내가 참여 중인 스터디를 먼저 보여줍니다.</p>
                 </div>
                 {!auth.authenticated && <Badge variant="outline">로그인하면 내 제출 상태 표시</Badge>}
               </div>
@@ -367,7 +365,7 @@ function PortalPage() {
                     </div>
                     {auth.oauthConfigured === false ? (
                       <Button disabled variant="outline">
-                        Discord OAuth 설정 필요
+                        로그인 준비 중
                       </Button>
                     ) : (
                       <Button asChild>
@@ -385,12 +383,7 @@ function PortalPage() {
                   <h3 className="text-2xl font-black">전체 공개 스터디</h3>
                   <p className="mt-1 text-sm text-muted-foreground">스터디 이름과 설명으로 검색하고 회차별 제출글을 볼 수 있습니다.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={portalQuery.isError ? 'destructive' : 'secondary'}>
-                    {portalQuery.isFetching ? 'syncing' : portalQuery.status}
-                  </Badge>
-                  {searchQuery && <Badge variant="outline">검색 {visibleStudies.length}개</Badge>}
-                </div>
+                {searchQuery && <Badge variant="outline">검색 {visibleStudies.length}개</Badge>}
               </div>
               <div className="mb-4 flex md:hidden">
                 <div className="flex w-full items-center gap-3 rounded-full border border-border bg-white px-5 py-2 shadow-airbnb">
@@ -469,7 +462,7 @@ function PortalPage() {
               <CardContent className="space-y-3">
                 {cycleStatusQuery.isFetching && selectedStudy?.currentCycle ? (
                   <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                    프리페치된 제출글을 확인하는 중입니다.
+                    제출글을 확인하는 중입니다.
                   </div>
                 ) : cycleStatus?.submitted.length ? (
                   cycleStatus.submitted.map((submission) => (
@@ -512,7 +505,7 @@ function getPortalMessage({
   if (!selectedStudy) return fallbackMessage ?? '스터디를 불러왔습니다.';
   if (!selectedStudy.currentCycle) return '이 스터디는 아직 진행 중인 회차가 없습니다.';
   if (cycleStatusError) return `제출글을 불러오지 못했습니다: ${cycleStatusError.message}`;
-  if (cycleStatusStatus === 'pending') return '제출글을 미리 불러오는 중입니다.';
+  if (cycleStatusStatus === 'pending') return '제출글을 불러오는 중입니다.';
   return '제출글 모아보기를 업데이트했습니다.';
 }
 

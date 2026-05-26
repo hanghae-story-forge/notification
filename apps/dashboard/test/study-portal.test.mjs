@@ -25,10 +25,25 @@ test('study portal reflects interviewed product requirements', async () => {
   assert.match(app, /\/submit url:https:\/\/your-blog\.com\/post/);
   assert.match(app, /전체 공개 스터디/);
   assert.match(app, /로그인하면 내 제출 상태/);
-  assert.match(app, /박준형 @bbakjun/);
-  assert.match(app, /제목이 없으면 URL/);
+  assert.match(app, /블로그 글을 제출하고 함께 읽는 공간/);
+  assert.match(app, /현재 진행 중인 회차/);
+  assert.doesNotMatch(app, /TanStack Query 프리페칭/);
+  assert.doesNotMatch(app, /Airbnb 참고/);
+  assert.doesNotMatch(app, /제목이 없으면 URL/);
+  assert.doesNotMatch(app, /예: 박준형 @bbakjun/);
+  assert.doesNotMatch(app, /syncing/);
+  assert.doesNotMatch(app, /OAuth 설정 필요/);
   assert.match(styles, /color-scheme: light/);
   assert.match(styles, /#ffffff/);
+});
+
+test('portal document metadata is customer-facing, not admin or implementation copy', async () => {
+  const html = await readProjectFile('index.html');
+
+  assert.match(html, /스터디 제출 현황/);
+  assert.match(html, /스터디원들과 제출 현황을 함께 확인하는 공개 포털/);
+  assert.doesNotMatch(html, /어드민/);
+  assert.doesNotMatch(html, /운영자를 위한/);
 });
 
 test('dashboard client uses public studies API, Discord auth session, and cycle status proxy', async () => {
