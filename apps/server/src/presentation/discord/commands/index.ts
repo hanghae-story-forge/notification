@@ -8,6 +8,7 @@ import { OrganizationCommand } from './OrganizationCommand';
 import { GenerationCommand } from './GenerationCommand';
 import { MeCommand } from './MeCommand';
 import { ReviewCommand } from './ReviewCommand';
+import { SubmitCommand } from './SubmitCommand';
 import { GetCycleStatusQuery } from '@/application/queries';
 import {
   CreateMemberCommand as AppCreateMemberCommand,
@@ -15,6 +16,7 @@ import {
   JoinOrganizationCommand as AppJoinOrganizationCommand,
   UpdateMemberStatusCommand,
   JoinGenerationCommand as AppJoinGenerationCommand,
+  RecordDiscordSubmissionCommand,
 } from '@/application/commands';
 import { DrizzleCycleRepository } from '@/infrastructure/persistence/drizzle/cycle.repository.impl';
 import { DrizzleGenerationRepository } from '@/infrastructure/persistence/drizzle/generation.repository.impl';
@@ -44,6 +46,7 @@ import {
   DrizzlePeerReviewAssignmentRepository,
   DrizzlePeerReviewSubmissionLookup,
 } from '@/infrastructure/persistence/drizzle/peer-review.repository.impl';
+import { SubmissionService } from '@/domain/submission/submission.service';
 
 // Repository instances
 const cycleRepo = new DrizzleCycleRepository();
@@ -105,6 +108,16 @@ const getCycleStatusQuery = new GetCycleStatusQuery(
   submissionRepo,
   organizationMemberRepo,
   memberRepo
+);
+const submissionService = new SubmissionService(submissionRepo);
+const recordDiscordSubmissionCommand = new RecordDiscordSubmissionCommand(
+  organizationRepo,
+  memberRepo,
+  cycleRepo,
+  generationRepo,
+  organizationMemberRepo,
+  submissionRepo,
+  submissionService
 );
 const createPeerReviewAssignmentsCommand =
   new CreatePeerReviewAssignmentsCommand(
@@ -175,6 +188,7 @@ export const createCommands = (): DiscordCommand[] => {
       cycleRepo
     ),
     new CycleCommand(getCycleStatusQuery),
+    new SubmitCommand(recordDiscordSubmissionCommand),
     new ReviewCommand({
       memberRepository: memberRepo,
       cycleQuery: currentPeerReviewCycleQuery,
