@@ -37,6 +37,7 @@ import {
 
 import { env } from './env';
 import { logger } from './infrastructure/lib/logger';
+import { apiEnvelopeMiddleware } from './presentation/shared/api-envelope';
 
 // Import GraphQL configuration
 import { graphql } from './presentation/graphql/pylon.service';
@@ -98,6 +99,8 @@ app.use('*', async (c, next) => {
     });
   }
 });
+
+app.use('/api/*', apiEnvelopeMiddleware);
 
 // ========================================
 // REST Endpoints

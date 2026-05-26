@@ -1,4 +1,4 @@
-import { getCookie } from '../../../_shared.js';
+import { apiFailure, getCookie, jsonResponse } from '../../../_shared.js';
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -7,15 +7,21 @@ export async function onRequestGet(context) {
   const expectedState = getCookie(context.request, 'discord_oauth_state');
 
   if (!code || !state || state !== expectedState) {
-    return new Response('Invalid Discord OAuth callback', { status: 400 });
+    return jsonResponse(apiFailure('Invalid Discord OAuth callback', 400), {
+      status: 400,
+    });
   }
 
   const clientId = context.env.DISCORD_CLIENT_ID;
   const clientSecret = context.env.DISCORD_CLIENT_SECRET;
-  const redirectUri = context.env.DISCORD_REDIRECT_URI ?? `${url.origin}/api/auth/discord/callback`;
+  const redirectUri =
+    context.env.DISCORD_REDIRECT_URI ??
+    `${url.origin}/api/auth/discord/callback`;
 
   if (!clientId || !clientSecret) {
-    return new Response('Discord OAuth is not configured', { status: 500 });
+    return jsonResponse(apiFailure('Discord OAuth is not configured', 500), {
+      status: 500,
+    });
   }
 
   const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
@@ -31,7 +37,10 @@ export async function onRequestGet(context) {
   });
 
   if (!tokenResponse.ok) {
-    return new Response('Failed to exchange Discord OAuth code', { status: 502 });
+    return jsonResponse(
+      apiFailure('Failed to exchange Discord OAuth code', 502),
+      { status: 502 },
+    );
   }
 
   const token = await tokenResponse.json();
@@ -40,16 +49,22 @@ export async function onRequestGet(context) {
   });
 
   if (!userResponse.ok) {
-    return new Response('Failed to read Discord user', { status: 502 });
+    return jsonResponse(apiFailure('Failed to read Discord user', 502), {
+      status: 502,
+    });
   }
 
   const user = await userResponse.json();
-  const session = encodeURIComponent(btoa(JSON.stringify({
-    id: user.id,
-    username: user.username,
-    globalName: user.global_name,
-    avatar: user.avatar,
-  })));
+  const session = encodeURIComponent(
+    btoa(
+      JSON.stringify({
+        id: user.id,
+        username: user.username,
+        globalName: user.global_name,
+        avatar: user.avatar,
+      }),
+    ),
+  );
 
   return new Response(null, {
     status: 302,
