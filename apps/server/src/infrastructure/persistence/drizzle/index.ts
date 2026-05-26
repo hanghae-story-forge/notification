@@ -5,4 +5,5 @@ export * from './member.repository.impl';
 export * from './organization.repository.impl';
 export * from './organization-member.repository.impl';
 export * from './submission.repository.impl';
+export * from './peer-review.repository.impl';
 export * from './study-operations.repository.impl';

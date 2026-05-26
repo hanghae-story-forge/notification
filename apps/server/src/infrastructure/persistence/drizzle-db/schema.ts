@@ -103,6 +103,11 @@ export const obligationStatusEnum = pgEnum('obligation_status', [
   'EXEMPT_NON_PARTICIPANT_ROLE',
 ]);
 
+export const peerReviewAssignmentStatusEnum = pgEnum(
+  'peer_review_assignment_status',
+  ['ASSIGNED', 'COMPLETED', 'SKIPPED', 'CANCELLED']
+);
+
 export const participantCycleResultStatusEnum = pgEnum(
   'participant_cycle_result_status',
   ['SUBMITTED_ON_TIME', 'SUBMITTED_LATE', 'MISSED', 'EXEMPT']
@@ -475,6 +480,70 @@ export const submissions = pgTable(
       table.generationParticipantId
     ),
     statusIdx: index('submissions_status_idx').on(table.status),
+  })
+);
+
+export const cycleReviewSettings = pgTable(
+  'cycle_review_settings',
+  {
+    id: serial('id').primaryKey(),
+    cycleId: integer('cycle_id')
+      .notNull()
+      .references(() => cycles.id),
+    enabled: boolean('enabled').default(true).notNull(),
+    assignmentSeed: text('assignment_seed').notNull(),
+    minSubmissionCount: integer('min_submission_count').default(2).notNull(),
+    createdByMemberId: integer('created_by_member_id').references(
+      () => members.id
+    ),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    cycleIdx: uniqueIndex('cycle_review_settings_cycle_uidx').on(table.cycleId),
+  })
+);
+
+export const peerReviewAssignments = pgTable(
+  'peer_review_assignments',
+  {
+    id: serial('id').primaryKey(),
+    cycleId: integer('cycle_id')
+      .notNull()
+      .references(() => cycles.id),
+    reviewerMemberId: integer('reviewer_member_id')
+      .notNull()
+      .references(() => members.id),
+    revieweeMemberId: integer('reviewee_member_id')
+      .notNull()
+      .references(() => members.id),
+    submissionId: integer('submission_id')
+      .notNull()
+      .references(() => submissions.id),
+    status: peerReviewAssignmentStatusEnum('status')
+      .default('ASSIGNED')
+      .notNull(),
+    assignedAt: timestamp('assigned_at').defaultNow().notNull(),
+    completedAt: timestamp('completed_at'),
+    completedSourceUrl: text('completed_source_url'),
+    completionNote: text('completion_note'),
+    skippedAt: timestamp('skipped_at'),
+    skipReason: text('skip_reason'),
+    cancelledAt: timestamp('cancelled_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    cycleReviewerIdx: uniqueIndex(
+      'peer_review_assignments_cycle_reviewer_uidx'
+    ).on(table.cycleId, table.reviewerMemberId),
+    cycleRevieweeIdx: uniqueIndex(
+      'peer_review_assignments_cycle_reviewee_uidx'
+    ).on(table.cycleId, table.revieweeMemberId),
+    cycleStatusIdx: index('peer_review_assignments_cycle_status_idx').on(
+      table.cycleId,
+      table.status
+    ),
   })
 );
 
