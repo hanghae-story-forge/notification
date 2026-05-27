@@ -81,17 +81,52 @@ type PortalSearch = {
   searchQuery?: string;
 };
 
+type ApiEnvelope<T> =
+  | {
+      success: true;
+      data: T;
+      error: null;
+      meta: { requestId: string; timestamp: string };
+    }
+  | {
+      success: false;
+      data: null;
+      error: { code: string; message: string; details?: unknown };
+      meta: { requestId: string; timestamp: string };
+    };
+
+function isApiEnvelope<T>(payload: unknown): payload is ApiEnvelope<T> {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'success' in payload &&
+    'data' in payload &&
+    'error' in payload &&
+    'meta' in payload
+  );
+}
+
+function unwrapApiResponse<T>(payload: unknown, response: Response): T {
+  if (isApiEnvelope<T>(payload)) {
+    if (payload.success) return payload.data;
+    throw new Error(payload.error.message || `HTTP ${response.status}`);
+  }
+
+  if (!response.ok) {
+    const legacyError = payload as { error?: string; message?: string };
+    throw new Error(legacyError.error ?? legacyError.message ?? `HTTP ${response.status}`);
+  }
+
+  return payload as T;
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { accept: 'application/json' },
   });
   const payload = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    throw new Error((payload as { error?: string }).error ?? `HTTP ${response.status}`);
-  }
-
-  return payload as T;
+  return unwrapApiResponse<T>(payload, response);
 }
 
 function portalQueryOptions() {

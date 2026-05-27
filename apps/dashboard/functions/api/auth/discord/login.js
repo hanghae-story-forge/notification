@@ -1,10 +1,17 @@
+import { apiFailure, jsonResponse } from '../../../_shared.js';
+
 export function onRequestGet(context) {
   const url = new URL(context.request.url);
   const clientId = context.env.DISCORD_CLIENT_ID;
-  const redirectUri = context.env.DISCORD_REDIRECT_URI ?? `${url.origin}/api/auth/discord/callback`;
+  const redirectUri =
+    context.env.DISCORD_REDIRECT_URI ??
+    `${url.origin}/api/auth/discord/callback`;
 
   if (!clientId) {
-    return new Response('DISCORD_CLIENT_ID is not configured', { status: 500 });
+    return jsonResponse(
+      apiFailure('DISCORD_CLIENT_ID is not configured', 500),
+      { status: 500 },
+    );
   }
 
   const state = crypto.randomUUID();

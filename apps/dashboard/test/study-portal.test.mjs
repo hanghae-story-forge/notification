@@ -46,26 +46,54 @@ test('portal document metadata is customer-facing, not admin or implementation c
   assert.doesNotMatch(html, /운영자를 위한/);
 });
 
-test('dashboard client uses public studies API, Discord auth session, and cycle status proxy', async () => {
+test('dashboard client uses public studies API, Discord auth session, cycle status proxy, and API envelopes', async () => {
   const app = await readProjectFile('src/App.tsx');
-  const studiesProxy = await readProjectFile('functions/api/studies/[[path]].js');
-  const authLogin = await readProjectFile('functions/api/auth/discord/login.js');
+  const shared = await readProjectFile('functions/_shared.js');
+  const studiesProxy = await readProjectFile(
+    'functions/api/studies/[[path]].js',
+  );
+  const authLogin = await readProjectFile(
+    'functions/api/auth/discord/login.js',
+  );
   const authMe = await readProjectFile('functions/api/auth/me.js');
 
   assert.match(app, /\/api\/studies/);
   assert.match(app, /\/api\/studies\/me/);
   assert.match(app, /\/api\/auth\/me/);
   assert.match(app, /\/api\/status\/\$\{cycleId\}/);
+  assert.match(app, /unwrapApiResponse/);
+  assert.match(app, /success/);
+  assert.match(app, /data/);
   assert.doesNotMatch(app, /onrender\.com/);
+  assert.match(shared, /apiSuccess/);
+  assert.match(shared, /apiFailure/);
   assert.match(studiesProxy, /\/api\/studies/);
   assert.match(authLogin, /DISCORD_CLIENT_ID/);
   assert.match(authLogin, /discord\.com\/oauth2\/authorize/);
-  assert.match(authMe, /discord_session/);
+  assert.match(authMe, /apiSuccess/);
+});
+
+test('server wraps REST API responses in a standard envelope', async () => {
+  const index = await readRepoFile('apps/server/src/index.ts');
+  const envelope = await readRepoFile(
+    'apps/server/src/presentation/shared/api-envelope.ts',
+  );
+
+  assert.match(index, /apiEnvelopeMiddleware/);
+  assert.match(index, /app\.use\('\/api\/\*'/);
+  assert.match(envelope, /success: true/);
+  assert.match(envelope, /success: false/);
+  assert.match(envelope, /data/);
+  assert.match(envelope, /error/);
+  assert.match(envelope, /requestId/);
+  assert.match(envelope, /timestamp/);
 });
 
 test('server exposes study portal read APIs backed by organization-as-study model', async () => {
   const index = await readRepoFile('apps/server/src/index.ts');
-  const handlers = await readRepoFile('apps/server/src/presentation/http/studies/studies.handlers.ts');
+  const handlers = await readRepoFile(
+    'apps/server/src/presentation/http/studies/studies.handlers.ts',
+  );
 
   assert.match(index, /getPublicStudies/);
   assert.match(index, /\/api\/studies/);
